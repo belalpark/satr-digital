@@ -69,3 +69,8 @@ npm run test:e2e         # Playwright: المسار كاملًا على 1440×90
 `.github/workflows/pages.yml` ينشر مع كل دفعة نشرة واحدة على GitHub Pages: `main` على الجذر
 وكل فرع آخر على `/preview/<branch>/`، ومعها `build-info.json` (رقم الـcommit والفرع والوقت)
 الذي يظهر مختصرًا في زاوية الصفحة.
+
+- دفعة إلى أي فرع: تُشغَّل اختبارات الوحدات، ثم يُطلب تشغيل النشر على `main` (بيئة `github-pages`
+  لا تقبل النشر إلا من الفرع الرئيسي)، فيُجمَّع الموقع من كل الفروع ويُنشر.
+- رابط معاينة الفرع: `https://belalpark.github.io/satr-digital/preview/<branch>/`
+- إعداد لمرة واحدة: Settings → Pages → Source: «GitHub Actions».
