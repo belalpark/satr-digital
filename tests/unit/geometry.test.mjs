@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bbox, centroid, pointInPolygon, zoomTransform, pathLength } from '../../assets/js/geometry.js';
+import { bbox, centroid, pointInPolygon, zoomTransform, pathLength, applyHomography, projectPoints, convexHull, pathData, bboxOf } from '../../assets/js/geometry.js';
 
 const rect = [[0, 0], [10, 0], [10, 20], [0, 20]];
 
@@ -54,4 +54,28 @@ test('zoomTransform never zooms out below 1', () => {
 
 test('pathLength sums segment lengths', () => {
   assert.equal(pathLength([[0, 0], [3, 4], [3, 10]]), 11);
+});
+
+test('identity and affine homographies', () => {
+  assert.deepEqual(applyHomography([1, 0, 0, 0, 1, 0, 0, 0, 1], [3, 4]), [3, 4]);
+  assert.deepEqual(applyHomography([2, 0, 5, 0, 3, -1, 0, 0, 1], [1, 1]), [7, 2]);
+});
+
+test('perspective homography divides by w', () => {
+  // w = 0.5 * x + 1 -> point (2, 0) maps to (2/2, 0/2) = (1, 0)
+  const [u, v] = applyHomography([1, 0, 0, 0, 1, 0, 0.5, 0, 1], [2, 0]);
+  assert.equal(u, 1);
+  assert.equal(v, 0);
+  assert.deepEqual(projectPoints([1, 0, 0, 0, 1, 0, 0, 0, 1], [[1, 2], [3, 4]]), [[1, 2], [3, 4]]);
+});
+
+test('convex hull drops interior points', () => {
+  const hull = convexHull([[0, 0], [10, 0], [10, 10], [0, 10], [5, 5], [2, 8]]);
+  assert.equal(hull.length, 4);
+  for (const p of [[0, 0], [10, 0], [10, 10], [0, 10]]) assert.ok(hull.some((q) => q[0] === p[0] && q[1] === p[1]));
+});
+
+test('path data and combined bbox', () => {
+  assert.equal(pathData([[0, 0], [1.25, 0], [1, 1]]), 'M0 0L1.3 0L1 1Z');
+  assert.deepEqual(bboxOf([[0, 0], [1, 1]], [[5, -2]]), { x: 0, y: -2, w: 5, h: 3 });
 });

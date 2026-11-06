@@ -9,13 +9,15 @@ test('empty hash is the welcome view', () => {
 });
 
 test('plan with scene query', () => {
-  assert.deepEqual(parseHash('#/plan?scene=visitor-path'), { view: 'plan', scene: 'visitor-path' });
+  assert.deepEqual(parseHash('#/plan?scene=paths'), { view: 'plan', scene: 'paths' });
   assert.deepEqual(parseHash('#/plan'), { view: 'plan' });
 });
 
-test('room and details routes', () => {
+test('room focus, photos and details routes', () => {
   assert.deepEqual(parseHash('#/room/meeting-large'), { view: 'room', roomId: 'meeting-large' });
+  assert.deepEqual(parseHash('#/room/meeting-large/photos'), { view: 'photos', roomId: 'meeting-large' });
   assert.deepEqual(parseHash('#/room/meeting-large/details'), { view: 'details', roomId: 'meeting-large' });
+  assert.deepEqual(parseHash('#/room/meeting-large/nope'), { view: 'plan' });
 });
 
 test('unknown routes fall back to plan', () => {
@@ -24,9 +26,10 @@ test('unknown routes fall back to plan', () => {
 
 test('buildHash round-trips', () => {
   assert.equal(buildHash({ view: 'welcome' }), '#/');
-  assert.equal(buildHash({ view: 'plan', scene: 'team-layout' }), '#/plan?scene=team-layout');
+  assert.equal(buildHash({ view: 'plan', scene: 'paths' }), '#/plan?scene=paths');
   assert.equal(buildHash({ view: 'plan', scene: 'current' }), '#/plan');
   assert.equal(buildHash({ view: 'room', roomId: 'ceo' }), '#/room/ceo');
+  assert.equal(buildHash({ view: 'photos', roomId: 'ceo' }), '#/room/ceo/photos');
   assert.equal(buildHash({ view: 'details', roomId: 'ceo' }), '#/room/ceo/details');
 });
 
