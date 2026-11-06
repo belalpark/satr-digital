@@ -40,6 +40,11 @@ previews=()
 for ref in $(git for-each-ref --format='%(refname)' refs/remotes/origin/); do
   branch=${ref#refs/remotes/origin/}
   case "$branch" in main|HEAD) continue ;; esac
+  # Only branches that actually ship the site get a preview (skips docs-only branches).
+  if ! git cat-file -e "$ref:index.html" 2>/dev/null; then
+    echo "  $branch: no index.html, skipped"
+    continue
+  fi
   copy_ref "$ref" "$out/preview/$branch" "$branch"
   previews+=("$branch")
 done
