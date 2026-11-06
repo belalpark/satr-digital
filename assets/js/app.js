@@ -351,6 +351,7 @@ export async function init() {
     if (!twin || !current()) return;
     twin.stopIdle();
     if (twin.getFocus() !== r.id) await twin.focusRoom(r.id, { animate });
+    else await twin.settled(); // the flight to this room may still be in progress (e.g. details opened mid-flight)
     if (overlay && current()) overlay.setFocus(r.id);
   }
   async function ensureUnfocus(current = () => true) {

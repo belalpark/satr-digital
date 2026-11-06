@@ -296,6 +296,7 @@ export async function createTwin3D(container, data, opts = {}) {
   // tweening between camera states
   let tween = null;
   let tweenResolve = null;
+  let tweenDone = Promise.resolve(); // resolves when the flight in progress ends (or is superseded)
   /** Ends the flight in progress (its promise resolves) so a direct placement is not undone by later frames. */
   function cancelTween() {
     if (!tween && !tweenResolve) return;
@@ -323,7 +324,7 @@ export async function createTwin3D(container, data, opts = {}) {
     while (dAz > Math.PI) dAz -= 2 * Math.PI;
     while (dAz < -Math.PI) dAz += 2 * Math.PI;
     const t0 = performance.now();
-    return new Promise((resolve) => {
+    tweenDone = new Promise((resolve) => {
       tweenResolve = resolve;
       tween = (now) => {
         const k = Math.min(1, (now - t0) / ms);
@@ -338,7 +339,10 @@ export async function createTwin3D(container, data, opts = {}) {
       };
       requestRender();
     });
+    return tweenDone;
   }
+  /** Resolves once no camera flight is in progress (immediately when the camera is at rest). */
+  const settled = () => (tween ? tweenDone : Promise.resolve());
 
   function roomCircle(id) {
     const a = anchors.get(id);
@@ -445,7 +449,9 @@ export async function createTwin3D(container, data, opts = {}) {
       needsRender = false;
       for (const fn of listeners) fn();
     }
-    if (tween || moved || needsRender || animating) rafId = requestAnimationFrame(frame);
+    // controls.update() above may already have queued the next frame through its
+    // synchronous 'change' event; never queue a second callback for the same tick
+    if (!rafId && (tween || moved || needsRender || animating)) rafId = requestAnimationFrame(frame);
   }
   controls.addEventListener('change', requestRender);
   controls.addEventListener('start', () => container.classList.add('is-orbiting'));
@@ -506,6 +512,7 @@ export async function createTwin3D(container, data, opts = {}) {
     element: renderer.domElement,
     focusRoom,
     unfocus,
+    settled,
     getFocus: () => focusId,
     setLighting,
     getLighting: () => mode,
