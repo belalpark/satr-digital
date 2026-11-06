@@ -91,7 +91,8 @@ export async function init() {
     if (twinPromise) return twinPromise;
     twinPromise = (async () => {
     try {
-      twin = await createTwin3D(planStage, data, { base: data.office.model.base, lighting: readPref('lighting', 'day'), idleSpin: true });
+      twin = await createTwin3D(planStage, data, { base: data.office.model.base, lighting: readPref('lighting', 'day'), idleSpin: true, active: currentView === 'plan' });
+      twin.setActive(currentView === 'plan'); // the view may have changed while the model was loading
       overlay = createOverlay(planStage, twin, data, {
         onModel: (id) => toggleRoom(id),
         onPhotos: (id) => navigate({ view: 'photos', roomId: id }),
@@ -329,6 +330,7 @@ export async function init() {
     const prev = currentView;
     currentView = name;
     app.dataset.currentView = name;
+    if (twin) twin.setActive(name === 'plan'); // no rendering or turntable behind the photos/details/welcome views
     const order = { welcome: 0, plan: 1, photos: 2, details: 3 };
     const goingUp = !prev || order[name] > order[prev];
     for (const [key, v] of Object.entries(views)) {

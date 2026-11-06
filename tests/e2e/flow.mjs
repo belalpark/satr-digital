@@ -49,6 +49,11 @@ async function flow(name, contextOptions, { mobile, team }) {
   const click = (sel) => page.evaluate((s) => document.querySelector(s).click(), sel); // toolbar buttons move while the model renders
   const modelReady = () => page.waitForSelector('#plan-stage.is-ready', { timeout: 120000 });
   const focusedOn = (id) => page.waitForFunction((rid) => document.getElementById('plan-stage').dataset.focus === rid, id, { timeout: 60000 });
+  // the camera flight has ended and one more frame was drawn (software GL can take seconds per frame)
+  const settled = () => page.evaluate(() => new Promise((res) => {
+    const twin = document.getElementById('plan-stage').__twin;
+    twin.settled().then(() => { const off = twin.onFrame(() => { off(); res(); }); twin.requestRender(); setTimeout(() => { off(); res(); }, 20000); });
+  }));
   let step = 'start';
 
   try {
@@ -72,6 +77,25 @@ async function flow(name, contextOptions, { mobile, team }) {
       assert.ok(!body.includes(banned), `welcome must not contain «${banned}»`);
     }
     await shot('welcome');
+    // the model preloads behind the welcome screen but must not render or spin there
+    await page.waitForSelector('#plan-stage.is-ready', { state: 'attached', timeout: 120000 });
+    const behindWelcome = await page.evaluate(async () => {
+      // the initial renders (lighting, fit, scene sync) drain first; a turntable would then keep
+      // producing frames, so look for a quiet window longer than any software-GL frame
+      const twin = document.getElementById('plan-stage').__twin;
+      let last = performance.now();
+      const off = twin.onFrame(() => { last = performance.now(); });
+      const t0 = performance.now();
+      let quiet = 0;
+      while (performance.now() - t0 < 60000) {
+        await new Promise((r) => setTimeout(r, 500));
+        quiet = performance.now() - last;
+        if (quiet > 8000) break;
+      }
+      off();
+      return Math.round(quiet);
+    });
+    assert.ok(behindWelcome > 8000, `no turntable behind the welcome screen (longest quiet window ${behindWelcome} ms)`);
 
     // 2. live 3D model, two tabs, sidebar list, dots legend
     step = '2 plan';
@@ -136,7 +160,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     await click('#overlay-dots .room-marker[data-id="meeting-large"] .dot-blue');
     await page.waitForFunction(() => location.hash === '#/room/meeting-large', null, { timeout: 60000 });
     await focusedOn('meeting-large');
-    await page.waitForTimeout(1400);
+    await settled();
     assert.ok(await page.isVisible('#room-card'), 'room card shown');
     assert.equal(await page.textContent('#focus-title'), 'غرفة الاجتماعات الكبرى');
     assert.match(await page.textContent('#focus-facts'), /16 مقعدًا/);
@@ -264,8 +288,8 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.equal(drift.focus, 'reception', 'focus follows the latest route');
     assert.ok(drift.moved < 0.5, `camera is still after the immediate focus (moved ${drift.moved.toFixed(1)}px)`);
     await page.goto(`${url}/#/room/reception`);
-    await page.waitForTimeout(800);
     await focusedOn('reception');
+    await settled();
     const recPx = await page.evaluate(() => {
       const st = document.getElementById('plan-stage');
       const b = st.__twin.roomScreenBox('reception');
@@ -315,6 +339,30 @@ async function flow(name, contextOptions, { mobile, team }) {
       return { ticks, renders };
     });
     assert.ok(perTick.renders <= perTick.ticks + 2, `one render per animation frame after a flight (${perTick.renders} renders in ${perTick.ticks} ticks)`);
+    // nothing renders behind another view: open a room's photos while the routes are visible and count frames
+    await page.goto(`${url}/#/room/reception/photos`);
+    await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'photos');
+    const behind = await page.evaluate(async (gap) => {
+      const twin = document.getElementById('plan-stage').__twin;
+      await new Promise((r) => setTimeout(r, gap)); // the focus render for the photos route drains here
+      let n = 0;
+      const off = twin.onFrame(() => { n += 1; });
+      await new Promise((r) => setTimeout(r, gap)); // three frame-times: an animating loop would show ≥2 frames
+      off();
+      return n;
+    }, Math.max(2000, frames.ms > 0 ? frames.ms : 3000));
+    assert.ok(behind <= 1, `no rendering behind the photos view (${behind} frames)`);
+    await page.goto(`${url}/#/plan?scene=paths`);
+    await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'plan');
+    const resumed = await page.evaluate(async () => {
+      const twin = document.getElementById('plan-stage').__twin;
+      let n = 0;
+      const off = twin.onFrame(() => { n += 1; });
+      await new Promise((r) => setTimeout(r, 15000)); // generous: software GL
+      off();
+      return n;
+    });
+    assert.ok(resumed >= 2, `route animation resumes when the plan view returns (${resumed} frames)`);
 
     // 6e. details requested while the flight to the room is still in progress: the snapshot is taken at the end of the flight
     step = '6e details mid-flight';

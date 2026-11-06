@@ -425,13 +425,15 @@ export async function createTwin3D(container, data, opts = {}) {
   let needsRender = true;
   let rafId = 0;
   let stageVisible = false; // kept current by the IntersectionObserver below
+  let active = opts.active !== false; // false while the page shows another view over the stage (views hide by visibility, not display)
+  const onScreen = () => active && stageVisible && !document.hidden;
   const listeners = new Set();
   function requestRender() {
     needsRender = true;
     if (!rafId) rafId = requestAnimationFrame(frame);
   }
   // the route stripes keep moving (while the stage is on screen) even when the camera is still
-  const routesAnimating = () => routeGroup.visible && !reducedMotion && stageVisible && !document.hidden;
+  const routesAnimating = () => routeGroup.visible && !reducedMotion && onScreen();
   function frame(now) {
     rafId = 0;
     if (tween) {
@@ -463,20 +465,27 @@ export async function createTwin3D(container, data, opts = {}) {
   if (typeof IntersectionObserver !== 'undefined') {
     new IntersectionObserver((entries) => {
       stageVisible = entries.some((e) => e.isIntersecting && e.intersectionRatio > 0.2);
-      if (stageVisible) requestRender(); // resumes the route animation and the idle spin
-      if (stageVisible && idle && !idleRaf) idleRaf = requestAnimationFrame(spin);
+      if (onScreen()) requestRender(); // resumes the route animation and the idle spin
+      if (onScreen() && idle && !idleRaf) idleRaf = requestAnimationFrame(spin);
     }, { threshold: [0, 0.2, 0.6] }).observe(container);
   } else {
     stageVisible = true;
   }
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) return;
+    if (!onScreen()) return;
     requestRender();
-    if (idle && stageVisible && !idleRaf) idleRaf = requestAnimationFrame(spin);
+    if (idle && !idleRaf) idleRaf = requestAnimationFrame(spin);
   });
+  /** The page tells the viewer whether its view is the one on screen; nothing animates behind another view. */
+  function setActive(on) {
+    active = !!on;
+    if (!active) return;
+    requestRender();
+    if (onScreen() && idle && !idleRaf) idleRaf = requestAnimationFrame(spin);
+  }
   function spin() {
     idleRaf = 0;
-    if (!idle || focusId || !stageVisible || document.hidden) return;
+    if (!idle || focusId || !onScreen()) return;
     if (tween) { idleRaf = requestAnimationFrame(spin); return; } // never fight a flight in progress
     const az = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) + 0.0009;
     const polar = Math.acos((camera.position.y - controls.target.y) / camera.position.distanceTo(controls.target));
@@ -506,13 +515,14 @@ export async function createTwin3D(container, data, opts = {}) {
   else window.addEventListener('resize', resize);
   resize();
   setLighting(opts.lighting || 'day');
-  if (idle && stageVisible) idleRaf = requestAnimationFrame(spin);
+  if (idle && onScreen()) idleRaf = requestAnimationFrame(spin);
 
   return {
     element: renderer.domElement,
     focusRoom,
     unfocus,
     settled,
+    setActive,
     getFocus: () => focusId,
     setLighting,
     getLighting: () => mode,
