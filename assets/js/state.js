@@ -1,4 +1,4 @@
-// Remembers where the visitor was on the plan (scene, proposed toggle, zoom)
+// Remembers where the visitor was on the plan (scene, zoom) before opening a room
 // so "العودة للمخطط" lands on the same spot. sessionStorage is optional:
 // every call is guarded so private mode or blocked storage just means a
 // fresh view.

@@ -1,8 +1,9 @@
 // Hash router. Routes:
 //   #/                      welcome
-//   #/plan[?scene=<id>]     plan
-//   #/room/<id>             room
-//   #/room/<id>/details     details
+//   #/plan[?scene=<id>]     3D plan (scene: current | paths)
+//   #/room/<id>             the room's second shot: 3D plan focused on the room
+//   #/room/<id>/photos      real photos of the room
+//   #/room/<id>/details     details panel
 
 const ROOM_ID = /^[a-z0-9-]+$/;
 
@@ -16,8 +17,9 @@ export function parseHash(hash) {
     return scene ? { view: 'plan', scene } : { view: 'plan' };
   }
   if (parts[0] === 'room' && parts[1] && ROOM_ID.test(parts[1])) {
-    if (parts[2] === 'details') return { view: 'details', roomId: parts[1] };
     if (parts.length === 2) return { view: 'room', roomId: parts[1] };
+    if (parts.length === 3 && parts[2] === 'photos') return { view: 'photos', roomId: parts[1] };
+    if (parts.length === 3 && parts[2] === 'details') return { view: 'details', roomId: parts[1] };
   }
   return { view: 'plan' };
 }
@@ -30,6 +32,8 @@ export function buildHash(route) {
       return route.scene && route.scene !== 'current' ? `#/plan?scene=${encodeURIComponent(route.scene)}` : '#/plan';
     case 'room':
       return `#/room/${route.roomId}`;
+    case 'photos':
+      return `#/room/${route.roomId}/photos`;
     case 'details':
       return `#/room/${route.roomId}/details`;
     default:

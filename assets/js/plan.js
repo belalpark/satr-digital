@@ -1,12 +1,17 @@
-// Interactive dollhouse plan: the rendered plan image with an SVG overlay of
-// clickable room polygons, zoom/pan, and the Home-Assistant-style scenes.
-import { bbox, zoomTransform, pointsAttr } from './geometry.js';
+// 3D dollhouse plan: the Blender render of the office (tools/twin) with an SVG
+// overlay. Room outlines, labels and routes are stored in plan coordinates
+// (data/office.json) and projected onto the render through the camera's
+// floor / wall-top homographies, so the overlay always matches the image.
+//
+// "Focus" is the second shot: the camera frames a ready room at the focus
+// frame (60% of the full view by default), a sharper render of exactly that
+// crop fades in, and every other room is dimmed.
+import { bboxOf, zoomTransform, pointsAttr, pathData, applyHomography, projectPoints, convexHull } from './geometry.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const MIN_SCALE = 1;
-const MAX_SCALE = 5;
-const ROOM_ZOOM_MAX = 3.2;
-const ROOM_ZOOM_PADDING = 0.12;
+const MAX_SCALE = 6;
+const PHONE_MAX = 720;
 
 function svgEl(name, attrs = {}) {
   const node = document.createElementNS(SVG_NS, name);
@@ -15,8 +20,8 @@ function svgEl(name, attrs = {}) {
 }
 
 function svgText(x, y, text, className) {
-  const t = svgEl('text', { x, y });
-  t.classList.add(className);
+  const t = svgEl('text', { x: +x.toFixed(1), y: +y.toFixed(1) });
+  t.setAttribute('class', className);
   t.textContent = text;
   return t;
 }
@@ -25,65 +30,143 @@ function svgText(x, y, text, className) {
  * @param {HTMLElement} stage   container (position: relative/absolute, overflow hidden)
  * @param {object} data         office.json
  * @param {object} opts
- *   onRoomOpen(roomId)         called after the zoom-in animation of a ready room
+ *   onRoomOpen(roomId)         a ready room was activated
  *   tip                        shared tooltip element
  *   static                     true = non-interactive (details panel)
  */
 export function createPlan(stage, data, opts = {}) {
-  const { width: planW, height: planH } = data.office.plan;
+  const P = data.office.plan;
+  const planW = P.width;
+  const planH = P.height;
   const rooms = data.rooms;
   const roomsById = new Map(rooms.map((r) => [r.id, r]));
   const isStatic = !!opts.static;
+
+  // ---------- projected geometry ----------
+  const geo = new Map();
+  for (const r of rooms) {
+    const floor = projectPoints(P.homography.floor, r.polygon);
+    const top = projectPoints(P.homography.top, r.polygon);
+    geo.set(r.id, {
+      floor,
+      hull: convexHull([...floor, ...top]),
+      box: bboxOf(floor, top),
+      label: applyHomography(P.homography.floor, [r.label.x, r.label.y]),
+    });
+  }
 
   // ---------- DOM ----------
   const world = document.createElement('div');
   world.className = 'plan-world';
   const img = document.createElement('img');
-  img.src = data.office.plan.image;
+  img.className = 'plan-image';
+  img.src = P.image;
   img.alt = '';
   img.decoding = 'async';
   img.draggable = false;
+  world.append(img);
+
+  const shots = new Map();
+  for (const r of rooms) {
+    if (!r.focus) continue;
+    const s = document.createElement('img');
+    s.className = 'focus-shot';
+    s.alt = '';
+    s.decoding = 'async';
+    s.draggable = false;
+    s.dataset.id = r.id;
+    const [x, y, w, h] = r.focus.rect;
+    Object.assign(s.style, {
+      left: `${(x / planW) * 100}%`, top: `${(y / planH) * 100}%`,
+      width: `${(w / planW) * 100}%`, height: `${(h / planH) * 100}%`,
+    });
+    s.addEventListener('load', () => s.classList.add('is-loaded'));
+    shots.set(r.id, s);
+    world.append(s);
+  }
+
   const svg = svgEl('svg', { viewBox: `0 0 ${planW} ${planH}`, preserveAspectRatio: 'none' });
   svg.classList.add('plan-svg');
+  const maskLayer = svgEl('g', { class: 'layer-mask' });
   const roomsLayer = svgEl('g', { class: 'layer-rooms' });
-  const sceneLayer = svgEl('g', { class: 'scene-layer' });
+  const routesLayer = svgEl('g', { class: 'layer-routes' });
   const labelsLayer = svgEl('g', { class: 'layer-labels' });
-  svg.append(roomsLayer, sceneLayer, labelsLayer);
-  world.append(img, svg);
+  svg.append(maskLayer, roomsLayer, routesLayer, labelsLayer);
+  world.append(svg);
   stage.append(world);
 
-  const paths = new Map();
-  const labels = new Map();
-  const sublabels = new Map();
+  const mask = svgEl('path', { class: 'focus-mask', 'fill-rule': 'evenodd', d: '' });
+  const focusGlow = svgEl('path', { class: 'focus-glow', d: '' });
+  const focusRing = svgEl('path', { class: 'focus-ring', d: '' });
+  maskLayer.append(mask, focusGlow, focusRing);
 
+  const polys = new Map();
+  const labels = new Map();
   for (const room of rooms) {
-    const path = svgEl('polygon', { points: pointsAttr(room.polygon), 'data-id': room.id });
-    path.classList.add('room', `is-${room.status}`);
+    const g = geo.get(room.id);
+    const poly = svgEl('polygon', { points: pointsAttr(g.floor), 'data-id': room.id });
+    poly.setAttribute('class', `room is-${room.status}`);
     if (!isStatic && room.status === 'ready') {
       // only openable rooms are tab stops; "soon" rooms stay reachable by pointer (tooltip)
-      path.setAttribute('role', 'button');
-      path.setAttribute('tabindex', '0');
-      path.setAttribute('aria-label', `${room.name} — ادخل الغرفة`);
+      poly.setAttribute('role', 'button');
+      poly.setAttribute('tabindex', '0');
+      poly.setAttribute('aria-label', `${room.name} — اعرض الغرفة`);
     } else if (!isStatic && room.status === 'soon') {
-      path.setAttribute('aria-label', `${room.name} — قريبًا`);
+      poly.setAttribute('aria-label', `${room.name} — قريبًا`);
     }
     const title = svgEl('title');
     title.textContent = room.name;
-    path.append(title);
-    roomsLayer.append(path);
-    paths.set(room.id, path);
+    poly.append(title);
+    roomsLayer.append(poly);
+    polys.set(room.id, poly);
 
-    const label = svgText(room.label.x, room.label.y, room.short || room.name, 'room-label');
-    if (room.status === 'ready') label.classList.add('is-ready');
+    const [lx, ly] = g.label;
+    const label = svgEl('g', { class: 'room-label' });
+    if (room.status === 'ready') {
+      label.classList.add('is-ready');
+      // drawn at the label point and lifted by CSS so it keeps its on-screen size and gap
+      const mark = svgEl('g', { class: 'ready-mark' });
+      mark.append(svgEl('circle', { class: 'ready-pulse', cx: lx.toFixed(1), cy: ly.toFixed(1), r: 13 }));
+      mark.append(svgEl('circle', { class: 'ready-dot', cx: lx.toFixed(1), cy: ly.toFixed(1), r: 9 }));
+      label.append(mark);
+    }
     if (room.kind === 'office' || room.kind === 'service') label.classList.add('is-minor');
+    if (room.status === 'info') label.classList.add('is-info');
+    label.append(svgText(lx, ly, room.short || room.name, 'label-text'));
     labelsLayer.append(label);
     labels.set(room.id, label);
+  }
 
-    const sub = svgText(room.label.x, room.label.y + 20, '', 'room-sublabel');
-    sub.setAttribute('hidden', '');
-    if (room.kind === 'office' || room.kind === 'service') sub.classList.add('is-minor');
-    labelsLayer.append(sub);
-    sublabels.set(room.id, sub);
+  // ---------- routes (paths scene) ----------
+  const routes = new Map();
+  const pathsScene = data.scenes && data.scenes.paths;
+  if (pathsScene) {
+    const startLabels = new Set();
+    for (const route of pathsScene.routes) {
+      const pts = projectPoints(P.homography.floor, route.points);
+      const g = svgEl('g', { class: 'route', 'data-route': route.id });
+      g.style.setProperty('--route', route.color);
+      g.append(svgEl('polyline', { class: 'route-glow', points: pointsAttr(pts) }));
+      g.append(svgEl('polyline', { class: 'route-line', points: pointsAttr(pts) }));
+      route.stops.forEach((stop, i) => {
+        const [sx, sy] = applyHomography(P.homography.floor, stop.at);
+        if (i === 0) {
+          if (startLabels.has(stop.label)) return;
+          startLabels.add(stop.label);
+          const s = svgEl('g', { class: 'route-start' });
+          s.append(svgEl('circle', { cx: sx.toFixed(1), cy: sy.toFixed(1), r: 16 }));
+          s.append(svgText(sx, sy + 48, stop.label, 'stop-name'));
+          routesLayer.append(s);
+          return;
+        }
+        const s = svgEl('g', { class: 'route-stop' });
+        s.append(svgEl('circle', { cx: sx.toFixed(1), cy: sy.toFixed(1), r: 15 }));
+        s.append(svgText(sx, sy - 30, stop.label, 'stop-name'));
+        g.append(s);
+      });
+      routesLayer.prepend(g);
+      routes.set(route.id, g);
+    }
   }
 
   // ---------- view state ----------
@@ -91,10 +174,9 @@ export function createPlan(stage, data, opts = {}) {
   let stageH = 0;
   let fitScale = 1;
   let current = { scale: 1, tx: 0, ty: 0 };
-  let mode = 'fit'; // 'fit' | 'room' | 'free'
-  let zoomedRoom = null;
+  let mode = 'fit'; // 'fit' | 'focus' | 'free'
+  let focusId = null;
   let scene = 'current';
-  let proposed = true;
 
   function measure() {
     const r = stage.getBoundingClientRect();
@@ -125,15 +207,17 @@ export function createPlan(stage, data, opts = {}) {
     current = t;
     world.classList.toggle('is-animating', !!animate);
     world.style.transform = `translate(${t.tx}px, ${t.ty}px) scale(${t.scale})`;
-    // minor labels (small offices, services) only when zoomed in enough to read them
-    svg.classList.toggle('is-zoomed', t.scale * fitScale >= 0.95 || isStatic);
+    // SVG units per CSS pixel at this zoom: labels keep a constant on-screen size
+    svg.style.setProperty('--px', (1 / (t.scale * fitScale)).toFixed(4));
+    // small rooms' labels only once the plan is large enough to read them
+    svg.classList.toggle('is-zoomed', t.scale * fitScale >= 0.62 || isStatic);
   }
 
-  function waitTransition(ms = 760) {
+  function waitTransition(ms = 900) {
     return new Promise((resolve) => {
       let done = false;
       const finish = (e) => {
-        // transitionend bubbles: ignore the polygons' hover fill transitions
+        // transitionend bubbles: ignore the overlay's own transitions
         if (e && e.target !== world) return;
         if (done) return;
         done = true;
@@ -145,24 +229,95 @@ export function createPlan(stage, data, opts = {}) {
     });
   }
 
-  function roomTransform(roomId) {
+  /** Second shot: the focus frame (desktop) or a tighter frame around the room (phones). */
+  function focusTransform(roomId) {
     const room = roomsById.get(roomId);
-    const box = bbox(room.polygon);
-    const padding = isStatic ? 0.2 : ROOM_ZOOM_PADDING;
-    const maxScale = isStatic ? 2.4 : ROOM_ZOOM_MAX;
-    return zoomTransform(box, { w: stageW, h: stageH }, { fitScale, padding, maxScale });
+    const g = geo.get(roomId);
+    // keep the room clear of overlays at the bottom of the stage (phone bottom sheet)
+    const inset = opts.focusInset ? opts.focusInset() : 0;
+    const viewport = { w: stageW, h: Math.max(stageH - inset, stageH * 0.3) };
+    const frame = room.focus
+      ? { x: room.focus.rect[0], y: room.focus.rect[1], w: room.focus.rect[2], h: room.focus.rect[3] }
+      : (() => {
+        const k = P.focusFrame || 0.6;
+        const cx = g.box.x + g.box.w / 2;
+        const cy = g.box.y + g.box.h / 2;
+        const w = planW * k;
+        const h = planH * k;
+        return { x: Math.min(Math.max(cx - w / 2, 0), planW - w), y: Math.min(Math.max(cy - h / 2, 0), planH - h), w, h };
+      })();
+    // details panel: the room with a ring of its neighbours, whatever the column width
+    if (isStatic) return clamp(zoomTransform(g.box, viewport, { fitScale, padding: 0.22, maxScale: MAX_SCALE }));
+    const byFrame = zoomTransform(frame, viewport, { fitScale, padding: 0, maxScale: MAX_SCALE });
+    if (stageW > PHONE_MAX) return clamp(byFrame);
+    const byRoom = zoomTransform(g.box, viewport, { fitScale, padding: 0.1, maxScale: MAX_SCALE });
+    return clamp(byRoom.scale > byFrame.scale ? byRoom : byFrame);
   }
 
-  async function zoomToRoom(roomId, { animate = true } = {}) {
-    zoomedRoom = roomId;
-    mode = 'room';
-    apply(roomTransform(roomId), animate);
+  function setMask(roomId) {
+    if (!roomId) {
+      mask.setAttribute('d', '');
+      focusGlow.setAttribute('d', '');
+      focusRing.setAttribute('d', '');
+      svg.classList.remove('is-focus');
+      return;
+    }
+    const hull = geo.get(roomId).hull;
+    mask.setAttribute('d', `M0 0H${planW}V${planH}H0Z${pathData(hull)}`);
+    focusRing.setAttribute('d', pathData(hull));
+    focusGlow.setAttribute('d', pathData(hull));
+    svg.classList.add('is-focus');
+  }
+
+  function showShot(roomId) {
+    for (const [id, s] of shots) {
+      const on = id === roomId;
+      if (on && !s.src) s.src = roomsById.get(id).focus.image;
+      s.classList.toggle('is-visible', on);
+    }
+  }
+
+  function highlight(roomId) {
+    for (const [id, poly] of polys) {
+      poly.classList.toggle('is-highlight', id === roomId);
+      // the focused room is not a tab stop (activating it does nothing)
+      if (poly.hasAttribute('tabindex')) poly.setAttribute('tabindex', id === roomId ? '-1' : '0');
+      labels.get(id).classList.toggle('is-current', id === roomId);
+      labels.get(id).classList.toggle('is-dim', !!roomId && id !== roomId);
+    }
+  }
+
+  async function focusRoom(roomId, { animate = true } = {}) {
+    if (!roomsById.has(roomId)) return;
+    focusId = roomId;
+    mode = 'focus';
+    hideTip();
+    highlight(roomId);
+    setMask(roomId);
+    apply(focusTransform(roomId), animate);
+    if (animate) await waitTransition();
+    if (focusId === roomId) showShot(roomId);
+  }
+
+  async function unfocus({ animate = true, to = null } = {}) {
+    focusId = null;
+    showShot(null);
+    highlight(null);
+    setMask(null);
+    if (to && to.mode === 'free' && to.transform) {
+      mode = 'free';
+      apply(clamp(to.transform), animate);
+      if (current.scale <= MIN_SCALE + 1e-6) mode = 'fit';
+    } else {
+      mode = 'fit';
+      apply(fitTransform(), animate);
+    }
     if (animate) await waitTransition();
   }
 
   async function resetZoom(animate = true) {
+    if (focusId) return unfocus({ animate });
     mode = 'fit';
-    zoomedRoom = null;
     apply(fitTransform(), animate);
     if (animate) await waitTransition();
   }
@@ -171,14 +326,17 @@ export function createPlan(stage, data, opts = {}) {
     const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, current.scale * factor));
     const k = scale / current.scale;
     const t = clamp({ scale, tx: point.x - (point.x - current.tx) * k, ty: point.y - (point.y - current.ty) * k });
+    if (focusId) {
+      apply(t, animate); // free look around the focused room; the focus stays
+      return;
+    }
     mode = scale <= MIN_SCALE + 1e-6 ? 'fit' : 'free';
-    zoomedRoom = null;
     apply(mode === 'fit' ? fitTransform() : t, animate);
   }
 
   function relayout() {
     measure();
-    if (mode === 'room' && zoomedRoom) apply(roomTransform(zoomedRoom), false);
+    if (mode === 'focus' && focusId) apply(focusTransform(focusId), false);
     else if (mode === 'fit') apply(fitTransform(), false);
     else apply(clamp(current), false);
   }
@@ -190,85 +348,27 @@ export function createPlan(stage, data, opts = {}) {
   }
   relayout();
 
-  // ---------- highlight ----------
-  function highlight(roomId) {
-    for (const [id, path] of paths) {
-      path.classList.toggle('is-highlight', id === roomId);
-      path.classList.toggle('is-dim', !!roomId && id !== roomId);
-      labels.get(id).classList.toggle('is-current', id === roomId);
-    }
+  // Warm the cache for the focus renders once the plan itself is on screen.
+  if (!isStatic) {
+    const prefetch = () => setTimeout(() => {
+      for (const [id] of shots) {
+        const pre = new Image();
+        pre.src = roomsById.get(id).focus.image;
+      }
+    }, 1200);
+    if (img.complete) prefetch();
+    else img.addEventListener('load', prefetch, { once: true });
   }
 
   // ---------- scenes ----------
-  function clearScene() {
-    sceneLayer.replaceChildren();
-    for (const [id, path] of paths) {
-      path.style.fill = '';
-      path.style.stroke = '';
-      path.style.strokeDasharray = '';
-      path.classList.remove('is-scene');
-      sublabels.get(id).setAttribute('hidden', '');
-    }
-  }
-
-  function renderVisitorPath() {
-    const sc = data.scenes['visitor-path'];
-    const pts = pointsAttr(sc.waypoints);
-    sceneLayer.append(svgEl('polyline', { points: pts, class: 'path-glow' }));
-    sceneLayer.append(svgEl('polyline', { points: pts, class: 'path-line' }));
-    sc.stops.forEach((stop, i) => {
-      const g = svgEl('g', { class: 'path-stop' });
-      g.append(svgEl('circle', { cx: stop.at[0], cy: stop.at[1], r: 20 }));
-      g.append(svgText(stop.at[0], stop.at[1], String(i + 1), 'stop-number'));
-      const name = svgText(stop.at[0], stop.at[1] + 44, stop.label, 'stop-name');
-      g.append(name);
-      sceneLayer.append(g);
-    });
-  }
-
-  function renderTeamLayout() {
-    const sc = data.scenes['team-layout'];
-    const colorByRoom = new Map();
-    for (const g of sc.groups) for (const id of g.rooms) colorByRoom.set(id, g.color);
-    for (const room of rooms) {
-      const path = paths.get(room.id);
-      const color = proposed ? colorByRoom.get(room.id) : null;
-      if (color) {
-        path.style.fill = hexToRgba(color, 0.34);
-        path.style.stroke = color;
-        path.style.strokeDasharray = '10 7';
-        path.classList.add('is-scene');
-      } else if (!proposed && room.kind !== 'circulation' && room.kind !== 'service') {
-        path.style.fill = 'rgba(91, 100, 114, 0.22)';
-        path.style.stroke = 'rgba(91, 100, 114, 0.8)';
-        path.style.strokeDasharray = '';
-        path.classList.add('is-scene');
-      }
-      const sub = sublabels.get(room.id);
-      const text = proposed ? room.use.proposed : room.use.current;
-      if (text && room.kind !== 'service' && room.kind !== 'circulation') {
-        sub.textContent = text;
-        sub.removeAttribute('hidden');
-      }
-    }
-    for (const cluster of sc.seatClusters) {
-      const g = svgEl('g', { class: `seat-marker${proposed ? '' : ' is-current'}` });
-      g.append(svgEl('circle', { cx: cluster.at[0], cy: cluster.at[1], r: 17 }));
-      g.append(svgText(cluster.at[0], cluster.at[1], String(cluster.seats), 'seat-count'));
-      sceneLayer.append(g);
-    }
-  }
-
   function setScene(id) {
-    scene = data.scenes[id] ? id : 'current';
-    clearScene();
-    if (scene === 'visitor-path') renderVisitorPath();
-    if (scene === 'team-layout') renderTeamLayout();
+    scene = id === 'paths' && pathsScene ? 'paths' : 'current';
+    svg.classList.toggle('scene-paths', scene === 'paths');
   }
 
-  function setProposed(value) {
-    proposed = !!value;
-    if (scene === 'team-layout') setScene('team-layout');
+  function setRouteVisible(id, visible) {
+    const g = routes.get(id);
+    if (g) g.classList.toggle('is-hidden', !visible);
   }
 
   // ---------- interaction ----------
@@ -314,19 +414,15 @@ export function createPlan(stage, data, opts = {}) {
       if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pointers.size === 2 && pinchStart) {
         const [a, b] = [...pointers.values()];
-        const dist = Math.hypot(a.x - b.x, a.y - b.y);
-        const factor = dist / pinchStart.dist;
+        const factor = Math.hypot(a.x - b.x, a.y - b.y) / pinchStart.dist;
         const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, pinchStart.scale * factor));
         const k = scale / pinchStart.scale;
         const rect = stage.getBoundingClientRect();
         const m0 = { x: pinchStart.mid.x - rect.left, y: pinchStart.mid.y - rect.top };
         const m1 = mid(a, b);
-        const mx = m1.x - rect.left;
-        const my = m1.y - rect.top;
-        mode = 'free';
-        zoomedRoom = null;
+        if (!focusId) mode = 'free';
         dragged = true;
-        apply(clamp({ scale, tx: mx - (m0.x - pinchStart.tx) * k, ty: my - (m0.y - pinchStart.ty) * k }), false);
+        apply(clamp({ scale, tx: m1.x - rect.left - (m0.x - pinchStart.tx) * k, ty: m1.y - rect.top - (m0.y - pinchStart.ty) * k }), false);
         return;
       }
       if (pointers.size === 1 && dragStart && pointers.has(e.pointerId)) {
@@ -336,15 +432,14 @@ export function createPlan(stage, data, opts = {}) {
         dragged = true; // moved too far to count as a tap, even when there is nothing to pan
         if (current.scale <= MIN_SCALE + 1e-6) return;
         stage.classList.add('is-dragging');
-        mode = 'free';
-        zoomedRoom = null;
+        if (!focusId) mode = 'free';
         apply(clamp({ scale: current.scale, tx: dragStart.tx + dx, ty: dragStart.ty + dy }), false);
         return;
       }
       if (pointers.size === 0 && e.pointerType === 'mouse') {
         const room = roomFromEvent(e);
-        if (room) {
-          const hint = room.status === 'ready' ? `${room.name} — انقر للدخول` : room.status === 'soon' ? `${room.name} — قريبًا` : room.name;
+        if (room && room.id !== focusId) {
+          const hint = room.status === 'ready' ? `${room.name} — انقر لعرضها` : room.status === 'soon' ? `${room.name} — قريبًا` : room.name;
           showTip(e.clientX, e.clientY, hint);
         } else hideTip();
       }
@@ -371,30 +466,28 @@ export function createPlan(stage, data, opts = {}) {
     stage.addEventListener('wheel', (e) => {
       e.preventDefault();
       const rect = stage.getBoundingClientRect();
-      const factor = Math.exp(-e.deltaY * 0.0015);
-      zoomAround({ x: e.clientX - rect.left, y: e.clientY - rect.top }, factor, false);
+      zoomAround({ x: e.clientX - rect.left, y: e.clientY - rect.top }, Math.exp(-e.deltaY * 0.0015), false);
     }, { passive: false });
 
-    const activate = (path, e) => {
+    const activate = (poly, e) => {
       if (dragged) return;
-      const room = roomsById.get(path.dataset.id);
-      if (!room || room.status === 'info') return;
+      const room = roomsById.get(poly.dataset.id);
+      if (!room || room.status === 'info' || room.id === focusId) return;
       if (room.status === 'soon') {
-        const x = e.clientX || (path.getBoundingClientRect().left + path.getBoundingClientRect().width / 2);
-        const y = e.clientY || path.getBoundingClientRect().top;
-        showTip(x, y, `${room.name} — قريبًا`, 1600);
+        const box = poly.getBoundingClientRect();
+        showTip(e.clientX || box.left + box.width / 2, e.clientY || box.top, `${room.name} — قريبًا`, 1600);
         return;
       }
       hideTip();
-      opts.onRoomOpen && opts.onRoomOpen(room.id);
+      if (opts.onRoomOpen) opts.onRoomOpen(room.id);
     };
 
     roomsLayer.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
-      const path = e.target.closest('.room');
-      if (!path) return;
+      const poly = e.target.closest('.room');
+      if (!poly) return;
       e.preventDefault();
-      activate(path, e);
+      activate(poly, e);
     });
   }
 
@@ -407,39 +500,23 @@ export function createPlan(stage, data, opts = {}) {
     return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   }
 
-  function hexToRgba(hex, alpha) {
-    const n = parseInt(hex.replace('#', ''), 16);
-    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
-  }
-
   return {
     setScene,
     getScene: () => scene,
-    setProposed,
-    isProposed: () => proposed,
-    zoomToRoom,
+    setRouteVisible,
+    focusRoom,
+    unfocus,
+    getFocus: () => focusId,
     resetZoom,
     highlight,
     relayout,
     zoomIn: () => zoomAround({ x: stageW / 2, y: stageH / 2 }, 1.5, true),
     zoomOut: () => zoomAround({ x: stageW / 2, y: stageH / 2 }, 1 / 1.5, true),
     fit: () => resetZoom(true),
-    getState: () => ({ mode, zoomedRoom, transform: { ...current }, scene, proposed }),
-    setTransform: (t, animate = false) => {
-      mode = 'free';
-      zoomedRoom = null;
-      apply(clamp(t), animate);
-      if (current.scale <= MIN_SCALE + 1e-6) mode = 'fit';
-    },
-    async animateTo(state) {
-      if (!state || state.mode === 'fit') return resetZoom(true);
-      if (state.mode === 'room' && state.zoomedRoom) return zoomToRoom(state.zoomedRoom, { animate: true });
-      mode = 'free';
-      zoomedRoom = null;
-      apply(clamp(state.transform), true);
-      await waitTransition();
-    },
+    getState: () => ({ mode, focus: focusId, transform: { ...current }, scene }),
     hideTip,
+    roomBox: (id) => (geo.has(id) ? { ...geo.get(id).box } : null),
     element: world,
   };
 }
+

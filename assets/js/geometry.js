@@ -65,5 +65,51 @@ export function pathLength(points) {
 
 /** "x,y x,y ..." attribute string for SVG polygons/polylines. */
 export function pointsAttr(points) {
-  return points.map(([x, y]) => `${x},${y}`).join(' ');
+  return points.map(([x, y]) => `${+x.toFixed(1)},${+y.toFixed(1)}`).join(' ');
+}
+
+/**
+ * Apply a plane-to-image homography (3x3, row-major, 9 numbers) to [x, y].
+ * The 3D renders export one per height (floor, wall top): a perspective
+ * camera maps every horizontal plane of the model to the image this way.
+ */
+export function applyHomography(H, [x, y]) {
+  const w = H[6] * x + H[7] * y + H[8];
+  return [(H[0] * x + H[1] * y + H[2]) / w, (H[3] * x + H[4] * y + H[5]) / w];
+}
+
+/** Project every point of a polygon/polyline. */
+export function projectPoints(H, points) {
+  return points.map((p) => applyHomography(H, p));
+}
+
+/** Bounding box of several point lists at once. */
+export function bboxOf(...lists) {
+  return bbox(lists.flat());
+}
+
+/** "M x y L ... Z" for a closed polygon (used to cut holes in the focus mask). */
+export function pathData(points) {
+  return `M${points.map(([x, y]) => `${+x.toFixed(1)} ${+y.toFixed(1)}`).join('L')}Z`;
+}
+
+/** Convex hull (Andrew's monotone chain) of [[x, y], ...], counter-clockwise in screen terms. */
+export function convexHull(points) {
+  const pts = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  if (pts.length < 3) return pts;
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower = [];
+  for (const p of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper = [];
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  upper.pop();
+  lower.pop();
+  return lower.concat(upper);
 }

@@ -1,5 +1,5 @@
-// Room details: photos | plan (room highlighted) | features. Three columns on
-// desktop, plan on top with two tabs on mobile.
+// Room details: photos | the room's 3D second shot | features. Three columns on
+// desktop, the 3D view on top with two tabs on mobile.
 import { createPlan } from './plan.js';
 import { seatsLabel } from './format.js';
 
@@ -45,7 +45,7 @@ export function createDetails(view, data, { onOpenPhoto } = {}) {
   function renderFeatures(room) {
     const cards = [];
     if (room.capacity) {
-      cards.push(card('السعة حسب الفرش المقترح', [
+      cards.push(card('السعة حسب الفرش الحالي', [
         text('p', 'big', seatsLabel(room.capacity.seats)),
         text('p', 'basis', room.capacity.basis),
       ]));
@@ -55,16 +55,12 @@ export function createDetails(view, data, { onOpenPhoto } = {}) {
       for (const item of room.fixtures.items) ul.append(text('li', '', item));
       cards.push(card('التجهيزات', [ul, text('p', 'source', `المصدر: ${room.fixtures.source}`)]));
     }
-    const uses = document.createElement('div');
-    uses.className = 'use-row';
-    const cur = document.createElement('div');
-    cur.className = 'use-item is-current';
-    cur.append(text('span', 'tag', 'الوضع الحالي'), text('span', '', room.use.current));
-    const pro = document.createElement('div');
-    pro.className = 'use-item is-proposed';
-    pro.append(text('span', 'tag', 'تصوّر مقترح'), text('span', '', room.use.proposed));
-    uses.append(cur, pro);
-    cards.push(card('الاستخدام', [uses]));
+    if (room.use && room.use.current) {
+      const cur = document.createElement('div');
+      cur.className = 'use-item is-current';
+      cur.append(text('span', 'tag', 'الوضع الحالي'), text('span', '', room.use.current));
+      cards.push(card('الاستخدام', [cur]));
+    }
     el.features.replaceChildren(...cards);
   }
 
@@ -93,12 +89,11 @@ export function createDetails(view, data, { onOpenPhoto } = {}) {
     renderPhotos(room);
     renderFeatures(room);
     setTab('photos');
-    plan.highlight(id);
     // The stage may have been hidden (display:none) while measuring; relayout
     // after the view is visible.
     requestAnimationFrame(() => {
       plan.relayout();
-      plan.zoomToRoom(id, { animate: false });
+      plan.focusRoom(id, { animate: false });
     });
     return true;
   }
