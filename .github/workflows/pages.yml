@@ -1,0 +1,89 @@
+name: Deploy to GitHub Pages (main + branch previews)
+
+# One Pages deployment holds everything:
+#   /                     the site from `main`
+#   /preview/<branch>/    the site from every other branch
+# Each copy carries build-info.json {sha, branch, builtAt}; the page shows the
+# short sha in its corner so a preview link can be matched to a commit.
+#
+# The `github-pages` environment only accepts deployments from the default
+# branch, so a push to any other branch does not deploy itself: it runs the
+# unit tests, then dispatches this workflow on `main`, which assembles every
+# branch and deploys.
+#
+# One-time setup in the repository: Settings → Pages → Source: "GitHub Actions".
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit tests
+        run: |
+          if [ -d tests/unit ]; then
+            node --test tests/unit/*.test.mjs
+          else
+            echo "No unit tests on this branch yet."
+          fi
+
+  # A branch push hands over to main's workflow run.
+  dispatch:
+    needs: test
+    if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Trigger the deployment run on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main --repo "$GITHUB_REPOSITORY"
+
+  build:
+    needs: test
+    if: >-
+      always() && github.ref == 'refs/heads/main' &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Assemble site (main at root, other branches under preview/)
+        run: bash tools/assemble_site.sh dist
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
