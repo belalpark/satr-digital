@@ -1,13 +1,15 @@
 # جولة المكتب
 
-موقع تفاعلي لتسويق مكتب للإيجار: يستكشف فريق الجهة المستهدفة المكتب على **نموذج ثلاثي الأبعاد**
-(Dollhouse بزاوية، مبني في Blender من مخطط الفرش المعتمد)، يختار غرفة فتظهر أولًا في سياقها
-ثلاثي الأبعاد مع فرشها الرقمي وما حولها، ثم يدخل صورها الحقيقية وتفاصيلها، ويشاهد مسارات الحركة
-لثلاث فئات (الموظفون، الإدارة التنفيذية، الضيوف).
+موقع تفاعلي لتسويق مكتب للإيجار: يستكشف فريق الجهة المستهدفة المكتب على **نموذج ثلاثي الأبعاد حي**
+في المتصفح (three.js، مبني في Blender من مخطط الفرش المعتمد ومُصدَّر glTF): تدوير 360° وتحريك وتكبير،
+إضاءة نهارية أو مسائية، نقطتان وامضتان في كل غرفة (زرقاء ← المنظور القريب للغرفة بين جيرانها،
+حمراء ← الصور الحقيقية)، قائمة غرف ثابتة على اليمين، ومسارات حركة لثلاث فئات (الموظفون، الإدارة
+التنفيذية، الضيوف).
 
 - المواصفة: `docs/superpowers/specs/2026-11-06-office-digital-twin-design.md`
-- خطة التنفيذ: `docs/superpowers/plans/2026-11-06-office-digital-twin-v1.md`، وتعديلات الجولة الثانية:
-  `docs/superpowers/plans/2026-11-06-office-digital-twin-v2-3d.md`
+- خطة التنفيذ: `docs/superpowers/plans/2026-11-06-office-digital-twin-v1.md`، تعديلات الجولة الثانية:
+  `docs/superpowers/plans/2026-11-06-office-digital-twin-v2-3d.md`، والثالثة: `docs/superpowers/plans/2026-11-06-office-digital-twin-v3-live.md`
+- دليل تصوير 360° لتجربة VR: `docs/vr-360-shooting-guide.md`
 
 ## التشغيل محليًا
 
@@ -26,17 +28,20 @@ python3 -m http.server 8080
 
 ```
 index.html                 صفحة واحدة؛ التطبيق يبدّل المشاهد داخلها
-assets/js/app.js           نقطة الدخول: تحميل السجل، التوجيه، الترحيب، لوحة الغرفة
-assets/js/router.js        #/ ، #/plan[?scene=paths] ، #/room/:id (اللقطة الثانية) ، #/room/:id/photos ، #/room/:id/details
-assets/js/plan.js          النموذج ثلاثي الأبعاد: الصورة + طبقة SVG مُسقطة بالـhomography + تكبير/تحريك + المسارات + اللقطة الثانية
+assets/js/app.js           نقطة الدخول: التوجيه، الهيدر، الترحيب، القائمة الجانبية وبطاقة الغرفة، المشاهد
+assets/js/router.js        #/ ، #/plan[?scene=paths] ، #/room/:id (المنظور القريب) ، #/room/:id/photos ، #/room/:id/details
+assets/js/twin3d.js        العارض الحي (three.js): تحميل glTF، التدوير/التحريك/التكبير، نهار/مساء، التركيز على غرفة، المسارات، الإسقاط للشاشة
+assets/js/overlay.js       النقاط الوامضة والمسميات (داخل المخطط أو خارجه بأسهم) فوق العارض
 assets/js/room.js          صور الغرفة الحقيقية (معرض)
-assets/js/details.js       لوحة التفاصيل (3 أعمدة / تبويبان)، وفي وسطها اللقطة ثلاثية الأبعاد للغرفة
-assets/js/geometry.js      دوال هندسية نقية (مختبرة): الإسقاط، الغلاف المحدّب، التكبير
-assets/js/state.js         حفظ موضع المخطط لاستعادته عند العودة
+assets/js/details.js       لوحة التفاصيل (3 أعمدة / تبويبان)، وفي وسطها رندر الغرفة أو لقطة من النموذج الحي
+assets/js/geometry.js      دوال هندسية نقية (مختبرة)
+assets/vendor/three-bundle.js  three.js 0.187 + GLTFLoader + OrbitControls + RoomEnvironment (حزمة واحدة، بلا CDN)
 data/office.json           سجل المكتب — مصدر الحقيقة الوحيد
-media/twin/                رندرات النموذج ثلاثي الأبعاد (WebP بشفافية)
+media/twin/web/            النموذج للمتصفح: office.glb + scene.json (الإضاءات ومراسي الغرف) + خامات مخبوزة
+media/twin/                رندرات Cycles الثابتة (اللقطة الثانية لغرفة الاجتماعات، للتفاصيل)
 media/rooms, media/hero    الصور الحقيقية المنشورة (WebP) — الأصول خارج المستودع
-tools/twin/                النموذج ثلاثي الأبعاد: layout.py (الجدران/الأبواب/الفرش)، build_twin.py (Blender)، finish.py
+tools/twin/                layout.py (الجدران/الأبواب/الفرش)، build_twin.py (Blender/Cycles)، export_web.py (glTF)، finish.py
+tools/photos_proposal.json توزيع الصور الحقيقية على الغرف (مقترح يحتاج اعتماد العميل) مع أسباب الاستبعاد
 tools/                     اشتقاق الصور، إزالة الشعارات، تجميع نشرة Pages
 tests/unit, tests/e2e      الاختبارات
 docs/qa/<تاريخ>/           لقطات الاختبار الشامل لكل تسليم
@@ -52,18 +57,23 @@ docs/qa/<تاريخ>/           لقطات الاختبار الشامل لكل 
 - كل غرفة: `id`، `name`، `short`، `kind`، `status` (`ready` مكتملة / `soon` قريبًا / `info` معلومة فقط)،
   `polygon` بإحداثيات المخطط المرجعي، `label`، `summary`، `capacity`، `fixtures`، `use.current`، `photos[]`،
   و`focus` {image, rect} للغرف الجاهزة. لا حقل مساحة بقرار صاحب المشروع.
-- `scenes`: `current` (الوضع الحالي) و`paths` (ثلاثة مسارات بألوانها ونقاط توقفها).
+- كل غرفة أيضًا: `hasModel` (نقطة زرقاء) و`hasPhotos` (نقطة حمراء) و`photosConfidence` (ثقة توزيع الصور المقترح).
+- `office.model`: مسارات النموذج الحي (glb + scene.json).
+- `scenes`: `current` («توزيعات المكاتب») و`paths` (ثلاثة مسارات بألوانها ونقاط توقفها؛ اختبار وحدة يضمن أنها لا تعبر الغرف).
 
-## النموذج ثلاثي الأبعاد (Blender)
+## النموذج ثلاثي الأبعاد (Blender → المتصفح)
 
 إجرائي بالكامل (لا نماذج أو خامات من طرف ثالث). يحتاج Blender كوحدة بايثون:
 
 ```bash
 uv venv --python 3.11 .blender && uv pip install --python .blender/bin/python bpy==5.0.1
-.blender/bin/python tools/twin/build_twin.py                            # .twin-render/plan.png + focus-<room>.png + twin.json (≈30 دقيقة على معالجين)
+.blender/bin/python tools/twin/export_web.py --out media/twin/web       # office.glb + scene.json + خامات مخبوزة (≈3 دقائق)
+.blender/bin/python tools/twin/build_twin.py                            # رندرات Cycles الثابتة (≈30 دقيقة على معالجين)
 .blender/bin/python tools/twin/build_twin.py --preview                  # معاينة سريعة بثلث الدقة
 python3 tools/twin/finish.py --src .twin-render --out media/twin        # WebP + توهج خفيف للإضاءات
 ```
+
+حزمة three.js: `npm pack three@0.187.0` ثم esbuild على `entry.js` (three + GLTFLoader + OrbitControls + RoomEnvironment) → `assets/vendor/three-bundle.js`.
 
 `finish.py` ينشر `media/twin/twin.json` مع الصور، واختبار وحدة يفشل إن لم تطابقه `homography` و`focus` في `data/office.json` (انسخهما عند تغيير الكاميرا).
 الإعدادات المعتمدة هي القيم الافتراضية في `build_twin.py` (كاميرا 50مم، ميل 50°، دوران −14°، Cycles 64 عينة).
@@ -82,8 +92,8 @@ python3 tools/build_media.py --src "/path/to/الصور" --manifest tools/media_
 ## الاختبار
 
 ```bash
-npm test                 # node --test: الهندسة والإسقاط، التوجيه، سلامة السجل والملفات والإجماليات
-npm run test:e2e         # Playwright: المسار كاملًا على 1440×900 وiPhone 13 + لقطات في docs/qa/
+npm test                 # node --test: الهندسة، التوجيه، سلامة السجل والملفات، المسارات، مطابقة بيانات النموذج
+npm run test:e2e         # Playwright (WebGL عبر SwiftShader): المسار كاملًا على 1440×900 وiPhone 13 + لقطات في docs/qa/
 ```
 
 إن كان Playwright مثبتًا خارج المشروع: `PLAYWRIGHT_MODULE=/path/to/playwright/index.js npm run test:e2e`.

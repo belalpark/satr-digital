@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>جولة المكتب</title>
-  <meta name="description" content="اكتشفوا المكتب غرفةً غرفة على نموذج ثلاثي الأبعاد، وتخيّلوا فريقكم فيه قبل الحجز.">
+  <meta name="description" content="استكشفوا تجربة المكتب وشاهدوا المكاتب الإدارية بتوأمة رقمية إبداعية.">
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#121418">
   <link rel="preload" href="assets/fonts/IBMPlexSansArabic-Regular.woff2" as="font" type="font/woff2" crossorigin>
@@ -14,6 +14,20 @@
 <body>
   <div id="app" class="app" data-current-view="welcome">
 
+    <!-- هيدر ثابت في كل الصفحات -->
+    <header class="site-header" id="site-header">
+      <a class="brand" href="#/" id="nav-home" aria-label="الرئيسية">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text">جولة المكتب</span>
+      </a>
+      <nav class="site-nav" aria-label="التنقل">
+        <a href="#/" data-nav="welcome">الرئيسية</a>
+        <a href="#/plan" data-nav="plan">المخطط ثلاثي الأبعاد</a>
+        <a href="#/plan?scene=paths" data-nav="paths">المسارات</a>
+      </nav>
+      <span class="team-chip" id="plan-team-chip" hidden></span>
+    </header>
+
     <!-- 1. الترحيب -->
     <section id="view-welcome" class="view view-welcome" data-view="welcome" aria-labelledby="welcome-title">
       <img id="welcome-photo" class="welcome-photo" alt="" decoding="async">
@@ -21,7 +35,6 @@
       <div class="welcome-content">
         <h1 id="welcome-title" class="welcome-title">مرحبًا بكم</h1>
         <p id="welcome-subtitle" class="welcome-subtitle"></p>
-        <ul id="welcome-highlights" class="welcome-highlights" aria-label="أبرز ما في المكتب"></ul>
         <p id="welcome-atmosphere" class="welcome-atmosphere"></p>
         <div class="welcome-actions">
           <a id="btn-start" class="btn btn-primary btn-lg" href="#/plan">ابدأ الجولة</a>
@@ -31,50 +44,60 @@
       <footer id="app-footer" class="app-footer" hidden></footer>
     </section>
 
-    <!-- 2. المخطط ثلاثي الأبعاد (ومنه اللقطة الثانية للغرفة) -->
-    <section id="view-plan" class="view view-plan" data-view="plan" aria-label="المخطط ثلاثي الأبعاد">
-      <header class="topbar topbar-night">
-        <div class="topbar-title">
-          <a class="brand" href="#/" aria-label="العودة إلى الترحيب">
-            <span class="brand-mark" aria-hidden="true"></span>
-            <span class="brand-text">جولة المكتب</span>
-          </a>
-          <span class="team-chip" id="plan-team-chip" hidden></span>
-        </div>
-      </header>
-
+    <!-- 2. النموذج ثلاثي الأبعاد الحي -->
+    <section id="view-plan" class="view view-plan" data-view="plan" aria-label="النموذج ثلاثي الأبعاد">
       <div class="scenebar" role="toolbar" aria-label="المشاهد">
         <div class="scene-tabs" role="tablist" aria-label="اختر مشهدًا" id="scene-tabs"></div>
         <ul class="route-legend" id="route-legend" aria-label="مفتاح المسارات" hidden></ul>
-        <p class="scene-hint" id="scene-hint"></p>
+        <div class="scene-tools">
+          <button type="button" class="tool-btn" id="btn-lighting" aria-pressed="false" title="تشغيل الإضاءة المسائية">
+            <span class="tool-icon" aria-hidden="true">☾</span><span class="tool-text">إضاءة مسائية</span>
+          </button>
+          <button type="button" class="tool-btn" id="btn-labels" aria-pressed="false" title="المسميات خارج المخطط">
+            <span class="tool-icon" aria-hidden="true">⇱</span><span class="tool-text">مسميات خارجية</span>
+          </button>
+        </div>
       </div>
 
-      <div class="plan-stage-wrap">
-        <div id="plan-stage" class="plan-stage" aria-label="نموذج المكتب ثلاثي الأبعاد"></div>
-        <div class="plan-badge" id="plan-badge">الوضع الحالي</div>
-        <div class="plan-legend" id="plan-legend"><i aria-hidden="true"></i> غرفة جاهزة للعرض</div>
-        <div class="zoom-controls" aria-label="التحكم بالتكبير">
-          <button type="button" class="zoom-btn" data-zoom="in" aria-label="تكبير">+</button>
-          <button type="button" class="zoom-btn" data-zoom="out" aria-label="تصغير">−</button>
-          <button type="button" class="zoom-btn" data-zoom="fit" aria-label="ملاءمة الشاشة">⤢</button>
-        </div>
-        <p class="plan-help" id="plan-help"><span class="help-desktop">انقر على الغرفة المضيئة لعرضها، وحرّك العجلة للتكبير</span><span class="help-mobile">اضغط على الغرفة المضيئة لعرضها، واقرص للتكبير</span></p>
-
-        <!-- اللقطة الثانية: الغرفة المختارة في سياقها -->
-        <aside class="focus-panel" id="focus-panel" hidden aria-labelledby="focus-title">
-          <button id="btn-focus-back" class="btn btn-ghost-light btn-sm" type="button">
-            <span class="btn-icon" aria-hidden="true">→</span>
-            العودة للمخطط
-          </button>
-          <h2 id="focus-title" class="focus-title" tabindex="-1"></h2>
-          <p id="focus-summary" class="focus-summary"></p>
-          <div class="focus-chips">
-            <span class="chip chip-light" id="focus-capacity"></span>
-            <span class="chip chip-light" id="focus-twin">نموذج رقمي للفرش الحالي</span>
+      <div class="plan-layout">
+        <div class="plan-stage-wrap">
+          <div id="plan-stage" class="plan-stage" aria-label="النموذج ثلاثي الأبعاد للمكتب">
+            <div class="twin-loading" id="twin-loading"><span class="spinner" aria-hidden="true"></span>يُحمَّل النموذج ثلاثي الأبعاد…</div>
+            <svg class="overlay-svg" id="overlay-svg" aria-hidden="true"></svg>
+            <div class="overlay-dots" id="overlay-dots"></div>
           </div>
-          <div class="focus-actions">
-            <button id="btn-photos" class="btn btn-primary" type="button">الصور الحقيقية</button>
-            <button id="btn-focus-details" class="btn btn-ghost-light" type="button">تفاصيل الغرفة</button>
+          <div class="plan-badge" id="plan-badge">توزيعات المكاتب</div>
+          <div class="dots-legend" id="dots-legend">
+            <span><i class="dot dot-blue" aria-hidden="true"></i> منظور قريب</span>
+            <span><i class="dot dot-red" aria-hidden="true"></i> الصور الحقيقية</span>
+          </div>
+          <div class="zoom-controls" aria-label="التحكم بالعرض">
+            <button type="button" class="zoom-btn" data-zoom="in" aria-label="تكبير">+</button>
+            <button type="button" class="zoom-btn" data-zoom="out" aria-label="تصغير">−</button>
+            <button type="button" class="zoom-btn" data-zoom="fit" aria-label="إعادة الضبط">⤢</button>
+          </div>
+          <p class="plan-help" id="plan-help"><span class="help-desktop">اسحب للتدوير، العجلة للتكبير، والزر الأيمن للتحريك — انقر الغرفة لعرضها</span><span class="help-mobile">اسحب للتدوير، اقرص للتكبير، وبإصبعين للتحريك — اضغط الغرفة لعرضها</span></p>
+        </div>
+
+        <!-- القائمة العمودية الثابتة على اليمين -->
+        <aside class="room-sidebar" id="room-sidebar" aria-label="الغرف">
+          <div class="sidebar-head">
+            <h2 class="sidebar-title">الغرف</h2>
+            <span class="sidebar-count" id="sidebar-count"></span>
+          </div>
+          <ul class="room-list" id="room-list"></ul>
+          <div class="room-card" id="room-card" hidden>
+            <button id="btn-focus-back" class="btn btn-ghost-light btn-sm" type="button">
+              <span class="btn-icon" aria-hidden="true">→</span>
+              العودة للمخطط
+            </button>
+            <h3 id="focus-title" class="focus-title" tabindex="-1"></h3>
+            <p id="focus-summary" class="focus-summary"></p>
+            <ul class="focus-facts" id="focus-facts"></ul>
+            <div class="focus-actions">
+              <button id="btn-photos" class="btn btn-primary" type="button">الصور الحقيقية</button>
+              <button id="btn-focus-details" class="btn btn-ghost-light" type="button">تفاصيل الغرفة</button>
+            </div>
           </div>
         </aside>
       </div>
@@ -137,7 +160,7 @@
       </div>
     </section>
 
-    <div class="plan-tip" id="plan-tip" role="status" aria-live="polite" hidden></div>
+    <div class="plan-tip" id="plan-tip" hidden></div>
     <div class="build-sha" id="build-sha" title="رقم النسخة المنشورة">dev</div>
   </div>
   <script type="module" src="assets/js/app.js"></script>

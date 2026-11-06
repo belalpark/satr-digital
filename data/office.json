@@ -2,7 +2,7 @@
   "version": 2,
   "office": {
     "title": "جولة المكتب",
-    "heroImage": "media/hero/welcome.webp",
+    "heroImage": "media/hero/perspective.webp",
     "plan": {
       "image": "media/twin/plan.webp",
       "width": 2400,
@@ -92,46 +92,16 @@
     "welcome": {
       "title": "مرحبًا بكم",
       "teamTitle": "مرحبًا بفريق",
-      "subtitle": "اكتشفوا المكتب غرفةً غرفة، وتخيّلوا فريقكم ينطلق ويُبدع فيه قبل الحجز.",
-      "highlights": [
-        {
-          "value": 13,
-          "label": "مكتبًا إداريًا",
-          "from": [
-            "مكتب الرئيس التنفيذي",
-            "مكتب مشرف",
-            "مكاتب وسط مغلقة",
-            "مكتب صغير مغلق"
-          ]
-        },
-        {
-          "value": 58,
-          "label": "محطة عمل",
-          "from": [
-            "مكاتب الموظفين"
-          ]
-        },
-        {
-          "value": 2,
-          "label": "قاعتا اجتماعات",
-          "dual": true,
-          "from": [
-            "غرفة اجتماع كبيرة ووسط"
-          ]
-        },
-        {
-          "value": 2,
-          "label": "دورتا مياه",
-          "dual": true,
-          "from": [
-            "دورة مياه نساء",
-            "دورة مياه رجال مع مستودع أغراض"
-          ]
-        }
-      ],
-      "more": "والمزيد",
-      "atmosphere": "أجواء جميلة وهادئة، في مكتب مفروش ومجهّز.",
+      "subtitle": "استكشفوا تجربة المكتب، وشاهدوا المكاتب الإدارية بتوأمة رقمية إبداعية.",
+      "atmosphere": "أجواء جميلة وهادئة في مكاتب مفروشة ومجهّزة.",
       "cta": "ابدأ الجولة"
+    },
+    "heroFallback": "media/hero/welcome.webp",
+    "model": {
+      "base": "media/twin/web/",
+      "glb": "media/twin/web/office.glb",
+      "scene": "media/twin/web/scene.json",
+      "source": "نموذج ثلاثي الأبعاد مبني في Blender من مخطط الفرش المعتمد، مُصدَّر للمتصفح (glTF)"
     }
   },
   "rooms": [
@@ -234,14 +204,16 @@
           1440.0,
           960.0
         ]
-      }
+      },
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "ceo",
       "name": "مكتب الرئيس التنفيذي",
       "short": "الرئيس التنفيذي",
       "kind": "office",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           162,
@@ -282,14 +254,54 @@
       },
       "use": {
         "current": "جناح الرئيس التنفيذي مع جلسة وطاولة اجتماعات"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/ceo/01.webp",
+          "thumb": "media/rooms/ceo/thumbs/01.webp",
+          "caption": "مكتب الإدارة مع طاولة اجتماعات وسقف خشبي"
+        },
+        {
+          "src": "media/rooms/ceo/02.webp",
+          "thumb": "media/rooms/ceo/thumbs/02.webp",
+          "caption": "منظر عام للمكتب والواجهة الزجاجية"
+        },
+        {
+          "src": "media/rooms/ceo/03.webp",
+          "thumb": "media/rooms/ceo/thumbs/03.webp",
+          "caption": "طاولة اجتماعات بمقاعد جلدية وإطلالة"
+        },
+        {
+          "src": "media/rooms/ceo/04.webp",
+          "thumb": "media/rooms/ceo/thumbs/04.webp",
+          "caption": "ركن جلوس بكنب وشاشة عرض"
+        },
+        {
+          "src": "media/rooms/ceo/05.webp",
+          "thumb": "media/rooms/ceo/thumbs/05.webp",
+          "caption": "الجلسة والنباتات بجوار النافذة"
+        },
+        {
+          "src": "media/rooms/ceo/06.webp",
+          "thumb": "media/rooms/ceo/thumbs/06.webp",
+          "caption": "طاولة الاجتماعات الملحقة بالمكتب"
+        },
+        {
+          "src": "media/rooms/ceo/07.webp",
+          "thumb": "media/rooms/ceo/thumbs/07.webp",
+          "caption": "طاولة الاجتماعات بإضاءة طبيعية"
+        }
+      ],
+      "photosConfidence": "high",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "marketing",
       "name": "مكاتب التسويق",
       "short": "التسويق",
       "kind": "open",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           530,
@@ -314,14 +326,39 @@
       },
       "use": {
         "current": "مكتب مدير التسويق"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/marketing/01.webp",
+          "thumb": "media/rooms/marketing/thumbs/01.webp",
+          "caption": "مكاتب مزدوجة مع حوض نباتات خشبي"
+        },
+        {
+          "src": "media/rooms/marketing/02.webp",
+          "thumb": "media/rooms/marketing/thumbs/02.webp",
+          "caption": "مكاتب بشاشات وفواصل مكتبية"
+        },
+        {
+          "src": "media/rooms/marketing/03.webp",
+          "thumb": "media/rooms/marketing/thumbs/03.webp",
+          "caption": "مكاتب العمل من زاوية قريبة"
+        },
+        {
+          "src": "media/rooms/marketing/04.webp",
+          "thumb": "media/rooms/marketing/thumbs/04.webp",
+          "caption": "المكاتب مع النباتات والممر الجانبي"
+        }
+      ],
+      "photosConfidence": "medium",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "data-analysis",
       "name": "مكاتب تحليل البيانات",
       "short": "تحليل البيانات",
       "kind": "open",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           640,
@@ -346,14 +383,49 @@
       },
       "use": {
         "current": "فريق تحليل البيانات"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/data-analysis/01.webp",
+          "thumb": "media/rooms/data-analysis/thumbs/01.webp",
+          "caption": "مكاتب مفتوحة بشاشات مزدوجة ومقاعد بيضاء"
+        },
+        {
+          "src": "media/rooms/data-analysis/02.webp",
+          "thumb": "media/rooms/data-analysis/thumbs/02.webp",
+          "caption": "تجمعات مكاتب مع أحواض نباتات"
+        },
+        {
+          "src": "media/rooms/data-analysis/03.webp",
+          "thumb": "media/rooms/data-analysis/thumbs/03.webp",
+          "caption": "مكاتب مفتوحة على الواجهة الزجاجية"
+        },
+        {
+          "src": "media/rooms/data-analysis/04.webp",
+          "thumb": "media/rooms/data-analysis/thumbs/04.webp",
+          "caption": "زاوية من المكاتب المفتوحة والنباتات"
+        },
+        {
+          "src": "media/rooms/data-analysis/05.webp",
+          "thumb": "media/rooms/data-analysis/thumbs/05.webp",
+          "caption": "مكاتب بشاشات وأدراج متحركة"
+        },
+        {
+          "src": "media/rooms/data-analysis/06.webp",
+          "thumb": "media/rooms/data-analysis/thumbs/06.webp",
+          "caption": "مكاتب مفتوحة بجوار الواجهة والنباتات"
+        }
+      ],
+      "photosConfidence": "medium",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "meeting-medium",
       "name": "غرفة الاجتماعات الوسطى",
       "short": "الاجتماعات الوسطى",
       "kind": "meeting",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           930,
@@ -378,14 +450,44 @@
       },
       "use": {
         "current": "غرفة اجتماعات وسط"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/meeting-medium/01.webp",
+          "thumb": "media/rooms/meeting-medium/thumbs/01.webp",
+          "caption": "قاعة اجتماعات بطاولة طويلة وشاشة"
+        },
+        {
+          "src": "media/rooms/meeting-medium/02.webp",
+          "thumb": "media/rooms/meeting-medium/thumbs/02.webp",
+          "caption": "القاعة بإطلالة من الواجهة الزجاجية"
+        },
+        {
+          "src": "media/rooms/meeting-medium/03.webp",
+          "thumb": "media/rooms/meeting-medium/thumbs/03.webp",
+          "caption": "طاولة الاجتماعات ومقاعد شبكية"
+        },
+        {
+          "src": "media/rooms/meeting-medium/04.webp",
+          "thumb": "media/rooms/meeting-medium/thumbs/04.webp",
+          "caption": "القاعة من الطرف المقابل للشاشة"
+        },
+        {
+          "src": "media/rooms/meeting-medium/05.webp",
+          "thumb": "media/rooms/meeting-medium/thumbs/05.webp",
+          "caption": "الطاولة مع هاتف اجتماعات وشاشة"
+        }
+      ],
+      "photosConfidence": "high",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "cfo",
       "name": "مكتب المدير المالي",
       "short": "المدير المالي",
       "kind": "office",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           995,
@@ -410,14 +512,49 @@
       },
       "use": {
         "current": "مكتب المدير المالي مع طاولة جانبية"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/cfo/01.webp",
+          "thumb": "media/rooms/cfo/thumbs/01.webp",
+          "caption": "مكتب تنفيذي مع طاولة اجتماعات مستديرة"
+        },
+        {
+          "src": "media/rooms/cfo/02.webp",
+          "thumb": "media/rooms/cfo/thumbs/02.webp",
+          "caption": "المكتب والطاولة المستديرة على الواجهة"
+        },
+        {
+          "src": "media/rooms/cfo/03.webp",
+          "thumb": "media/rooms/cfo/thumbs/03.webp",
+          "caption": "زاوية الاجتماعات الصغيرة بجوار النافذة"
+        },
+        {
+          "src": "media/rooms/cfo/04.webp",
+          "thumb": "media/rooms/cfo/thumbs/04.webp",
+          "caption": "طاولة العمل على شكل L"
+        },
+        {
+          "src": "media/rooms/cfo/05.webp",
+          "thumb": "media/rooms/cfo/thumbs/05.webp",
+          "caption": "شاشة عرض متنقلة ومقعد تنفيذي"
+        },
+        {
+          "src": "media/rooms/cfo/06.webp",
+          "thumb": "media/rooms/cfo/thumbs/06.webp",
+          "caption": "المكتب مع خزانة عرض وشاشة"
+        }
+      ],
+      "photosConfidence": "medium",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "office-r2",
       "name": "مكتب مغلق (الجناح الشرقي 1)",
       "short": "مكتب مغلق",
       "kind": "office",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           995,
@@ -442,14 +579,17 @@
       },
       "use": {
         "current": "مكتب مدير"
-      }
+      },
+      "photos": [],
+      "hasModel": true,
+      "hasPhotos": false
     },
     {
       "id": "office-r3",
       "name": "مكتب مغلق (الجناح الشرقي 2)",
       "short": "مكتب مغلق",
       "kind": "office",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           995,
@@ -474,14 +614,17 @@
       },
       "use": {
         "current": "مكتب مدير"
-      }
+      },
+      "photos": [],
+      "hasModel": true,
+      "hasPhotos": false
     },
     {
       "id": "field-qc",
       "name": "مكاتب الجودة الميدانية",
       "short": "الجودة الميدانية",
       "kind": "open",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           995,
@@ -506,14 +649,49 @@
       },
       "use": {
         "current": "فريق فحص الجودة الميداني"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/field-qc/01.webp",
+          "thumb": "media/rooms/field-qc/thumbs/01.webp",
+          "caption": "مكاتب مفتوحة بإضاءة طبيعية من الواجهة الزجاجية"
+        },
+        {
+          "src": "media/rooms/field-qc/02.webp",
+          "thumb": "media/rooms/field-qc/thumbs/02.webp",
+          "caption": "مكاتب مزدوجة مع شاشات ومقاعد شبكية"
+        },
+        {
+          "src": "media/rooms/field-qc/03.webp",
+          "thumb": "media/rooms/field-qc/thumbs/03.webp",
+          "caption": "المكاتب المفتوحة والجدار الأخضر المجاور"
+        },
+        {
+          "src": "media/rooms/field-qc/04.webp",
+          "thumb": "media/rooms/field-qc/thumbs/04.webp",
+          "caption": "مكاتب مع أحواض نباتات خشبية فاصلة"
+        },
+        {
+          "src": "media/rooms/field-qc/05.webp",
+          "thumb": "media/rooms/field-qc/thumbs/05.webp",
+          "caption": "مكاتب مفتوحة وجلسة بجوار الواجهة"
+        },
+        {
+          "src": "media/rooms/field-qc/06.webp",
+          "thumb": "media/rooms/field-qc/thumbs/06.webp",
+          "caption": "منظر عام للمكاتب المفتوحة والنباتات"
+        }
+      ],
+      "photosConfidence": "high",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "lounge",
       "name": "جلسة الاستقبال",
       "short": "جلسة الاستقبال",
       "kind": "social",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           997,
@@ -546,14 +724,49 @@
       },
       "use": {
         "current": "جلسة انتظار للزوار"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/lounge/01.webp",
+          "thumb": "media/rooms/lounge/thumbs/01.webp",
+          "caption": "جلسة استقبال بكنب مريح على الواجهة الزجاجية"
+        },
+        {
+          "src": "media/rooms/lounge/02.webp",
+          "thumb": "media/rooms/lounge/thumbs/02.webp",
+          "caption": "الجلسة من الداخل مع السقف الخشبي"
+        },
+        {
+          "src": "media/rooms/lounge/03.webp",
+          "thumb": "media/rooms/lounge/thumbs/03.webp",
+          "caption": "الكنب الرمادي بإضاءة طبيعية وفيرة"
+        },
+        {
+          "src": "media/rooms/lounge/04.webp",
+          "thumb": "media/rooms/lounge/thumbs/04.webp",
+          "caption": "زاوية الجلسة بجوار المدرّج الخشبي"
+        },
+        {
+          "src": "media/rooms/lounge/05.webp",
+          "thumb": "media/rooms/lounge/thumbs/05.webp",
+          "caption": "الجلسة مع طاولات جانبية ونباتات"
+        },
+        {
+          "src": "media/rooms/lounge/06.webp",
+          "thumb": "media/rooms/lounge/thumbs/06.webp",
+          "caption": "منظر عام للجلسة قرب الواجهة"
+        }
+      ],
+      "photosConfidence": "high",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "bleachers",
       "name": "المدرّج",
       "short": "المدرّج",
       "kind": "social",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           800,
@@ -586,14 +799,17 @@
       },
       "use": {
         "current": "جلسة غير رسمية ومنطقة فعاليات"
-      }
+      },
+      "photos": [],
+      "hasModel": true,
+      "hasPhotos": false
     },
     {
       "id": "entrance",
       "name": "ردهة المصاعد",
       "short": "ردهة المصاعد",
       "kind": "circulation",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           690,
@@ -618,14 +834,17 @@
       },
       "use": {
         "current": "مدخل الدور ودرج الوصول"
-      }
+      },
+      "photos": [],
+      "hasModel": true,
+      "hasPhotos": false
     },
     {
       "id": "reception",
       "name": "الاستقبال",
       "short": "الاستقبال",
       "kind": "circulation",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           768,
@@ -650,14 +869,39 @@
       },
       "use": {
         "current": "كاونتر الاستقبال"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/reception/01.webp",
+          "thumb": "media/rooms/reception/thumbs/01.webp",
+          "caption": "كاونتر الاستقبال مع إضاءة سقفية مميزة"
+        },
+        {
+          "src": "media/rooms/reception/02.webp",
+          "thumb": "media/rooms/reception/thumbs/02.webp",
+          "caption": "واجهة الاستقبال من زاوية جانبية"
+        },
+        {
+          "src": "media/rooms/reception/03.webp",
+          "thumb": "media/rooms/reception/thumbs/03.webp",
+          "caption": "الاستقبال وخلفه الجدار الأخضر والممر"
+        },
+        {
+          "src": "media/rooms/reception/04.webp",
+          "thumb": "media/rooms/reception/thumbs/04.webp",
+          "caption": "تفاصيل كاونتر الاستقبال والرفوف الخلفية"
+        }
+      ],
+      "photosConfidence": "high",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "coo",
       "name": "مكتب الرئيس التنفيذي للعمليات",
       "short": "الرئيس التنفيذي للعمليات",
       "kind": "office",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           594,
@@ -682,14 +926,44 @@
       },
       "use": {
         "current": "مكتب تنفيذي مع طاولة مستديرة"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/coo/01.webp",
+          "thumb": "media/rooms/coo/thumbs/01.webp",
+          "caption": "مكتب تنفيذي مع طاولة مستديرة ونبات"
+        },
+        {
+          "src": "media/rooms/coo/02.webp",
+          "thumb": "media/rooms/coo/thumbs/02.webp",
+          "caption": "طاولة العمل والشاشة المتنقلة"
+        },
+        {
+          "src": "media/rooms/coo/03.webp",
+          "thumb": "media/rooms/coo/thumbs/03.webp",
+          "caption": "المكتب بإضاءة طبيعية من النافذة"
+        },
+        {
+          "src": "media/rooms/coo/04.webp",
+          "thumb": "media/rooms/coo/thumbs/04.webp",
+          "caption": "المكتب التنفيذي من زاوية مختلفة"
+        },
+        {
+          "src": "media/rooms/coo/05.webp",
+          "thumb": "media/rooms/coo/thumbs/05.webp",
+          "caption": "الطاولة المستديرة لاجتماعات صغيرة"
+        }
+      ],
+      "photosConfidence": "low",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "hr-pmo-ops",
       "name": "مكاتب الموارد البشرية والعمليات",
       "short": "الموارد البشرية والعمليات",
       "kind": "open",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           162,
@@ -714,14 +988,44 @@
       },
       "use": {
         "current": "الموارد البشرية وإدارة المشاريع والعمليات"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/hr-pmo-ops/01.webp",
+          "thumb": "media/rooms/hr-pmo-ops/thumbs/01.webp",
+          "caption": "صالة مكاتب واسعة بأحواض نباتات"
+        },
+        {
+          "src": "media/rooms/hr-pmo-ops/02.webp",
+          "thumb": "media/rooms/hr-pmo-ops/thumbs/02.webp",
+          "caption": "مكاتب مفتوحة بجوار الواجهة الزجاجية"
+        },
+        {
+          "src": "media/rooms/hr-pmo-ops/03.webp",
+          "thumb": "media/rooms/hr-pmo-ops/thumbs/03.webp",
+          "caption": "النباتات الفاصلة بين تجمعات المكاتب"
+        },
+        {
+          "src": "media/rooms/hr-pmo-ops/04.webp",
+          "thumb": "media/rooms/hr-pmo-ops/thumbs/04.webp",
+          "caption": "زاوية المكاتب مع النوافذ الجانبية"
+        },
+        {
+          "src": "media/rooms/hr-pmo-ops/05.webp",
+          "thumb": "media/rooms/hr-pmo-ops/thumbs/05.webp",
+          "caption": "المكاتب المفتوحة بسقف مكشوف"
+        }
+      ],
+      "photosConfidence": "medium",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "research",
       "name": "مكاتب البحث",
       "short": "البحث",
       "kind": "open",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           162,
@@ -746,14 +1050,54 @@
       },
       "use": {
         "current": "فريق البحث"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/research/01.webp",
+          "thumb": "media/rooms/research/thumbs/01.webp",
+          "caption": "مكاتب مفتوحة على طول الواجهة الزجاجية"
+        },
+        {
+          "src": "media/rooms/research/02.webp",
+          "thumb": "media/rooms/research/thumbs/02.webp",
+          "caption": "صفوف مكاتب مع مقاعد بيضاء"
+        },
+        {
+          "src": "media/rooms/research/03.webp",
+          "thumb": "media/rooms/research/thumbs/03.webp",
+          "caption": "المكاتب خلف الفاصل الزجاجي"
+        },
+        {
+          "src": "media/rooms/research/04.webp",
+          "thumb": "media/rooms/research/thumbs/04.webp",
+          "caption": "صف المكاتب بإضاءة الشمس"
+        },
+        {
+          "src": "media/rooms/research/05.webp",
+          "thumb": "media/rooms/research/thumbs/05.webp",
+          "caption": "مكاتب مع خزائن منخفضة وطابعة"
+        },
+        {
+          "src": "media/rooms/research/06.webp",
+          "thumb": "media/rooms/research/thumbs/06.webp",
+          "caption": "المكاتب المطلة على النافذة"
+        },
+        {
+          "src": "media/rooms/research/07.webp",
+          "thumb": "media/rooms/research/thumbs/07.webp",
+          "caption": "منظر عام لصالة المكاتب"
+        }
+      ],
+      "photosConfidence": "medium",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "office-l1",
       "name": "مكتب مغلق (الجناح الغربي 1)",
       "short": "مكتب مغلق",
       "kind": "office",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           162,
@@ -778,14 +1122,39 @@
       },
       "use": {
         "current": "مكتب مدير"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/office-l1/01.webp",
+          "thumb": "media/rooms/office-l1/thumbs/01.webp",
+          "caption": "مكتب مغلق مع خزانة ملفات وطابعة"
+        },
+        {
+          "src": "media/rooms/office-l1/02.webp",
+          "thumb": "media/rooms/office-l1/thumbs/02.webp",
+          "caption": "خزانة الملفات ووحدة الطابعة"
+        },
+        {
+          "src": "media/rooms/office-l1/03.webp",
+          "thumb": "media/rooms/office-l1/thumbs/03.webp",
+          "caption": "المكتب بإطلالة من النافذة"
+        },
+        {
+          "src": "media/rooms/office-l1/04.webp",
+          "thumb": "media/rooms/office-l1/thumbs/04.webp",
+          "caption": "طاولة العمل والمقعد الشبكي"
+        }
+      ],
+      "photosConfidence": "medium",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "office-l2",
       "name": "مكتب مغلق (الجناح الغربي 2)",
       "short": "مكتب مغلق",
       "kind": "office",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           162,
@@ -810,14 +1179,39 @@
       },
       "use": {
         "current": "مكتب رئيس قسم البحث"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/office-l2/01.webp",
+          "thumb": "media/rooms/office-l2/thumbs/01.webp",
+          "caption": "مكتب مغلق مع نباتات وإضاءة نهارية"
+        },
+        {
+          "src": "media/rooms/office-l2/02.webp",
+          "thumb": "media/rooms/office-l2/thumbs/02.webp",
+          "caption": "طاولة العمل وكرسي الزائر"
+        },
+        {
+          "src": "media/rooms/office-l2/03.webp",
+          "thumb": "media/rooms/office-l2/thumbs/03.webp",
+          "caption": "المكتب على شكل L بجوار النافذة"
+        },
+        {
+          "src": "media/rooms/office-l2/04.webp",
+          "thumb": "media/rooms/office-l2/thumbs/04.webp",
+          "caption": "المقعد الشبكي وطاولة العمل"
+        }
+      ],
+      "photosConfidence": "medium",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "office-l3",
       "name": "مكتب مغلق (الجناح الغربي 3)",
       "short": "مكتب مغلق",
       "kind": "office",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           162,
@@ -842,14 +1236,34 @@
       },
       "use": {
         "current": "مكتب باحث أول مع طاولة مستديرة"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/office-l3/01.webp",
+          "thumb": "media/rooms/office-l3/thumbs/01.webp",
+          "caption": "مكتب مغلق بطاولتين على الواجهة"
+        },
+        {
+          "src": "media/rooms/office-l3/02.webp",
+          "thumb": "media/rooms/office-l3/thumbs/02.webp",
+          "caption": "طاولتا عمل مع شاشة جدارية"
+        },
+        {
+          "src": "media/rooms/office-l3/03.webp",
+          "thumb": "media/rooms/office-l3/thumbs/03.webp",
+          "caption": "المكتب المزدوج بإضاءة طبيعية"
+        }
+      ],
+      "photosConfidence": "low",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "inner-1",
       "name": "مكتب وسط مغلق (1)",
       "short": "مكتب وسط",
       "kind": "office",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           359,
@@ -874,14 +1288,39 @@
       },
       "use": {
         "current": "مكتب مشترك لأربعة"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/inner-1/01.webp",
+          "thumb": "media/rooms/inner-1/thumbs/01.webp",
+          "caption": "مكتب مغلق بطاولة على شكل L"
+        },
+        {
+          "src": "media/rooms/inner-1/02.webp",
+          "thumb": "media/rooms/inner-1/thumbs/02.webp",
+          "caption": "المكتب مع طابعة وكرسي زائر"
+        },
+        {
+          "src": "media/rooms/inner-1/03.webp",
+          "thumb": "media/rooms/inner-1/thumbs/03.webp",
+          "caption": "زاوية المكتب والمقاعد"
+        },
+        {
+          "src": "media/rooms/inner-1/04.webp",
+          "thumb": "media/rooms/inner-1/thumbs/04.webp",
+          "caption": "المكتب من الممر عبر الواجهة الزجاجية"
+        }
+      ],
+      "photosConfidence": "low",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "inner-2",
       "name": "مكتب وسط مغلق (2)",
       "short": "مكتب وسط",
       "kind": "office",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           481,
@@ -906,14 +1345,39 @@
       },
       "use": {
         "current": "مكتب رئيس التسويق"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/inner-2/01.webp",
+          "thumb": "media/rooms/inner-2/thumbs/01.webp",
+          "caption": "مكتب مغلق مطل على المكاتب المفتوحة"
+        },
+        {
+          "src": "media/rooms/inner-2/02.webp",
+          "thumb": "media/rooms/inner-2/thumbs/02.webp",
+          "caption": "طاولة العمل مع الهاتف والشاشة"
+        },
+        {
+          "src": "media/rooms/inner-2/03.webp",
+          "thumb": "media/rooms/inner-2/thumbs/03.webp",
+          "caption": "زاوية المكتب مع وحدة أدراج"
+        },
+        {
+          "src": "media/rooms/inner-2/04.webp",
+          "thumb": "media/rooms/inner-2/thumbs/04.webp",
+          "caption": "المكتب المغلق بإضاءة هادئة"
+        }
+      ],
+      "photosConfidence": "low",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "inner-3",
       "name": "مكتب وسط مغلق (3)",
       "short": "مكتب وسط",
       "kind": "office",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           597,
@@ -938,14 +1402,17 @@
       },
       "use": {
         "current": "مكتب رئيس البيانات"
-      }
+      },
+      "photos": [],
+      "hasModel": true,
+      "hasPhotos": false
     },
     {
       "id": "women-area",
       "name": "جلسة النساء",
       "short": "جلسة النساء",
       "kind": "social",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           700,
@@ -970,14 +1437,29 @@
       },
       "use": {
         "current": "جلسة نساء"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/women-area/01.webp",
+          "thumb": "media/rooms/women-area/thumbs/01.webp",
+          "caption": "جلسة بكنب على شكل L وطاولة"
+        },
+        {
+          "src": "media/rooms/women-area/02.webp",
+          "thumb": "media/rooms/women-area/thumbs/02.webp",
+          "caption": "الجلسة من زاوية قريبة"
+        }
+      ],
+      "photosConfidence": "medium",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "finance",
       "name": "مكاتب المالية",
       "short": "المالية",
       "kind": "open",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           815,
@@ -1002,14 +1484,44 @@
       },
       "use": {
         "current": "فريق المالية"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/finance/01.webp",
+          "thumb": "media/rooms/finance/thumbs/01.webp",
+          "caption": "مكاتب مزدوجة مع طابعات وهواتف"
+        },
+        {
+          "src": "media/rooms/finance/02.webp",
+          "thumb": "media/rooms/finance/thumbs/02.webp",
+          "caption": "وحدة مكتبين مع شاشات وطابعة"
+        },
+        {
+          "src": "media/rooms/finance/03.webp",
+          "thumb": "media/rooms/finance/thumbs/03.webp",
+          "caption": "مكاتب العمل مع خزائن جانبية"
+        },
+        {
+          "src": "media/rooms/finance/04.webp",
+          "thumb": "media/rooms/finance/thumbs/04.webp",
+          "caption": "المكاتب والنباتات خلف الزجاج"
+        },
+        {
+          "src": "media/rooms/finance/05.webp",
+          "thumb": "media/rooms/finance/thumbs/05.webp",
+          "caption": "مكتبان متقابلان بتجهيزات كاملة"
+        }
+      ],
+      "photosConfidence": "medium",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "inner-4",
       "name": "مكتب وسط مغلق (4)",
       "short": "مكتب وسط",
       "kind": "office",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           359,
@@ -1034,14 +1546,34 @@
       },
       "use": {
         "current": "مكتب مشترك لاثنين"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/inner-4/01.webp",
+          "thumb": "media/rooms/inner-4/thumbs/01.webp",
+          "caption": "مكتب زجاجي بإطارات داكنة لموظفين"
+        },
+        {
+          "src": "media/rooms/inner-4/02.webp",
+          "thumb": "media/rooms/inner-4/thumbs/02.webp",
+          "caption": "المكتب الزجاجي من الجهة الأمامية"
+        },
+        {
+          "src": "media/rooms/inner-4/03.webp",
+          "thumb": "media/rooms/inner-4/thumbs/03.webp",
+          "caption": "المكتب الزجاجي وسط المكاتب المفتوحة"
+        }
+      ],
+      "photosConfidence": "medium",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "store",
       "name": "مستودع",
       "short": "مستودع",
       "kind": "service",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           503,
@@ -1066,14 +1598,17 @@
       },
       "use": {
         "current": "مستودع"
-      }
+      },
+      "photos": [],
+      "hasModel": true,
+      "hasPhotos": false
     },
     {
       "id": "data-center",
       "name": "غرفة الرسيفر",
       "short": "الرسيفر",
       "kind": "service",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           603,
@@ -1098,14 +1633,17 @@
       },
       "use": {
         "current": "غرفة الشبكة والرسيفر"
-      }
+      },
+      "photos": [],
+      "hasModel": true,
+      "hasPhotos": false
     },
     {
       "id": "wc-women",
       "name": "دورة مياه النساء",
       "short": "دورة مياه النساء",
       "kind": "service",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           768,
@@ -1130,14 +1668,24 @@
       },
       "use": {
         "current": "دورة مياه نساء"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/wc-women/01.webp",
+          "thumb": "media/rooms/wc-women/thumbs/01.webp",
+          "caption": "مدخل دورة مياه النساء"
+        }
+      ],
+      "photosConfidence": "low",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "wc-men",
       "name": "دورة مياه الرجال",
       "short": "دورة مياه الرجال",
       "kind": "service",
-      "status": "soon",
+      "status": "ready",
       "polygon": [
         [
           768,
@@ -1162,7 +1710,27 @@
       },
       "use": {
         "current": "دورة مياه رجال مع مستودع أغراض"
-      }
+      },
+      "photos": [
+        {
+          "src": "media/rooms/wc-men/01.webp",
+          "thumb": "media/rooms/wc-men/thumbs/01.webp",
+          "caption": "مغاسل بمرايا وإضاءة حديثة"
+        },
+        {
+          "src": "media/rooms/wc-men/02.webp",
+          "thumb": "media/rooms/wc-men/thumbs/02.webp",
+          "caption": "مدخل دورة مياه الرجال"
+        },
+        {
+          "src": "media/rooms/wc-men/03.webp",
+          "thumb": "media/rooms/wc-men/thumbs/03.webp",
+          "caption": "باب دورة المياه مع الجدار الأخضر"
+        }
+      ],
+      "photosConfidence": "medium",
+      "hasModel": true,
+      "hasPhotos": true
     },
     {
       "id": "core",
@@ -1194,19 +1762,22 @@
       },
       "use": {
         "current": "نواة الحركة الرأسية"
-      }
+      },
+      "photos": [],
+      "hasModel": false,
+      "hasPhotos": false
     }
   ],
   "scenes": {
     "current": {
-      "name": "الوضع الحالي",
-      "badge": "الوضع الحالي",
-      "description": "المكتب كما هو اليوم بفرشه الفعلي، في نموذج ثلاثي الأبعاد"
+      "name": "توزيعات المكاتب",
+      "badge": "توزيعات المكاتب",
+      "description": "توزيع المكاتب كما هو اليوم بفرشه الفعلي، في نموذج ثلاثي الأبعاد حي"
     },
     "paths": {
       "name": "المسارات",
       "badge": "مسارات الحركة",
-      "description": "مسارات حركة مقترحة تبدأ من ردهة المصاعد، لكل فئة لون",
+      "description": "مسارات حركة مقترحة تبدأ من ردهة المصاعد: الموظفون يدورون على كل مكاتبهم، الإدارة إلى مكتبها، الضيوف إلى الاجتماعات والاستقبال",
       "routes": [
         {
           "id": "employees",
@@ -1214,35 +1785,51 @@
           "color": "#5aa9ff",
           "points": [
             [
-              722,
+              729,
               600
             ],
             [
-              722,
+              729,
               760
             ],
             [
               700,
-              848
+              860
             ],
             [
-              338,
-              848
+              331,
+              860
             ],
             [
-              338,
-              470
+              331,
+              278
             ],
             [
-              282,
-              470
+              966,
+              278
+            ],
+            [
+              966,
+              860
+            ],
+            [
+              760,
+              860
+            ],
+            [
+              729,
+              760
+            ],
+            [
+              729,
+              600
             ]
           ],
           "stops": [
             {
               "roomId": "entrance",
               "at": [
-                722,
+                729,
                 600
               ],
               "label": "ردهة المصاعد"
@@ -1250,18 +1837,50 @@
             {
               "roomId": "hr-pmo-ops",
               "at": [
-                375,
-                848
+                390,
+                860
               ],
               "label": "الموارد البشرية والعمليات"
             },
             {
               "roomId": "research",
               "at": [
-                282,
-                470
+                331,
+                420
               ],
-              "label": "مكاتب البحث"
+              "label": "البحث"
+            },
+            {
+              "roomId": "marketing",
+              "at": [
+                585,
+                278
+              ],
+              "label": "التسويق"
+            },
+            {
+              "roomId": "data-analysis",
+              "at": [
+                752,
+                278
+              ],
+              "label": "تحليل البيانات"
+            },
+            {
+              "roomId": "finance",
+              "at": [
+                877,
+                300
+              ],
+              "label": "المالية"
+            },
+            {
+              "roomId": "field-qc",
+              "at": [
+                966,
+                700
+              ],
+              "label": "الجودة الميدانية"
             }
           ]
         },
@@ -1271,15 +1890,15 @@
           "color": "#e7b45a",
           "points": [
             [
-              736,
+              742,
               600
             ],
             [
-              736,
+              742,
               745
             ],
             [
-              752,
+              754,
               872
             ],
             [
@@ -1287,16 +1906,16 @@
               872
             ],
             [
-              966,
+              978,
               820
             ],
             [
-              966,
-              270
+              978,
+              266
             ],
             [
               358,
-              270
+              266
             ],
             [
               358,
@@ -1311,7 +1930,7 @@
             {
               "roomId": "entrance",
               "at": [
-                736,
+                742,
                 600
               ],
               "label": "ردهة المصاعد"
@@ -1319,7 +1938,7 @@
             {
               "roomId": "cfo",
               "at": [
-                966,
+                978,
                 315
               ],
               "label": "المدير المالي"
@@ -1340,43 +1959,83 @@
           "color": "#ff7a59",
           "points": [
             [
-              729,
+              716,
               600
             ],
             [
-              729,
-              760
+              716,
+              745
             ],
             [
-              780,
-              866
+              740,
+              880
             ],
             [
-              640,
-              860
+              860,
+              900
             ],
             [
-              318,
-              860
+              990,
+              900
             ],
             [
-              318,
-              695
+              1050,
+              935
+            ],
+            [
+              990,
+              900
+            ],
+            [
+              950,
+              880
+            ],
+            [
+              942,
+              262
+            ],
+            [
+              930,
+              262
+            ],
+            [
+              1030,
+              220
+            ],
+            [
+              930,
+              262
+            ],
+            [
+              942,
+              262
+            ],
+            [
+              966,
+              278
+            ],
+            [
+              345,
+              278
+            ],
+            [
+              345,
+              460
             ],
             [
               380,
-              695
+              460
             ],
             [
               428,
-              640
+              560
             ]
           ],
           "stops": [
             {
               "roomId": "entrance",
               "at": [
-                729,
+                716,
                 600
               ],
               "label": "ردهة المصاعد"
@@ -1384,18 +2043,34 @@
             {
               "roomId": "reception",
               "at": [
-                780,
-                866
+                860,
+                900
               ],
               "label": "الاستقبال"
+            },
+            {
+              "roomId": "lounge",
+              "at": [
+                1050,
+                935
+              ],
+              "label": "جلسة الاستقبال"
+            },
+            {
+              "roomId": "meeting-medium",
+              "at": [
+                1030,
+                220
+              ],
+              "label": "الاجتماعات الوسطى"
             },
             {
               "roomId": "meeting-large",
               "at": [
                 428,
-                640
+                560
               ],
-              "label": "غرفة الاجتماعات الكبرى"
+              "label": "الاجتماعات الكبرى"
             }
           ]
         }

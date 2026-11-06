@@ -1,9 +1,10 @@
-// Room details: photos | the room's 3D second shot | features. Three columns on
-// desktop, the 3D view on top with two tabs on mobile.
-import { createPlan } from './plan.js';
+// Room details: photos | the room in the 3D model | features. Three columns on
+// desktop, the 3D view on top with two tabs on mobile. The centre image is the
+// evening Cycles render of the room when one exists, otherwise a snapshot of
+// the live model taken when the room was focused.
 import { seatsLabel } from './format.js';
 
-export function createDetails(view, data, { onOpenPhoto } = {}) {
+export function createDetails(view, data, { onOpenPhoto, snapshot } = {}) {
   const el = {
     title: view.querySelector('#details-title'),
     photos: view.querySelector('#details-photos'),
@@ -11,8 +12,11 @@ export function createDetails(view, data, { onOpenPhoto } = {}) {
     stage: view.querySelector('#details-stage'),
     tabs: [...view.querySelectorAll('.details-tabs .tab')],
   };
-
-  const plan = createPlan(el.stage, data, { static: true });
+  const img = document.createElement('img');
+  img.className = 'details-render';
+  img.alt = '';
+  img.decoding = 'async';
+  el.stage.append(img);
   let roomId = null;
 
   function setTab(name) {
@@ -58,13 +62,19 @@ export function createDetails(view, data, { onOpenPhoto } = {}) {
     if (room.use && room.use.current) {
       const cur = document.createElement('div');
       cur.className = 'use-item is-current';
-      cur.append(text('span', 'tag', 'الوضع الحالي'), text('span', '', room.use.current));
+      cur.append(text('span', 'tag', 'الاستخدام الحالي'), text('span', '', room.use.current));
       cards.push(card('الاستخدام', [cur]));
     }
+    cards.push(card('النموذج الرقمي', [text('p', '', 'الفرش في النموذج ثلاثي الأبعاد يحاكي التوزيع والمواد الظاهرة في الصور الميدانية ومخطط الفرش المعتمد.')]));
+    if (!cards.length) cards.push(card('المميزات', [text('p', 'basis', 'تفاصيل هذه الغرفة تُوثَّق في الجولة القادمة.')]));
     el.features.replaceChildren(...cards);
   }
 
   function renderPhotos(room) {
+    if (!room.hasPhotos) {
+      el.photos.replaceChildren(text('p', 'basis', 'لا توجد صور حقيقية لهذه الغرفة بعد.'));
+      return;
+    }
     el.photos.replaceChildren(
       ...room.photos.map((p, i) => {
         const b = document.createElement('button');
@@ -81,7 +91,15 @@ export function createDetails(view, data, { onOpenPhoto } = {}) {
     );
   }
 
-  function show(id) {
+  function refreshImage() {
+    const room = data.rooms.find((r) => r.id === roomId);
+    if (!room) return;
+    const shot = room.focus && room.focus.image ? room.focus.image : (snapshot ? snapshot() : '');
+    if (shot) img.src = shot;
+    img.hidden = !shot;
+  }
+
+  function show(id, { deferImage = false } = {}) {
     const room = data.rooms.find((r) => r.id === id);
     if (!room) return false;
     roomId = id;
@@ -89,14 +107,9 @@ export function createDetails(view, data, { onOpenPhoto } = {}) {
     renderPhotos(room);
     renderFeatures(room);
     setTab('photos');
-    // The stage may have been hidden (display:none) while measuring; relayout
-    // after the view is visible.
-    requestAnimationFrame(() => {
-      plan.relayout();
-      plan.focusRoom(id, { animate: false });
-    });
+    if (deferImage) { img.hidden = true; } else refreshImage();
     return true;
   }
 
-  return { show, plan, currentRoom: () => roomId };
+  return { show, refreshImage, currentRoom: () => roomId };
 }
