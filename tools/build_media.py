@@ -6,12 +6,11 @@ documents exactly how every published image was derived from them so the step
 can be repeated when new rooms are added.
 
 Usage:
-    python3 tools/build_media.py --src "/path/to/المكتب" --plan render.jpg \
+    python3 tools/build_media.py --src "/path/to/المكتب" \
         --hero IMG_0148.JPG --manifest tools/media_manifest.json
 
 The manifest maps room ids to ordered lists of source files (optionally already
-cleaned by tools/clean_photo.py). Outputs:
-    media/plan/dollhouse.webp              2x Lanczos upscale of the dollhouse render
+cleaned by tools/clean_photo.py). The 3D plan is built separately by tools/twin/. Outputs:
     media/hero/welcome.webp                2200px wide welcome photo
     media/rooms/<id>/NN.webp               1800px long side, quality 82
     media/rooms/<id>/thumbs/NN.webp        480px long side, quality 75
@@ -44,13 +43,6 @@ def save_webp(im, rel, quality):
     im.save(out, "WEBP", quality=quality, method=6)
     return os.path.getsize(out)
 
-
-def build_plan(src):
-    im = load(src)
-    big = im.resize((im.width * 2, im.height * 2), Image.LANCZOS)
-    big = big.filter(ImageFilter.UnsharpMask(radius=1.2, percent=60, threshold=2))
-    size = save_webp(big, "media/plan/dollhouse.webp", 82)
-    print(f"plan  {big.size}  {size/1024:.0f} KB")
 
 
 def build_hero(src):
@@ -99,7 +91,6 @@ def build_rooms(src_dir, manifest, model_path=None, clean_dir=None):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--src", required=True, help="directory with the original photos")
-    ap.add_argument("--plan", help="dollhouse render source image")
     ap.add_argument("--hero", help="welcome photo (file name inside --src or absolute)")
     ap.add_argument("--manifest", help="JSON: {room_id: [file | {file, masks}, ...]}")
     ap.add_argument("--model", default=os.environ.get("LAMA_MODEL", ""), help="path to big-lama.pt (optional)")
@@ -107,8 +98,6 @@ def main():
     args = ap.parse_args()
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-    if args.plan:
-        build_plan(args.plan)
     if args.hero:
         hero = args.hero if os.path.isabs(args.hero) else os.path.join(args.src, args.hero)
         build_hero(hero)
