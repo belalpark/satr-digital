@@ -2,7 +2,7 @@
   "name": "satr-digital",
   "version": "0.1.0",
   "private": true,
-  "description": "التوأم الرقمي للمكتب — موقع تفاعلي لتسويق مكتب للإيجار",
+  "description": "جولة المكتب — موقع تفاعلي ثلاثي الأبعاد لتسويق مكتب للإيجار",
   "type": "module",
   "scripts": {
     "serve": "node tests/e2e/serve.mjs . 8080",
