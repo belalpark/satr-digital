@@ -31,25 +31,32 @@ test('no area fields anywhere in the record', () => {
   assert.ok(!/م²|متر مربع/.test(text), 'area text found');
 });
 
-test('ready rooms are complete and their media exist', () => {
-  const ready = data.rooms.filter((r) => r.status === 'ready');
-  assert.ok(ready.length >= 1, 'at least one ready room');
-  for (const r of ready) {
-    assert.ok(r.photos.length >= 4, `${r.id} photos`);
-    assert.ok(r.capacity && r.capacity.seats > 0 && r.capacity.basis, `${r.id} capacity`);
-    assert.ok(r.fixtures && r.fixtures.items.length > 0 && r.fixtures.source, `${r.id} fixtures`);
-    assert.ok(r.summary, `${r.id} summary`);
+test('every room with photos has existing media and captions', () => {
+  const withPhotos = data.rooms.filter((r) => r.hasPhotos);
+  assert.ok(withPhotos.length >= 1, 'at least one room with photos');
+  for (const r of withPhotos) {
+    assert.ok(r.photos.length >= 1, `${r.id} photos`);
     for (const p of r.photos) {
       assert.ok(existsSync(resolve(root, p.src)), `missing ${p.src}`);
       assert.ok(existsSync(resolve(root, p.thumb)), `missing ${p.thumb}`);
-      assert.ok(p.caption, `caption for ${p.src}`);
+      assert.ok(p.caption && !/م²|متر|DRC/i.test(p.caption), `caption for ${p.src}`);
     }
   }
+  for (const r of data.rooms) {
+    assert.equal(r.hasPhotos, (r.photos || []).length > 0, `${r.id} hasPhotos flag`);
+    assert.equal(r.status === 'ready', r.hasPhotos || (r.hasModel && r.status !== 'info'), `${r.id} ready status`);
+  }
+  // the first fully documented room keeps its full record
+  const ml = data.rooms.find((r) => r.id === 'meeting-large');
+  assert.ok(ml.capacity && ml.capacity.seats === 16 && ml.fixtures.items.length > 0 && ml.summary);
 });
 
-test('plan, focus and hero images exist', () => {
+test('plan, model, focus and hero images exist', () => {
   assert.ok(existsSync(resolve(root, data.office.plan.image)));
-  assert.ok(existsSync(resolve(root, data.office.heroImage)));
+  assert.ok(existsSync(resolve(root, data.office.heroImage)), 'hero perspective');
+  assert.ok(existsSync(resolve(root, data.office.heroFallback)), 'hero fallback');
+  assert.ok(existsSync(resolve(root, data.office.model.glb)), 'web model');
+  assert.ok(existsSync(resolve(root, data.office.model.scene)), 'web scene data');
   for (const r of data.rooms.filter((x) => x.focus)) {
     assert.ok(existsSync(resolve(root, r.focus.image)), `focus image for ${r.id}`);
   }
@@ -78,24 +85,20 @@ test('every room polygon projects inside the rendered image', () => {
   }
 });
 
-test('ready rooms have a focus frame inside the image', () => {
-  for (const r of data.rooms.filter((x) => x.status === 'ready')) {
-    assert.ok(r.focus, `${r.id} focus`);
+test('focus frames (where present) lie inside the image', () => {
+  for (const r of data.rooms.filter((x) => x.focus)) {
     const [x, y, w, h] = r.focus.rect;
     assert.ok(x >= 0 && y >= 0 && x + w <= width + 0.5 && y + h <= height + 0.5, `${r.id} rect`);
   }
 });
 
-test('welcome totals add up from the documented inventory', () => {
-  const inv = new Map(data.office.inventory.items.map((i) => [i.name, i.count]));
-  for (const h of data.office.welcome.highlights) {
-    const sum = h.from.reduce((n, name) => {
-      assert.ok(inv.has(name), `unknown inventory item ${name}`);
-      return n + inv.get(name);
-    }, 0);
-    assert.equal(h.value, sum, h.label);
-    if (h.dual) assert.equal(h.value, 2, `${h.label} is an Arabic dual`);
-  }
+test('welcome copy: no totals, the agreed lines only', () => {
+  const w = data.office.welcome;
+  assert.equal(w.title, 'مرحبًا بكم');
+  assert.ok(!('highlights' in w), 'totals removed from the welcome');
+  assert.match(w.subtitle, /توأمة رقمية/);
+  assert.match(w.atmosphere, /أجواء جميلة وهادئة/);
+  assert.equal(w.cta, 'ابدأ الجولة');
 });
 
 test('no booking call to action and no proposed layouts', () => {
@@ -104,6 +107,7 @@ test('no booking call to action and no proposed layouts', () => {
   assert.ok(!/احجز معاينة/.test(text));
   assert.ok(!/proposed/.test(text), 'proposed fields removed');
   assert.ok(!/التوأم الرقمي للمكتب/.test(text), 'old product name removed from the record');
+  assert.ok(!/الوضع الحالي/.test(JSON.stringify(data.scenes)), 'scene renamed to توزيعات المكاتب');
 });
 
 test('scenes: current state and three coloured routes over existing rooms', () => {
@@ -111,6 +115,13 @@ test('scenes: current state and three coloured routes over existing rooms', () =
   const ids = new Set(data.rooms.map((r) => r.id));
   const routes = data.scenes.paths.routes;
   assert.deepEqual(routes.map((r) => r.id), ['employees', 'executive', 'guests']);
+  // employees loop past every employee office area; guests reach both meeting rooms and the lounge
+  const empStops = new Set(routes[0].stops.map((s) => s.roomId));
+  for (const id of ['hr-pmo-ops', 'research', 'marketing', 'data-analysis', 'finance', 'field-qc']) assert.ok(empStops.has(id), `employees -> ${id}`);
+  const guestStops = new Set(routes[2].stops.map((s) => s.roomId));
+  for (const id of ['meeting-medium', 'meeting-large', 'lounge', 'reception']) assert.ok(guestStops.has(id), `guests -> ${id}`);
+  const emp = routes[0].points;
+  assert.deepEqual(emp[0], emp[emp.length - 1], 'the employee loop returns to the lobby');
   assert.equal(new Set(routes.map((r) => r.color)).size, 3, 'three distinct colours');
   for (const r of routes) {
     assert.ok(r.points.length >= 2, r.id);
@@ -166,4 +177,32 @@ test('office.json camera data matches the published render (media/twin/twin.json
   for (const r of data.rooms.filter((x) => x.focus)) {
     assert.deepEqual(r.focus.rect, twin.focus[r.id].rect, `${r.id} focus rect`);
   }
+});
+
+test('web model scene data matches the office record', () => {
+  const sceneInfo = JSON.parse(readFileSync(resolve(root, data.office.model.scene), 'utf8'));
+  const ids = new Set(data.rooms.map((r) => r.id));
+  assert.equal(sceneInfo.rooms.length, data.rooms.length, 'one anchor per room');
+  for (const a of sceneInfo.rooms) {
+    assert.ok(ids.has(a.id), `anchor for unknown room ${a.id}`);
+    assert.ok(a.floor.length >= 3 && a.label.length === 2, a.id);
+  }
+  assert.equal(sceneInfo.scale, ref.pxPerMetre, 'same plan scale');
+  assert.ok(sceneInfo.lights.length > 10, 'ceiling light pools exported');
+  // plan px -> metres mapping used by the viewer must reproduce the exported anchors
+  const ml = data.rooms.find((r) => r.id === 'meeting-large');
+  const a = sceneInfo.rooms.find((r) => r.id === 'meeting-large');
+  const [px, py] = ml.polygon[0];
+  const x = (px - sceneInfo.origin.cx) / sceneInfo.scale;
+  const y = -(py - sceneInfo.origin.cy) / sceneInfo.scale;
+  assert.ok(Math.abs(x - a.floor[0][0]) < 1e-3 && Math.abs(y - a.floor[0][1]) < 1e-3, 'anchor projection');
+});
+
+test('every room declares its dot capabilities consistently', () => {
+  for (const r of data.rooms) {
+    assert.equal(typeof r.hasModel, 'boolean', `${r.id} hasModel`);
+    assert.equal(typeof r.hasPhotos, 'boolean', `${r.id} hasPhotos`);
+    if (r.hasPhotos) assert.ok(r.photos.length > 0, `${r.id} photos`);
+  }
+  assert.ok(data.rooms.filter((r) => r.hasPhotos).length >= 20, 'most rooms have real photos now');
 });

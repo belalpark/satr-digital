@@ -4,10 +4,12 @@ Coordinates are "plan px": the reference plan the room polygons in
 data/office.json use (1309 x 1201, x to the right, y down). SCALE converts
 them to metres. Walls, doors, furniture and lights below were traced from the
 approved furniture layout; materials follow the field photos (white desks,
-black/white mesh chairs with blue seats, blue-grey carpet in private offices,
-grey carpet in meeting rooms, oak-look floors in shared areas, angular
-reception counter with an oak band and LED under-glow, oak bleachers,
-dark slate lounge sofas).
+black/white mesh chairs with blue seats, blue-grey carpet in private offices
+and the medium meeting room, grey carpet in the large meeting room and open
+areas, pale oak floor in the CEO office and in front of the bleachers, tiles in
+the women's lounge, angular reception counter with an oak band and LED
+under-glow, oak bleachers, one large U of dark slate lounge sofas on the oak
+platform, cream sofas in the CEO office and the women's lounge).
 """
 
 SCALE = 32.0          # plan px per metre
@@ -88,13 +90,16 @@ EXTRA_FLOORS = {
 
 # Floor material per room id (others: by kind).
 FLOOR_BY_ROOM = {
-    'meeting-large': 'carpet_grey', 'meeting-medium': 'carpet_grey',
+    'meeting-large': 'carpet_grey', 'meeting-medium': 'carpet_blue',   # photos 0314-0318: blue-grey carpet
     'wc-women': 'tile', 'wc-men': 'tile', 'core': 'stone',
     'store': 'stone', 'data-center': 'stone',
-    'entrance': 'stone_light', 'reception': None, 'bleachers': None, 'lounge': None,
+    'entrance': 'stone_light', 'reception': None, 'lounge': None,
+    'bleachers': 'wood_deck',                                           # photos 0154-0159: pale oak planks in front of the tiers
     'hr-pmo-ops': 'carpet_grey', 'research': 'carpet_grey', 'data-analysis': 'carpet_grey',
     'marketing': 'carpet_grey', 'field-qc': 'carpet_grey', 'finance': 'carpet_grey',
-    'inner-1': 'carpet_grey', 'women-area': 'wood',
+    'inner-1': 'carpet_grey',
+    'women-area': 'stone_light',                                        # photos 0331-0332: large grey-beige tiles
+    'ceo': 'wood_deck',                                                 # photos 0203-0210, 0216-0218: pale oak floor
 }
 FLOOR_BY_KIND = {'office': 'carpet_blue', 'meeting': 'carpet_grey', 'open': 'carpet_grey',
                  'service': 'stone', 'social': None, 'circulation': None}
@@ -111,79 +116,82 @@ def bench(cx, cy, n, axis, divider=True):
 
 
 FURNITURE = [
-    # CEO
-    {'t': 'table_oval', 'x': 366, 'y': 100, 'len': 2.6, 'w': 1.15},
+    # CEO (photos 0203-0210, 0320: rectangular dark-wood 8-seat table in the glazed notch;
+    # 0205-0206: cream/taupe sofa + armchair; 0211-0218: desk against the east wall, chair faces west)
+    {'t': 'table_meeting', 'x': 366, 'y': 100, 'len': 2.6, 'w': 1.15, 'axis': 'x', 'top': 'walnut', 'modules': 1},
     *[{'t': 'chair_exec', 'x': x, 'y': 66, 'rot': 0} for x in (340, 366, 392)],
     *[{'t': 'chair_exec', 'x': x, 'y': 134, 'rot': 180} for x in (340, 366, 392)],
-    {'t': 'chair_exec', 'x': 318, 'y': 100, 'rot': 90},
-    {'t': 'chair_exec', 'x': 414, 'y': 100, 'rot': 270},
-    {'t': 'sofa', 'x': 252, 'y': 140, 'rot': 0, 'len': 2.2, 'fabric': 'sofa_cream'},
+    {'t': 'chair_exec', 'x': 314, 'y': 100, 'rot': 90},
+    {'t': 'chair_exec', 'x': 418, 'y': 100, 'rot': 270},
+    {'t': 'sofa', 'x': 246, 'y': 134, 'rot': 0, 'len': 2.2, 'fabric': 'sofa_cream'},
     {'t': 'armchair', 'x': 190, 'y': 176, 'rot': 90, 'fabric': 'sofa_cream'},
-    {'t': 'coffee_table', 'x': 252, 'y': 186, 'len': 1.2, 'w': 0.6},
-    {'t': 'rug', 'x': 240, 'y': 172, 'len': 3.0, 'w': 2.0, 'mat': 'rug_beige'},
-    {'t': 'desk_exec', 'x': 462, 'y': 192, 'rot': 270, 'len': 2.0},
-    {'t': 'chair_exec', 'x': 488, 'y': 192, 'rot': 270},
-    {'t': 'chair_guest', 'x': 432, 'y': 172, 'rot': 90},
-    {'t': 'chair_guest', 'x': 432, 'y': 212, 'rot': 90},
+    {'t': 'coffee_table', 'x': 248, 'y': 178, 'len': 1.2, 'w': 0.6},
+    {'t': 'rug', 'x': 240, 'y': 176, 'len': 3.0, 'w': 2.0, 'mat': 'rug_beige'},
+    {'t': 'desk_exec', 'x': 456, 'y': 178, 'rot': 270, 'len': 2.0},
+    {'t': 'chair_exec', 'x': 482, 'y': 178, 'rot': 270},
+    {'t': 'chair_guest', 'x': 426, 'y': 158, 'rot': 90},
+    {'t': 'chair_guest', 'x': 426, 'y': 198, 'rot': 90},
     {'t': 'credenza', 'x': 517, 'y': 150, 'rot': 270, 'len': 1.6},
     {'t': 'plant', 'x': 466, 'y': 70, 's': 1.15},
     {'t': 'plant', 'x': 186, 'y': 222, 's': 1.0},
     # marketing + data analysis
     {'t': 'green_wall', 'x1': 536, 'y1': 128, 'x2': 536, 'y2': 238},
     bench(574, 182, 1, 'x'),
-    bench(678, 183, 3, 'y'),
-    bench(792, 183, 3, 'y'),
+    bench(678, 176, 3, 'y'),       # 3.9 m benches: centred so they clear the south glass wall (y 245)
+    bench(792, 176, 3, 'y'),
     {'t': 'plant', 'x': 850, 'y': 120, 's': 0.9},
     # secretary area
     {'t': 'plant', 'x': 896, 'y': 132, 's': 1.0},
-    {'t': 'credenza', 'x': 898, 'y': 200, 'rot': 90, 'len': 1.2},
-    # medium meeting room
-    {'t': 'table_meeting', 'x': 1028, 'y': 182, 'len': 3.5, 'w': 1.3, 'axis': 'x', 'top': 'walnut'},
+    {'t': 'credenza', 'x': 898, 'y': 190, 'rot': 90, 'len': 1.2},
+    # medium meeting room (photos 0313-0319: white two-module table, 10 white-shell chairs, TV on a stand)
+    {'t': 'table_meeting', 'x': 1028, 'y': 182, 'len': 3.5, 'w': 1.3, 'axis': 'x', 'top': 'desk_white'},
     *[{'t': 'chair_task', 'x': x, 'y': 150, 'rot': 0} for x in (987, 1014, 1042, 1069)],
     *[{'t': 'chair_task', 'x': x, 'y': 214, 'rot': 180} for x in (987, 1014, 1042, 1069)],
     {'t': 'chair_task', 'x': 960, 'y': 182, 'rot': 90},
     {'t': 'chair_task', 'x': 1096, 'y': 182, 'rot': 270},
     {'t': 'plant', 'x': 1106, 'y': 120, 's': 0.9},
-    # east wing offices
+    # east wing offices (CAD: L-desks against the east facade, chair faces east, cabinet in the SE corner)
     {'t': 'desk_exec', 'x': 1098, 'y': 292, 'rot': 90, 'len': 1.8},
     {'t': 'chair_exec', 'x': 1076, 'y': 292, 'rot': 90},
-    {'t': 'table_round', 'x': 1040, 'y': 352, 'r': 0.42},
-    {'t': 'chair_guest', 'x': 1040, 'y': 330, 'rot': 0},
-    {'t': 'chair_guest', 'x': 1040, 'y': 372, 'rot': 180},
+    {'t': 'cabinet', 'x': 1104, 'y': 338, 'rot': 270, 'len': 0.9},
+    {'t': 'table_round', 'x': 1040, 'y': 342, 'r': 0.42},
+    {'t': 'chair_guest', 'x': 1040, 'y': 320, 'rot': 0},
+    {'t': 'chair_guest', 'x': 1040, 'y': 364, 'rot': 180},
     {'t': 'plant', 'x': 1010, 'y': 262, 's': 0.9},
-    {'t': 'desk_exec', 'x': 1098, 'y': 428, 'rot': 90, 'len': 1.8},
-    {'t': 'chair_exec', 'x': 1076, 'y': 428, 'rot': 90},
-    {'t': 'cabinet', 'x': 1030, 'y': 388, 'rot': 0, 'len': 1.2},
-    {'t': 'plant', 'x': 1010, 'y': 466, 's': 0.85},
+    {'t': 'desk_exec', 'x': 1098, 'y': 414, 'rot': 90, 'len': 1.8},
+    {'t': 'chair_exec', 'x': 1076, 'y': 414, 'rot': 90},
+    {'t': 'cabinet', 'x': 1104, 'y': 464, 'rot': 270, 'len': 0.9},
+    {'t': 'plant', 'x': 1010, 'y': 392, 's': 0.85},
     {'t': 'desk_exec', 'x': 1064, 'y': 538, 'rot': 0, 'len': 1.8},
     {'t': 'chair_exec', 'x': 1064, 'y': 514, 'rot': 0},
     {'t': 'cabinet', 'x': 1104, 'y': 572, 'rot': 270, 'len': 1.0},
     {'t': 'plant', 'x': 1010, 'y': 582, 's': 0.85},
-    bench(1046, 636, 2, 'x'),
-    bench(1060, 756, 3, 'x'),
+    # field QC: CAD has 2 + 3 desk pairs; the 3-pair bench (3.9 m) only just fits the 3.84 m bay
+    bench(1046, 646, 2, 'x'),
+    bench(1056, 738, 3, 'x'),
     {'t': 'plant', 'x': 1106, 'y': 690, 's': 0.9},
-    # lounge (dark slate modular sofas)
+    # lounge (photos 0146-0152, 0169-0170: one large U of dark slate modular sofas along the east and
+    # south glazing, a curved high-back module closing the open west side, cube poufs at the arm
+    # ends, two small dark side tables, no rugs; everything on the raised oak platform)
     {'t': 'platform'},
-    {'t': 'sofa', 'x': 1062, 'y': 838, 'rot': 0, 'len': 2.4, 'fabric': 'sofa_slate'},
-    {'t': 'sofa', 'x': 1104, 'y': 872, 'rot': 270, 'len': 1.9, 'fabric': 'sofa_slate'},
-    {'t': 'coffee_table', 'x': 1056, 'y': 880, 'len': 1.1, 'w': 0.6},
-    {'t': 'rug', 'x': 1060, 'y': 878, 'len': 2.8, 'w': 2.0, 'mat': 'rug_grey'},
-    {'t': 'sofa', 'x': 1066, 'y': 930, 'rot': 0, 'len': 2.4, 'fabric': 'sofa_slate'},
-    {'t': 'sofa', 'x': 1104, 'y': 975, 'rot': 270, 'len': 2.4, 'fabric': 'sofa_slate'},
-    {'t': 'sofa', 'x': 1062, 'y': 1024, 'rot': 180, 'len': 2.2, 'fabric': 'sofa_slate'},
-    {'t': 'coffee_table', 'x': 1058, 'y': 976, 'len': 1.1, 'w': 0.65},
-    {'t': 'rug', 'x': 1060, 'y': 976, 'len': 2.8, 'w': 2.4, 'mat': 'rug_grey'},
-    {'t': 'pouf', 'x': 1012, 'y': 960}, {'t': 'pouf', 'x': 1012, 'y': 990},
-    {'t': 'floor_lamp', 'x': 1093, 'y': 906},
-    {'t': 'floor_lamp', 'x': 984, 'y': 1026},
-    {'t': 'plant', 'x': 990, 'y': 1000, 's': 1.2},
+    {'t': 'sofa', 'x': 1100, 'y': 936, 'rot': 270, 'len': 5.2, 'fabric': 'sofa_slate'},
+    {'t': 'sofa', 'x': 1053, 'y': 846, 'rot': 0, 'len': 2.0, 'fabric': 'sofa_slate'},
+    {'t': 'sofa', 'x': 1040, 'y': 1024, 'rot': 180, 'len': 2.8, 'fabric': 'sofa_slate'},
+    {'t': 'sofa', 'x': 1004, 'y': 936, 'rot': 90, 'len': 1.6, 'fabric': 'sofa_slate'},   # curved module
+    {'t': 'coffee_table', 'x': 1068, 'y': 884, 'len': 0.55, 'w': 0.55},
+    {'t': 'coffee_table', 'x': 1068, 'y': 996, 'len': 0.55, 'w': 0.55},
+    {'t': 'pouf', 'x': 1008, 'y': 848}, {'t': 'pouf', 'x': 987, 'y': 1020},
+    {'t': 'floor_lamp', 'x': 972, 'y': 1032},
+    {'t': 'plant', 'x': 1102, 'y': 840, 's': 1.1},
     {'t': 'plant', 'x': 1106, 'y': 1032, 's': 0.85},
     # reception
     {'t': 'reception'},
     {'t': 'feature_shelves', 'x1': 788, 'x2': 930, 'y': 743},
     {'t': 'plant', 'x': 912, 'y': 808, 's': 0.55},
-    {'t': 'armchair', 'x': 778, 'y': 890, 'rot': 90, 'fabric': 'sofa_cream'},
-    {'t': 'side_table', 'x': 800, 'y': 902},
+    {'t': 'armchair', 'x': 792, 'y': 908, 'rot': 90, 'fabric': 'sofa_cream'},
+    {'t': 'side_table', 'x': 814, 'y': 926},
+    # oak-clad toilet wall with green panels beside the WC doors (photos 0312, 0327-0328, 0135)
+    {'t': 'green_wall', 'x1': 943, 'y1': 495, 'x2': 943, 'y2': 648},
     # bleachers
     {'t': 'bleachers', 'x1': 806, 'y1': 1046, 'x2': 1028, 'y2': 1112, 'stair_x1': 897, 'stair_x2': 931},
     {'t': 'plant', 'x': 818, 'y': 1058, 's': 0.9},
@@ -193,54 +201,62 @@ FURNITURE = [
     bench(425, 370, 2, 'y'),
     {'t': 'desk_exec', 'x': 516, 'y': 362, 'rot': 180, 'len': 1.8},
     {'t': 'chair_exec', 'x': 516, 'y': 388, 'rot': 180},
-    {'t': 'cabinet', 'x': 556, 'y': 414, 'rot': 180, 'len': 1.0},
+    {'t': 'cabinet', 'x': 556, 'y': 411, 'rot': 180, 'len': 1.0},
     {'t': 'plant', 'x': 496, 'y': 330, 's': 0.85},
     {'t': 'desk_exec', 'x': 664, 'y': 362, 'rot': 180, 'len': 1.8},
     {'t': 'chair_exec', 'x': 664, 'y': 388, 'rot': 180},
-    {'t': 'cabinet', 'x': 616, 'y': 414, 'rot': 180, 'len': 1.0},
+    {'t': 'cabinet', 'x': 616, 'y': 411, 'rot': 180, 'len': 1.0},
     {'t': 'plant', 'x': 684, 'y': 330, 's': 0.85},
-    {'t': 'sofa', 'x': 748, 'y': 410, 'rot': 180, 'len': 2.0, 'fabric': 'sofa_blue'},
-    {'t': 'coffee_table', 'x': 748, 'y': 380, 'len': 0.9, 'w': 0.5},
-    {'t': 'armchair', 'x': 718, 'y': 350, 'rot': 90, 'fabric': 'sofa_blue'},
-    {'t': 'plant', 'x': 796, 'y': 334, 's': 1.1},
+    # women's lounge (photos 0331-0332: cream L-shaped sectional, round dark coffee table, tiled floor;
+    # doors on the north wall and from the lobby on the south wall are kept clear)
+    {'t': 'sofa', 'x': 799, 'y': 376, 'rot': 270, 'len': 2.1, 'fabric': 'sofa_cream'},
+    {'t': 'armchair', 'x': 768, 'y': 406, 'rot': 180, 'fabric': 'sofa_cream'},   # chaise end of the L
+    {'t': 'coffee_table', 'x': 770, 'y': 372, 'len': 0.7, 'w': 0.7},
+    {'t': 'plant', 'x': 712, 'y': 330, 's': 0.9},
     bench(875, 370, 2, 'y'),
-    # meeting room (16 seats, white modular table, white-shell chairs with blue seats)
+    # meeting room (16 seats, white modular table, white-shell chairs with blue seats;
+    # photos 0273/0283: the mobile whiteboard stands beside the TV wall)
     {'t': 'table_meeting', 'x': 430, 'y': 590, 'len': 6.2, 'w': 1.3, 'axis': 'y', 'top': 'desk_white', 'modules': 2},
     *[{'t': 'chair_task', 'x': 397, 'y': y, 'rot': 90} for y in (506, 530, 554, 578, 602, 626, 650, 674)],
     *[{'t': 'chair_task', 'x': 463, 'y': y, 'rot': 270} for y in (506, 530, 554, 578, 602, 626, 650, 674)],
     {'t': 'tv_wall', 'x1': 372, 'x2': 488, 'y': 427, 'face': 0},
-    {'t': 'whiteboard', 'x': 478, 'y': 708, 'rot': 180},
-    {'t': 'plant', 'x': 372, 'y': 710, 's': 0.8},
+    {'t': 'whiteboard', 'x': 474, 'y': 456, 'rot': 0},
+    {'t': 'plant', 'x': 372, 'y': 482, 's': 0.8},
     # inner ring south row
     bench(434, 770, 1, 'y'),
-    {'t': 'shelving', 'x': 553, 'y': 732, 'rot': 0, 'len': 2.6},
+    {'t': 'credenza', 'x': 432, 'y': 812, 'rot': 0, 'len': 2.4},       # CAD: low storage along the south wall
+    {'t': 'shelving', 'x': 553, 'y': 734, 'rot': 0, 'len': 2.6},
     {'t': 'shelving', 'x': 513, 'y': 778, 'rot': 90, 'len': 2.0},
-    {'t': 'rack', 'x': 634, 'y': 738, 'rot': 0},
+    {'t': 'rack', 'x': 634, 'y': 743, 'rot': 0},
     # toilets
     {'t': 'wc_block'},
     # core
     {'t': 'core'},
     # west wing
     bench(237, 313, 3, 'x'),
-    bench(237, 419, 3, 'x'),
+    bench(237, 408, 3, 'x'),       # keeps the south chairs out of the corridor door swing (y 455-485)
     bench(253, 534, 2, 'x'),
     {'t': 'plant', 'x': 176, 'y': 258, 's': 0.85},
     {'t': 'desk_exec', 'x': 230, 'y': 604, 'rot': 180, 'len': 1.7},
     {'t': 'chair_exec', 'x': 230, 'y': 628, 'rot': 180},
     {'t': 'plant', 'x': 287, 'y': 642, 's': 0.75},
-    {'t': 'desk_exec', 'x': 205, 'y': 708, 'rot': 180, 'len': 1.7},
-    {'t': 'chair_exec', 'x': 205, 'y': 734, 'rot': 180},
+    {'t': 'desk_exec', 'x': 218, 'y': 712, 'rot': 180, 'len': 1.7},
+    {'t': 'chair_exec', 'x': 218, 'y': 738, 'rot': 180},
     {'t': 'cabinet', 'x': 292, 'y': 742, 'rot': 270, 'len': 1.1},
     {'t': 'plant', 'x': 176, 'y': 670, 's': 0.8},
-    {'t': 'desk_exec', 'x': 180, 'y': 846, 'rot': 270, 'len': 1.6},
-    {'t': 'chair_exec', 'x': 204, 'y': 846, 'rot': 270},
+    # west office 3 (CAD + photos 0258-0262: L-desk along the window, chair faces north, round table, tall unit)
+    {'t': 'desk_exec', 'x': 206, 'y': 836, 'rot': 180, 'len': 1.7},
+    {'t': 'chair_exec', 'x': 206, 'y': 862, 'rot': 180},
     {'t': 'table_round', 'x': 266, 'y': 846, 'r': 0.4},
     {'t': 'chair_guest', 'x': 266, 'y': 824, 'rot': 0},
     {'t': 'chair_guest', 'x': 266, 'y': 868, 'rot': 180},
+    {'t': 'cabinet', 'x': 294, 'y': 846, 'rot': 270, 'len': 1.2},
     {'t': 'plant', 'x': 178, 'y': 786, 's': 0.8},
-    # HR / PMO / operations
+    # HR / PMO / operations (CAD marks planter boxes at the facing bench ends; photos 0180-0189, 0220-0228)
     bench(267, 962, 4, 'x'),
     bench(490, 962, 4, 'x'),
+    {'t': 'plant', 'x': 362, 'y': 946, 's': 0.9},
+    {'t': 'plant', 'x': 398, 'y': 946, 's': 0.9},
     {'t': 'plant', 'x': 176, 'y': 902, 's': 0.85},
     {'t': 'plant', 'x': 178, 'y': 1028, 's': 0.9},
     {'t': 'plant', 'x': 580, 'y': 1024, 's': 1.0},

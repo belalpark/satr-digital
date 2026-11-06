@@ -3,7 +3,8 @@
 //   node tests/e2e/flow.mjs            → docs/qa/<yyyy-mm-dd>/<device>-<nn>-<step>.jpg
 //   PLAYWRIGHT_MODULE=/path/to/playwright/index.js node tests/e2e/flow.mjs
 //
-// Exits non-zero on the first failed assertion.
+// The live 3D model needs WebGL; headless Chromium gets SwiftShader (software GL),
+// so the model takes 10-20 s to load there. Exits non-zero on the first failed assertion.
 import { mkdir } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,7 +21,7 @@ await mkdir(outDir, { recursive: true });
 
 const TEAM = 'شركة نور';
 const { server, url } = await serve(root);
-const browser = await chromium.launch();
+const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 let failures = 0;
 
 async function flow(name, contextOptions, { mobile, team }) {
@@ -41,178 +42,217 @@ async function flow(name, contextOptions, { mobile, team }) {
   const shot = async (step) => {
     n += 1;
     await page.waitForTimeout(250);
-    await page.screenshot({ path: resolve(outDir, `${name}-${String(n).padStart(2, '0')}-${step}.jpg`), type: 'jpeg', quality: 82 });
+    await page.screenshot({ path: resolve(outDir, `${name}-${String(n).padStart(2, '0')}-${step}.jpg`), type: 'jpeg', quality: 82, animations: 'disabled', timeout: 60000 });
   };
   const hash = () => new URL(page.url()).hash;
+  const click = (sel) => page.evaluate((s) => document.querySelector(s).click(), sel); // toolbar buttons move while the model renders
+  const modelReady = () => page.waitForSelector('#plan-stage.is-ready', { timeout: 120000 });
+  const focusedOn = (id) => page.waitForFunction((rid) => document.getElementById('plan-stage').dataset.focus === rid, id, { timeout: 30000 });
   let step = 'start';
-  const focusShotReady = () => page.waitForFunction(() => {
-    const s = document.querySelector('#plan-stage .focus-shot.is-visible');
-    return s && s.complete && s.naturalWidth > 0 && getComputedStyle(s).opacity === '1';
-  }, null, { timeout: 10000 });
 
   try {
-    // 1. welcome — copy, totals, single call to action
-    step = '1 welcome — copy, totals, single call to a';
+    // 1. welcome — header with home, agreed copy, no totals, single call to action
+    step = '1 welcome';
     await page.goto(team ? `${url}/?team=${encodeURIComponent(TEAM)}` : `${url}/`);
     await page.waitForSelector('#app.is-ready');
     await page.waitForTimeout(600);
+    assert.ok(await page.isVisible('#site-header'), 'persistent header');
+    assert.equal((await page.textContent('.site-nav a[data-nav="welcome"]')).trim(), 'الرئيسية');
     if (team) {
       assert.equal(await page.textContent('#welcome-team'), TEAM, 'team name from ?team=');
       assert.match(await page.textContent('#welcome-title'), /^مرحبًا بفريق/);
     } else {
       assert.equal((await page.textContent('#welcome-title')).trim(), 'مرحبًا بكم');
     }
-    assert.match(await page.textContent('#welcome-subtitle'), /اكتشفوا المكتب غرفةً غرفة/);
-    const totals = await page.textContent('#welcome-highlights');
-    assert.match(totals, /13\s*مكتبًا إداريًا/);
-    assert.match(totals, /58\s*محطة عمل/);
-    assert.match(totals, /والمزيد/);
+    assert.match(await page.textContent('#welcome-subtitle'), /توأمة رقمية/);
+    assert.match(await page.textContent('#welcome-atmosphere'), /أجواء جميلة وهادئة/);
     const body = await page.textContent('body');
-    assert.ok(!/احجز معاينة/.test(body), 'no booking button');
-    assert.ok(!/التوأم الرقمي للمكتب/.test(body), 'old product name gone');
+    for (const banned of ['احجز معاينة', 'التوأم الرقمي للمكتب', 'محطة عمل', 'مكتبًا إداريًا', 'الوضع الحالي']) {
+      assert.ok(!body.includes(banned), `welcome must not contain «${banned}»`);
+    }
     await shot('welcome');
 
-    // 2. 3D plan with two scenes
-    step = '2 3D plan with two scenes';
-    await page.click('#btn-start');
+    // 2. live 3D model, two tabs, sidebar list, dots legend
+    step = '2 plan';
+    await click('#btn-start');
     await page.waitForFunction(() => location.hash === '#/plan');
-    await page.waitForFunction(() => document.querySelector('#plan-stage .plan-image').complete);
-    await page.waitForTimeout(500);
+    await modelReady();
+    await page.waitForTimeout(1200);
     assert.equal(await page.locator('.scene-tab').count(), 2, 'two scene tabs');
-    assert.ok(await page.isVisible('polygon[data-id="meeting-large"]'), 'meeting room hotspot visible');
+    assert.equal((await page.textContent('.scene-tab[data-scene="current"]')).trim(), 'توزيعات المكاتب');
+    assert.ok(await page.$('#plan-stage canvas'), 'WebGL canvas present');
+    assert.ok((await page.locator('#room-list .room-item-btn').count()) >= 20, 'sidebar lists the rooms');
+    assert.ok((await page.locator('#overlay-dots .dot-blue').count()) >= 20, 'blue dot per room');
+    assert.ok((await page.locator('#overlay-dots .dot-red').count()) >= 10, 'red dot where photos exist');
+    const visibleBlue = await page.$$eval('#overlay-dots .dot-blue', (els) => els.filter((e) => { const r = e.getBoundingClientRect(); return r.width > 4 && getComputedStyle(e).display !== 'none' && r.left >= 0 && r.right <= innerWidth; }).length);
+    assert.ok(visibleBlue >= 20, `blue dots visible on screen at the default view (${visibleBlue})`);
+    // dots sit inside the stage, never outside the model's screen box
+    const stageBox = await page.locator('#plan-stage').boundingBox();
+    const outside = await page.$$eval('#overlay-dots .room-marker .dot-blue', (els) => els.filter((e) => getComputedStyle(e).display !== 'none').map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+    for (const [x, y] of outside) assert.ok(x >= stageBox.x && x <= stageBox.x + stageBox.width && y >= stageBox.y && y <= stageBox.y + stageBox.height, `dot inside the stage (${x.toFixed(0)},${y.toFixed(0)})`);
+    if (!mobile) {
+      const sb = await page.locator('#room-sidebar').boundingBox();
+      assert.ok(sb.x + sb.width / 2 > stageBox.x + stageBox.width / 2, 'sidebar sits on the right (RTL)');
+    }
     await shot('plan');
 
-    // 2b. a "soon" room does not navigate
-    step = '2b a "soon" room does not navigate';
-    await page.click('polygon[data-id="hr-pmo-ops"]');
-    await page.waitForTimeout(400);
-    assert.equal(hash(), '#/plan', 'soon room keeps the plan route');
+    // 2b. lighting toggle: day by default, evening on request, remembered
+    step = '2b lighting';
+    assert.equal(await page.getAttribute('#plan-stage', 'data-lighting'), 'day', 'daylight by default');
+    await click('#btn-lighting');
+    await page.waitForFunction(() => document.getElementById('plan-stage').dataset.lighting === 'night');
+    await page.waitForTimeout(900);
+    await shot('night');
+    await click('#btn-lighting');
+    await page.waitForFunction(() => document.getElementById('plan-stage').dataset.lighting === 'day');
 
-    // 2c. routes: three colours, each can be toggled
-    step = '2c routes: three colours, each can be toggl';
-    await page.click('.scene-tab[data-scene="paths"]');
-    await page.waitForTimeout(500);
-    assert.equal(await page.locator('.route-line:visible').count(), 3, 'three routes drawn');
-    assert.equal(await page.locator('#plan-stage .room-label:visible').count(), 0, 'room labels give way to route labels');
-    const stopBoxes = await page.$$eval('#plan-stage .stop-name', (els) => els
-      .filter((e) => e.getClientRects().length && getComputedStyle(e).display !== 'none')
-      .map((e) => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }));
-    if (mobile) {
-      assert.equal(stopBoxes.length, 0, 'stop names wait for zoom on phones');
-    } else {
-      assert.ok(stopBoxes.length >= 6, 'stop names shown on desktop');
-      for (let i = 0; i < stopBoxes.length; i++) {
-        for (let j = i + 1; j < stopBoxes.length; j++) {
-          const [a, b] = [stopBoxes[i], stopBoxes[j]];
-          const overlap = a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
-          assert.ok(!overlap, `stop names ${i} and ${j} overlap`);
-        }
-      }
-    }
+    // 2c. routes: three colours, each can be toggled; employees loop, guests to meetings + lounge
+    step = '2c routes';
+    await click('.scene-tab[data-scene="paths"]');
+    await page.waitForFunction(() => location.hash === '#/plan?scene=paths');
+    await page.waitForTimeout(900);
+    assert.equal(await page.locator('.route-chip').count(), 3, 'three routes in the legend');
+    assert.ok(!(await page.isHidden('#route-legend')), 'legend shown');
     await shot('paths');
-    await page.click('.route-chip[data-route="executive"]');
-    await page.waitForTimeout(200);
-    assert.equal(await page.locator('.route-line:visible').count(), 2, 'route toggled off');
-    await page.click('.route-chip[data-route="executive"]');
-    await page.click('.scene-tab[data-scene="current"]');
-    await page.waitForTimeout(300);
-    assert.equal(await page.locator('.route-line:visible').count(), 0, 'routes hidden on the current scene');
+    await click('.route-chip[data-route="executive"]');
+    assert.equal(await page.getAttribute('.route-chip[data-route="executive"]', 'aria-pressed'), 'false', 'route toggled off');
+    await click('.route-chip[data-route="executive"]');
+    await click('.scene-tab[data-scene="current"]');
+    await page.waitForFunction(() => location.hash === '#/plan');
+    assert.ok(await page.isHidden('#route-legend'), 'legend hidden on the layout tab');
 
-    // 3. second shot: the room in its 3D context, neighbours dimmed
-    step = '3 second shot: the room in its 3D context,';
-    await page.click('polygon[data-id="meeting-large"]');
-    await page.waitForFunction(() => location.hash === '#/room/meeting-large', null, { timeout: 5000 });
-    await focusShotReady();
-    assert.ok(await page.isVisible('#focus-panel'), 'focus panel shown');
+    // 2d. labels outside option
+    step = '2d labels';
+    await click('#btn-labels');
+    await page.waitForTimeout(400);
+    assert.ok(await page.$eval('#plan-stage', (s) => s.classList.contains('labels-outside')), 'outside labels mode');
+    assert.ok((await page.locator('#plan-stage .room-tag.is-outside:not([hidden])').count()) >= 5, 'outside labels drawn');
+    await shot('labels-outside');
+    await click('#btn-labels');
+
+    // 3. blue dot -> the room in its 3D context; the card appears in the sidebar
+    step = '3 focus';
+    await click('#overlay-dots .room-marker[data-id="meeting-large"] .dot-blue');
+    await page.waitForFunction(() => location.hash === '#/room/meeting-large', null, { timeout: 15000 });
+    await focusedOn('meeting-large');
+    await page.waitForTimeout(1400);
+    assert.ok(await page.isVisible('#room-card'), 'room card shown');
     assert.equal(await page.textContent('#focus-title'), 'غرفة الاجتماعات الكبرى');
-    assert.match(await page.textContent('#focus-capacity'), /16 مقعدًا/);
-    assert.ok(await page.$eval('#plan-stage .focus-mask', (p) => p.getAttribute('d').length > 20), 'neighbours dimmed');
-    assert.ok(await page.evaluate(() => !!document.activeElement.closest('#focus-panel')), 'keyboard focus moved into the room panel');
-    // the sharp render must not be tinted while the pointer rests on the room
-    const box = await page.locator('#plan-stage polygon[data-id="meeting-large"]').boundingBox();
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await page.waitForTimeout(300);
-    const fill = await page.$eval('#plan-stage polygon[data-id="meeting-large"]', (p) => getComputedStyle(p).fill);
-    const alpha = /rgba\([^)]*,\s*([\d.]+)\)/.exec(fill);
-    assert.ok(fill === 'none' || (alpha && Number(alpha[1]) <= 0.06), `focused room stays untinted (${fill})`);
-    await page.mouse.move(5, 5);
+    assert.match(await page.textContent('#focus-facts'), /16 مقعدًا/);
+    assert.match(await page.textContent('#focus-facts'), /قاعة اجتماعات بفرشها الحالي/);
+    assert.ok(await page.evaluate(() => !!document.activeElement.closest('#room-card')), 'keyboard focus moved to the card');
+    assert.ok(await page.$eval('#room-list .room-item-btn[data-id="meeting-large"]', (b) => b.classList.contains('is-active')), 'sidebar item highlighted');
+    // the focused room must be a real close-up: its floor spans a good share of the stage
+    const roomPx = await page.evaluate(() => {
+      const st = document.getElementById('plan-stage');
+      const b = st.__twin.roomScreenBox('meeting-large');
+      return { size: Math.max(b.w, b.h), stage: Math.min(st.clientWidth, st.clientHeight) };
+    });
+    assert.ok(roomPx.size > roomPx.stage * (mobile ? 0.22 : 0.3), `focused room is a close-up (room ${roomPx.size.toFixed(0)}px on a ${roomPx.stage.toFixed(0)}px stage)`);
+    for (const sel of ['#btn-photos', '#btn-focus-details', '#btn-focus-back']) {
+      const bb = await page.locator(sel).boundingBox();
+      assert.ok(bb && bb.y >= 0 && bb.y + bb.height <= page.viewportSize().height, `${sel} inside the viewport`);
+    }
     await shot('focus');
 
-    // 4. real photos, gallery, back to the second shot
-    step = '4 real photos, gallery, back to the second';
-    await page.click('#btn-photos');
+    // 3b. clicking the same room again returns to the plan; clicking another room switches
+    step = '3b toggle';
+    await click('#room-list .room-item-btn[data-id="meeting-large"]');
+    await page.waitForFunction(() => location.hash === '#/plan');
+    await page.waitForFunction(() => !document.getElementById('plan-stage').dataset.focus, null, { timeout: 30000 });
+    assert.ok(await page.isHidden('#room-card'), 'card hidden after the second click');
+    await click('#room-list .room-item-btn[data-id="ceo"]');
+    await page.waitForFunction(() => location.hash === '#/room/ceo');
+    await focusedOn('ceo');
+    await click('#room-list .room-item-btn[data-id="meeting-large"]');
+    await page.waitForFunction(() => location.hash === '#/room/meeting-large');
+    await focusedOn('meeting-large');
+
+    // 4. red dot / photos button -> real photos, gallery, back to the model
+    step = '4 photos';
+    await click('#btn-photos');
     await page.waitForFunction(() => location.hash === '#/room/meeting-large/photos');
     await page.waitForFunction(() => {
       const img = document.getElementById('room-photo');
       return img && img.complete && img.naturalWidth > 0;
-    }, null, { timeout: 10000 });
+    }, null, { timeout: 15000 });
     await page.waitForTimeout(500);
     assert.equal(await page.textContent('#room-title'), 'غرفة الاجتماعات الكبرى');
     await shot('photos');
-    await page.click('#gallery-next');
+    await click('#gallery-next');
     await page.waitForTimeout(400);
     assert.ok((await page.getAttribute('#room-photo', 'src')).includes('/02.webp'), 'second photo shown');
-    await page.click('#btn-back-plan');
+    await click('#btn-back-plan');
     await page.waitForFunction(() => location.hash === '#/room/meeting-large');
     await page.waitForTimeout(500);
-    assert.ok(await page.isVisible('#focus-panel'), 'back on the second shot');
+    assert.ok(await page.isVisible('#room-card'), 'back on the 3D view of the room');
 
-    // 5. details: 3D view in the centre, features, photos
-    step = '5 details: 3D view in the centre, features';
-    await page.click('#btn-focus-details');
+    // 4b. a room with photos but no documented capacity still opens its photos (red dot)
+    step = '4b other room photos';
+    await page.goto(`${url}/#/room/reception/photos`);
+    await page.waitForFunction(() => location.hash === '#/room/reception/photos');
+    await page.waitForFunction(() => { const i = document.getElementById('room-photo'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 15000 });
+    assert.equal(await page.textContent('#room-title'), 'الاستقبال');
+    // a room without photos never shows a photo view
+    await page.goto(`${url}/#/room/bleachers/photos`);
+    await page.waitForFunction(() => location.hash === '#/room/bleachers');
+
+    // 5. details: render in the centre, features, photos
+    step = '5 details';
+    await page.goto(`${url}/#/room/meeting-large/details`);
     await page.waitForFunction(() => location.hash === '#/room/meeting-large/details');
-    await page.waitForTimeout(700);
+    await page.waitForTimeout(900);
     assert.ok((await page.textContent('#details-features')).includes('16 مقعدًا'), 'capacity shown');
     assert.ok(!(await page.textContent('#details-features')).includes('مقترح'), 'no proposed use');
-    await page.waitForFunction(() => {
-      const s = document.querySelector('#details-stage .focus-shot.is-visible');
-      return s && s.complete && s.naturalWidth > 0;
-    }, null, { timeout: 10000 });
+    await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 20000 });
     await shot('details');
     if (mobile) {
-      await page.click('#tab-features');
+      await click('#tab-features');
       await page.waitForTimeout(300);
       assert.ok(await page.isVisible('#details-features'), 'features tab visible on mobile');
       await shot('details-features-tab');
     }
-    await page.click('#btn-close-details');
+    await click('#btn-close-details');
     await page.waitForFunction(() => location.hash === '#/room/meeting-large');
 
-    // 6. back to the full plan: zoom glides back to the fit view
-    step = '6 back to the full plan: zoom glides back ';
-    await page.click('#btn-focus-back');
-    await page.waitForFunction(() => location.hash === '#/plan');
-    await page.waitForTimeout(1200);
-    const transform = await page.$eval('#plan-stage .plan-world', (el) => el.style.transform);
-    assert.match(transform, /scale\(1\)/, 'plan back at fit scale');
-    assert.ok(!(await page.isVisible('#focus-panel')), 'focus panel hidden');
-    await shot('plan-after-back');
-
-    // 7. browser history: back returns to the second shot, forward to the plan
-    step = '7 browser history: back returns to the sec';
+    // 6. header home link and browser history
+    step = '6 navigation';
+    await click('#nav-home');
+    await page.waitForFunction(() => location.hash === '#/' || location.hash === '');
+    assert.ok(await page.isVisible('#welcome-title'), 'home via the header');
     await page.goBack();
     await page.waitForFunction(() => location.hash === '#/room/meeting-large');
-    await focusShotReady();
-    await page.goForward();
+    await focusedOn('meeting-large');
+    await click('#btn-focus-back');
     await page.waitForFunction(() => location.hash === '#/plan');
+    await page.waitForTimeout(600);
+    await shot('plan-after-back');
 
-    // 8. bad deep links fall back to the plan
-    step = '8 bad deep links fall back to the plan';
-    for (const bad of ['#/room/nope', '#/room/ceo', '#/room/meeting-large/xyz']) {
+    // 6b. race: open a room and leave before the fly-to ends — overlay and model agree
+    step = '6b race';
+    await page.goto(`${url}/#/room/ceo`);
+    await page.waitForTimeout(150);
+    await page.goto(`${url}/#/plan`);
+    await page.waitForFunction(() => !document.getElementById('plan-stage').dataset.focus, null, { timeout: 30000 });
+    await page.waitForTimeout(1500);
+    assert.equal(await page.locator('#overlay-dots .room-marker.is-dim').count(), 0, 'no stale dimming after a race');
+    assert.ok(await page.isHidden('#room-card'), 'no stale card after a race');
+
+    // 7. bad deep links fall back to the plan; old links keep working
+    step = '7 deep links';
+    for (const bad of ['#/room/nope', '#/room/core', '#/room/meeting-large/xyz', '#/whatever']) {
       await page.goto(`${url}/${bad}`);
       await page.waitForFunction(() => location.hash === '#/plan');
     }
-    // deep link straight into the second shot works
-    await page.goto(`${url}/#/room/meeting-large`);
-    await page.waitForSelector('#app.is-ready');
-    await focusShotReady();
+    await page.goto(`${url}/#/plan?scene=visitor-path`);
+    await page.waitForFunction(() => location.hash === '#/plan?scene=paths');
 
     assert.deepEqual(errors, [], 'no console/page errors');
     console.log(`✓ ${name}: ${n} screenshots, all steps passed`);
   } catch (err) {
     failures += 1;
     console.error(`✗ ${name} at step "${step}": ${err.message.split('\n')[0]}`);
-    await page.screenshot({ path: resolve(outDir, `${name}-FAILED.png`) }).catch(() => {});
+    await page.screenshot({ path: resolve(outDir, `${name}-FAILED.png`), timeout: 60000 }).catch(() => {});
   } finally {
     await ctx.close();
   }

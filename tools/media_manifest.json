@@ -1,13 +1,274 @@
 {
-  "_comment": "masks: x,y,w,h rectangles inpainted (company table flag). fills: screen polygons painted as switched-off displays (the TV showed the current tenant's calendar, an organiser name and a QR code). Coordinates are in the EXIF-corrected 5184x3456 originals.",
+  "_comment": "masks: x,y,w,h rectangles inpainted (company table flag). fills: screen polygons painted as switched-off displays (the TV showed the current tenant's calendar, an organiser name and a QR code). Coordinates are in the EXIF-corrected 5184x3456 originals. Other rooms: Rooms other than meeting-large. masks: x,y,w,h rectangles inpainted with LaMa (tenant name cards, desk-divider sticker clusters, a branded '5' award and small logo stands). fills: TV screen polygons painted as switched-off displays (the medium meeting-room TV showed the tenant's Teams calendar, an organiser name and a QR code). Coordinates are in the EXIF-corrected originals.",
   "meeting-large": [
-    { "file": "IMG_0287.JPG", "fills": ["4005,495 5140,478 5140,1125 4005,1108"] },
-    { "file": "IMG_0273.JPG", "masks": ["2460,1120,165,430"], "fills": ["1995,495 3005,495 3005,1112 1995,1112"] },
+    {
+      "file": "IMG_0287.JPG",
+      "fills": [
+        "4005,495 5140,478 5140,1125 4005,1108"
+      ]
+    },
+    {
+      "file": "IMG_0273.JPG",
+      "masks": [
+        "2460,1120,165,430"
+      ],
+      "fills": [
+        "1995,495 3005,495 3005,1112 1995,1112"
+      ]
+    },
     "IMG_0283.JPG",
-    { "file": "IMG_0286.JPG", "fills": ["4080,505 5184,445 5184,1030 4560,1030 4480,1105 4080,1105"] },
-    { "file": "IMG_0272.JPG", "masks": ["1310,1120,190,230"], "fills": ["530,490 1565,560 1565,1100 1200,1095 1200,1040 650,1040 650,1085 530,1085"] },
+    {
+      "file": "IMG_0286.JPG",
+      "fills": [
+        "4080,505 5184,445 5184,1030 4560,1030 4480,1105 4080,1105"
+      ]
+    },
+    {
+      "file": "IMG_0272.JPG",
+      "masks": [
+        "1310,1120,190,230"
+      ],
+      "fills": [
+        "530,490 1565,560 1565,1100 1200,1095 1200,1040 650,1040 650,1085 530,1085"
+      ]
+    },
     "IMG_0284.JPG",
-    { "file": "IMG_0275.JPG", "masks": ["2430,1360,250,610"] },
-    { "file": "IMG_0271.JPG", "masks": ["1020,980,200,200"], "fills": ["255,320 1320,430 1330,1000 760,955 760,870 300,870 300,905 255,905"] }
+    {
+      "file": "IMG_0275.JPG",
+      "masks": [
+        "2430,1360,250,610"
+      ]
+    },
+    {
+      "file": "IMG_0271.JPG",
+      "masks": [
+        "1020,980,200,200"
+      ],
+      "fills": [
+        "255,320 1320,430 1330,1000 760,955 760,870 300,870 300,905 255,905"
+      ]
+    }
+  ],
+  "reception": [
+    "IMG_0134.JPG",
+    "IMG_0137.JPG",
+    "IMG_0138.JPG",
+    "IMG_0136.JPG"
+  ],
+  "lounge": [
+    "IMG_0147.JPG",
+    "IMG_0169.JPG",
+    "IMG_0152.JPG",
+    "IMG_0170.JPG",
+    "IMG_0148.JPG",
+    "IMG_0149.JPG"
+  ],
+  "field-qc": [
+    "IMG_0178.JPG",
+    "IMG_0177.JPG",
+    "IMG_0174.JPG",
+    "IMG_0193.JPG",
+    "IMG_0196.JPG",
+    "IMG_0194.JPG"
+  ],
+  "ceo": [
+    "IMG_0218.JPG",
+    "IMG_0217.JPG",
+    "IMG_0210.JPG",
+    "IMG_0205.JPG",
+    "IMG_0206.JPG",
+    "IMG_0207.JPG",
+    "IMG_0209.JPG"
+  ],
+  "data-analysis": [
+    "IMG_0228.JPG",
+    "IMG_0226.JPG",
+    "IMG_0229.JPG",
+    "IMG_0230.JPG",
+    "IMG_0221.JPG",
+    "IMG_0225.JPG"
+  ],
+  "marketing": [
+    {
+      "file": "IMG_0233.JPG",
+      "masks": [
+        "2640,1050,300,240"
+      ]
+    },
+    {
+      "file": "IMG_0232.JPG",
+      "masks": [
+        "2930,1000,200,320"
+      ]
+    },
+    {
+      "file": "IMG_0235.JPG",
+      "masks": [
+        "2880,1635,275,245"
+      ]
+    },
+    {
+      "file": "IMG_0234.JPG",
+      "masks": [
+        "2400,1060,250,230"
+      ]
+    }
+  ],
+  "finance": [
+    "IMG_0266.JPG",
+    "IMG_0268.JPG",
+    "IMG_0265.JPG",
+    "IMG_0267.JPG",
+    "IMG_0270.JPG"
+  ],
+  "inner-1": [
+    {
+      "file": "IMG_0246.JPG",
+      "masks": [
+        "3950,510,320,265"
+      ]
+    },
+    {
+      "file": "IMG_0250.JPG",
+      "masks": [
+        "3630,570,270,245"
+      ]
+    },
+    {
+      "file": "IMG_0249.JPG",
+      "masks": [
+        "3800,1040,340,330"
+      ]
+    },
+    {
+      "file": "IMG_0377.JPG",
+      "masks": [
+        "2435,1990,140,145"
+      ]
+    }
+  ],
+  "inner-2": [
+    "IMG_0237.JPG",
+    "IMG_0240.JPG",
+    "IMG_0242.JPG",
+    "IMG_0238.JPG"
+  ],
+  "inner-4": [
+    {
+      "file": "IMG_0362.JPG",
+      "masks": [
+        "2420,1990,220,150",
+        "2070,2050,90,90",
+        "3790,1690,190,220",
+        "3600,1820,50,50"
+      ]
+    },
+    {
+      "file": "IMG_0365.JPG",
+      "masks": [
+        "2280,2030,200,140",
+        "1550,2055,80,80"
+      ]
+    },
+    {
+      "file": "IMG_0363.JPG",
+      "masks": [
+        "2550,1940,220,130",
+        "3650,1610,160,190",
+        "1885,1995,80,70"
+      ]
+    }
+  ],
+  "cfo": [
+    "IMG_0319.JPG",
+    "IMG_0323.JPG",
+    "IMG_0324.JPG",
+    "IMG_0321.JPG",
+    "IMG_0326.JPG",
+    "IMG_0322.JPG"
+  ],
+  "coo": [
+    "IMG_0258.JPG",
+    "IMG_0259.JPG",
+    "IMG_0261.JPG",
+    "IMG_0260.JPG",
+    "IMG_0262.JPG"
+  ],
+  "office-l1": [
+    "IMG_0251.JPG",
+    "IMG_0252.JPG",
+    "IMG_0253.JPG",
+    "IMG_0254.JPG"
+  ],
+  "office-l2": [
+    "IMG_0301.JPG",
+    "IMG_0308.JPG",
+    "IMG_0309.JPG",
+    "IMG_0302.JPG"
+  ],
+  "office-l3": [
+    "IMG_0255.JPG",
+    "IMG_0256.JPG",
+    "IMG_0257.JPG"
+  ],
+  "research": [
+    "IMG_0352.JPG",
+    "IMG_0356.JPG",
+    "IMG_0358.JPG",
+    "IMG_0360.JPG",
+    "IMG_0349.JPG",
+    "IMG_0353.JPG",
+    "IMG_0359.JPG"
+  ],
+  "hr-pmo-ops": [
+    "IMG_0293.JPG",
+    "IMG_0290.JPG",
+    "IMG_0294.JPG",
+    "IMG_0299.JPG",
+    "IMG_0291.JPG"
+  ],
+  "meeting-medium": [
+    {
+      "file": "IMG_0313.JPG",
+      "fills": [
+        "733,684 2080,688 2092,1406 742,1448"
+      ]
+    },
+    {
+      "file": "IMG_0316.JPG",
+      "fills": [
+        "3390,395 4660,335 4665,1170 3390,1125"
+      ]
+    },
+    {
+      "file": "IMG_0317.JPG",
+      "fills": [
+        "3652,880 5022,688 5038,1582 3665,1622"
+      ]
+    },
+    {
+      "file": "IMG_0318.JPG",
+      "fills": [
+        "2122,670 3460,586 3466,1368 2168,1405"
+      ]
+    },
+    {
+      "file": "IMG_0314.JPG",
+      "fills": [
+        "650,970 1305,975 1305,1295 650,1290"
+      ]
+    }
+  ],
+  "women-area": [
+    "IMG_0331.JPG",
+    "IMG_0332.JPG"
+  ],
+  "wc-men": [
+    "IMG_0310.JPG",
+    "IMG_0311.JPG",
+    "IMG_0327.JPG"
+  ],
+  "wc-women": [
+    "IMG_0328.JPG"
   ]
 }

@@ -248,7 +248,7 @@ def build_materials():
     principled('mesh_dark', (0.07, 0.07, 0.08), 0.75)
     principled('shell_white', (0.9, 0.9, 0.9), 0.3, coat=0.3)
     principled('leather_black', (0.03, 0.03, 0.035), 0.42, coat=0.2)
-    principled('sofa_slate', (0.17, 0.2, 0.25), 0.92, sheen=0.5)
+    principled('sofa_slate', (0.10, 0.13, 0.18), 0.92, sheen=0.5)   # photos 0146-0152: dark slate blue
     principled('sofa_cream', (0.7, 0.66, 0.6), 0.9, sheen=0.4)
     principled('sofa_blue', (0.18, 0.28, 0.45), 0.9, sheen=0.4)
     principled('cushion', (0.36, 0.38, 0.42), 0.92, sheen=0.4)
@@ -1009,13 +1009,46 @@ def build_lights(col, office, energy):
         add(x, y, energy * 0.6)
 
 
-def setup_world(scene, ambient):
+def setup_world(scene, ambient, color=(0.42, 0.46, 0.55)):
     world = bpy.data.worlds.new('world')
     scene.world = world
     world.use_nodes = True
     bg = world.node_tree.nodes['Background']
-    bg.inputs['Color'].default_value = (0.42, 0.46, 0.55, 1)
+    bg.inputs['Color'].default_value = (*color, 1)
     bg.inputs['Strength'].default_value = ambient
+
+
+def add_sun(col):
+    light = bpy.data.lights.new('sun', 'SUN')
+    light.energy = 3.2
+    light.angle = math.radians(2.5)
+    light.color = (1.0, 0.95, 0.86)
+    obj = bpy.data.objects.new('sun', light)
+    obj.rotation_euler = (math.radians(52), math.radians(-18), math.radians(35))
+    col.objects.link(obj)
+
+
+def setup_hero_camera(scene):
+    """Low, wide perspective from above the lounge corner across the reception toward the core."""
+    cam_data = bpy.data.cameras.new('hero')
+    cam_data.lens = 24
+    cam_data.sensor_width = 36
+    cam_data.dof.use_dof = True
+    cam_data.dof.aperture_fstop = 5.6
+    cam = bpy.data.objects.new('hero', cam_data)
+    scene.collection.objects.link(cam)
+    scene.camera = cam
+    # eye at standing height inside the lounge corner, looking across the reception
+    # counter: the cut walls stay out of frame, the LED glow and the lounge lamp carry the mood
+    eye = W(1098, 1010, 1.45)
+    target = W(860, 790, 1.0)
+    cam_data.lens = 32
+    cam_data.dof.aperture_fstop = 2.8
+    cam.location = eye
+    cam.rotation_euler = (target - eye).to_track_quat('-Z', 'Y').to_euler()
+    cam_data.dof.focus_distance = (target - eye).length * 0.9
+    bpy.context.view_layer.update()
+    return cam
 
 
 def add_key_light(col, energy):
@@ -1173,6 +1206,8 @@ def main():
     ap.add_argument('--preview', action='store_true')
     ap.add_argument('--no-plan', action='store_true')
     ap.add_argument('--save-blend', default='')
+    ap.add_argument('--hero', action='store_true', help='render the welcome perspective instead of the plan views')
+    ap.add_argument('--daylight', action='store_true', help='daylight rig (strong sun, bright sky) instead of the evening pools')
     args = ap.parse_args(sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:])
 
     res = tuple(int(v) for v in args.res.lower().split('x'))
@@ -1193,14 +1228,31 @@ def main():
     t0 = time.time()
     build_architecture(col, office)
     build_furniture(col)
-    build_lights(col, office, args.light)
-    add_key_light(col, args.key)
-    add_ground(col)
-    setup_world(scene, args.ambient)
-    cam = setup_camera(scene, args.yaw, args.pitch, args.lens, args.margin)
+    if args.daylight:
+        build_lights(col, office, args.light * 0.25)
+        add_sun(col)
+        add_key_light(col, args.key * 2.2)
+        add_ground(col)
+        setup_world(scene, max(args.ambient, 0.9), color=(0.62, 0.72, 0.88))
+    else:
+        build_lights(col, office, args.light)
+        add_key_light(col, args.key)
+        add_ground(col)
+        setup_world(scene, args.ambient)
+    if args.hero:
+        cam = setup_hero_camera(scene)
+    else:
+        cam = setup_camera(scene, args.yaw, args.pitch, args.lens, args.margin)
     print(f'scene built in {time.time() - t0:.1f}s, objects: {len(bpy.data.objects)}', flush=True)
     if args.save_blend:
         bpy.ops.wm.save_as_mainfile(filepath=args.save_blend)
+
+    if args.hero:
+        scene.render.resolution_x, scene.render.resolution_y = res
+        scene.render.film_transparent = False
+        render_to(scene, os.path.join(args.out, 'hero-preview.png' if args.preview else 'hero.png'))
+        print('done')
+        return
 
     # projections (computed at the final resolution)
     full = tuple(int(v) for v in args.res.lower().split('x'))
