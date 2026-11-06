@@ -1,0 +1,13 @@
+{
+  "_comment": "masks: x,y,w,h rectangles inpainted (company table flag). fills: screen polygons painted as switched-off displays (the TV showed the current tenant's calendar, an organiser name and a QR code). Coordinates are in the EXIF-corrected 5184x3456 originals.",
+  "meeting-large": [
+    { "file": "IMG_0287.JPG", "fills": ["4005,495 5140,478 5140,1125 4005,1108"] },
+    { "file": "IMG_0273.JPG", "masks": ["2460,1120,165,430"], "fills": ["1995,495 3005,495 3005,1112 1995,1112"] },
+    "IMG_0283.JPG",
+    { "file": "IMG_0286.JPG", "fills": ["4080,505 5184,445 5184,1030 4560,1030 4480,1105 4080,1105"] },
+    { "file": "IMG_0272.JPG", "masks": ["1310,1120,190,230"], "fills": ["530,490 1565,560 1565,1100 1200,1095 1200,1040 650,1040 650,1085 530,1085"] },
+    "IMG_0284.JPG",
+    { "file": "IMG_0275.JPG", "masks": ["2430,1360,250,610"] },
+    { "file": "IMG_0271.JPG", "masks": ["1020,980,200,200"], "fills": ["255,320 1320,430 1330,1000 760,955 760,870 300,870 300,905 255,905"] }
+  ]
+}
