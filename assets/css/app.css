@@ -247,12 +247,13 @@ ul { margin: 0; padding: 0; list-style: none; }
 .room-item-btn:hover { background: rgba(255, 255, 255, 0.07); }
 .room-item-btn.is-active { background: rgba(95, 211, 255, 0.14); box-shadow: inset 0 0 0 1px rgba(95, 211, 255, 0.35); }
 .room-item-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.room-sidebar.is-focus .room-list { flex: 0 1 38%; }
-.room-card { flex: 1 1 auto; min-height: 0; overflow: auto; display: grid; gap: 10px; align-content: start; padding: 14px 16px 18px; border-top: 1px solid var(--night-line); background: linear-gradient(180deg, rgba(30, 33, 39, 0.9), rgba(16, 18, 22, 0.9)); animation: rise 420ms var(--ease) both; }
+.room-sidebar.is-focus .room-list { flex: 0 1 34%; }
+/* back / title / summary / facts (the only part that scrolls) / actions: the buttons always stay in view */
+.room-card { flex: 1 1 auto; min-height: 0; overflow: hidden; display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto; gap: 10px; align-content: start; padding: 14px 16px 18px; border-top: 1px solid var(--night-line); background: linear-gradient(180deg, rgba(30, 33, 39, 0.9), rgba(16, 18, 22, 0.9)); animation: rise 420ms var(--ease) both; }
 .room-card .btn-sm { justify-self: start; }
 .focus-title { font-size: 20px; font-weight: 700; outline: none; }
 .focus-summary { font-size: 13.5px; color: rgba(255, 255, 255, 0.8); }
-.focus-facts { display: grid; gap: 6px; }
+.focus-facts { display: grid; gap: 6px; align-content: start; min-height: 0; overflow: auto; scrollbar-width: thin; }
 .focus-facts li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.06); font-size: 13px; }
 .focus-facts .k { color: var(--night-muted); }
 .focus-facts .v { font-weight: 600; text-align: end; }

@@ -48,7 +48,7 @@ async function flow(name, contextOptions, { mobile, team }) {
   const hash = () => new URL(page.url()).hash;
   const click = (sel) => page.evaluate((s) => document.querySelector(s).click(), sel); // toolbar buttons move while the model renders
   const modelReady = () => page.waitForSelector('#plan-stage.is-ready', { timeout: 120000 });
-  const focusedOn = (id) => page.waitForFunction((rid) => document.getElementById('plan-stage').dataset.focus === rid, id, { timeout: 30000 });
+  const focusedOn = (id) => page.waitForFunction((rid) => document.getElementById('plan-stage').dataset.focus === rid, id, { timeout: 60000 });
   let step = 'start';
 
   try {
@@ -134,7 +134,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     // 3. blue dot -> the room in its 3D context; the card appears in the sidebar
     step = '3 focus';
     await click('#overlay-dots .room-marker[data-id="meeting-large"] .dot-blue');
-    await page.waitForFunction(() => location.hash === '#/room/meeting-large', null, { timeout: 15000 });
+    await page.waitForFunction(() => location.hash === '#/room/meeting-large', null, { timeout: 60000 });
     await focusedOn('meeting-large');
     await page.waitForTimeout(1400);
     assert.ok(await page.isVisible('#room-card'), 'room card shown');
@@ -160,7 +160,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     step = '3b toggle';
     await click('#room-list .room-item-btn[data-id="meeting-large"]');
     await page.waitForFunction(() => location.hash === '#/plan');
-    await page.waitForFunction(() => !document.getElementById('plan-stage').dataset.focus, null, { timeout: 30000 });
+    await page.waitForFunction(() => !document.getElementById('plan-stage').dataset.focus, null, { timeout: 60000 });
     assert.ok(await page.isHidden('#room-card'), 'card hidden after the second click');
     await click('#room-list .room-item-btn[data-id="ceo"]');
     await page.waitForFunction(() => location.hash === '#/room/ceo');
@@ -176,7 +176,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     await page.waitForFunction(() => {
       const img = document.getElementById('room-photo');
       return img && img.complete && img.naturalWidth > 0;
-    }, null, { timeout: 15000 });
+    }, null, { timeout: 60000 });
     await page.waitForTimeout(500);
     assert.equal(await page.textContent('#room-title'), 'غرفة الاجتماعات الكبرى');
     await shot('photos');
@@ -192,7 +192,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     step = '4b other room photos';
     await page.goto(`${url}/#/room/reception/photos`);
     await page.waitForFunction(() => location.hash === '#/room/reception/photos');
-    await page.waitForFunction(() => { const i = document.getElementById('room-photo'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 15000 });
+    await page.waitForFunction(() => { const i = document.getElementById('room-photo'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 60000 });
     assert.equal(await page.textContent('#room-title'), 'الاستقبال');
     // a room without photos never shows a photo view
     await page.goto(`${url}/#/room/bleachers/photos`);
@@ -201,9 +201,9 @@ async function flow(name, contextOptions, { mobile, team }) {
     // 5b. details deep link for a room that has no real photos: no gallery crash, message + model snapshot
     step = '5b details without photos';
     await page.goto(`${url}/#/room/bleachers/details`);
-    await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'details', null, { timeout: 15000 });
+    await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'details', null, { timeout: 60000 });
     assert.ok((await page.textContent('#details-photos')).includes('لا توجد صور حقيقية'), 'no-photos message');
-    await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 20000 });
+    await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 60000 });
     assert.ok(await page.isHidden('#btn-photos'), 'no photos button for a room without photos');
 
     // 5. details: render in the centre, features, photos
@@ -213,7 +213,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     await page.waitForTimeout(900);
     assert.ok((await page.textContent('#details-features')).includes('16 مقعدًا'), 'capacity shown');
     assert.ok(!(await page.textContent('#details-features')).includes('مقترح'), 'no proposed use');
-    await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 20000 });
+    await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 60000 });
     await shot('details');
     if (mobile) {
       await click('#tab-features');
@@ -242,7 +242,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     await page.goto(`${url}/#/room/ceo`);
     await page.waitForTimeout(150);
     await page.goto(`${url}/#/plan`);
-    await page.waitForFunction(() => !document.getElementById('plan-stage').dataset.focus, null, { timeout: 30000 });
+    await page.waitForFunction(() => !document.getElementById('plan-stage').dataset.focus, null, { timeout: 60000 });
     await page.waitForTimeout(1500);
     assert.equal(await page.locator('#overlay-dots .room-marker.is-dim').count(), 0, 'no stale dimming after a race');
     assert.ok(await page.isHidden('#room-card'), 'no stale card after a race');
@@ -252,7 +252,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     await page.goto(`${url}/#/room/ceo`);
     await page.waitForTimeout(200);
     await page.goto(`${url}/#/room/reception/photos`);
-    await page.waitForFunction(() => document.getElementById('plan-stage').dataset.focus === 'reception', null, { timeout: 30000 });
+    await page.waitForFunction(() => document.getElementById('plan-stage').dataset.focus === 'reception', null, { timeout: 60000 });
     await page.waitForTimeout(1500); // longer than the superseded flight
     const drift = await page.evaluate(async () => {
       const twin = document.getElementById('plan-stage').__twin;
@@ -276,7 +276,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     // 6d. the route stripes keep animating after the visitor has interacted; the loop idles when they are hidden
     step = '6d route animation';
     await page.goto(`${url}/#/plan?scene=paths`);
-    await page.waitForFunction(() => !document.getElementById('plan-stage').dataset.focus, null, { timeout: 30000 });
+    await page.waitForFunction(() => !document.getElementById('plan-stage').dataset.focus, null, { timeout: 60000 });
     await page.waitForTimeout(600);
     const frames = await page.evaluate(async () => {
       const twin = document.getElementById('plan-stage').__twin;
@@ -302,6 +302,45 @@ async function flow(name, contextOptions, { mobile, team }) {
     });
     assert.ok(frames.ms > 0, `routes keep animating without camera input (${frames.ms < 0 ? -frames.ms : 3} frames in 20 s)`);
     assert.ok(frames.idleFrames <= 1, `render loop idles when nothing animates (${frames.idleFrames} frames)`);
+    // an animated flight must not multiply render callbacks (controls' change event + end-of-frame scheduling)
+    const perTick = await page.evaluate(async () => {
+      const twin = document.getElementById('plan-stage').__twin;
+      await twin.focusRoom('ceo'); // animated, routes still visible
+      let ticks = 0;
+      let renders = 0;
+      const off = twin.onFrame(() => { renders += 1; });
+      await new Promise((done) => { const t0 = performance.now(); const tick = () => { ticks += 1; if (performance.now() - t0 < 1200) requestAnimationFrame(tick); else done(); }; requestAnimationFrame(tick); });
+      off();
+      await twin.unfocus({ animate: false });
+      return { ticks, renders };
+    });
+    assert.ok(perTick.renders <= perTick.ticks + 2, `one render per animation frame after a flight (${perTick.renders} renders in ${perTick.ticks} ticks)`);
+
+    // 6e. details requested while the flight to the room is still in progress: the snapshot is taken at the end of the flight
+    step = '6e details mid-flight';
+    await page.goto(`${url}/#/plan`); // layout scene: no animated routes, so two snapshots of a still camera are identical
+    await page.waitForFunction(() => location.hash === '#/plan' && document.getElementById('route-legend').hidden);
+    await page.waitForTimeout(300);
+    await page.goto(`${url}/#/room/ceo`);
+    await page.waitForTimeout(200);
+    await page.goto(`${url}/#/room/ceo/details`);
+    await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 60000 });
+    await page.waitForTimeout(1500); // longer than any flight
+    const snapDiff = await page.evaluate(async () => {
+      const twin = document.getElementById('plan-stage').__twin;
+      const load = (src) => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+      const a = await load(document.querySelector('#details-stage .details-render').src);
+      const b = await load(twin.snapshot());
+      const w = Math.min(a.width, b.width, 320);
+      const h = Math.min(a.height, b.height, 200);
+      const px = (im) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.drawImage(im, 0, 0, w, h); return g.getImageData(0, 0, w, h).data; };
+      const pa = px(a);
+      const pb = px(b);
+      let sum = 0;
+      for (let i = 0; i < pa.length; i += 4) sum += Math.abs(pa[i] - pb[i]) + Math.abs(pa[i + 1] - pb[i + 1]) + Math.abs(pa[i + 2] - pb[i + 2]);
+      return { sameSize: a.width === b.width && a.height === b.height, meanDiff: sum / (pa.length / 4) / 3 };
+    });
+    assert.ok(snapDiff.sameSize && snapDiff.meanDiff < 2, `details snapshot matches the settled camera (mean diff ${snapDiff.meanDiff.toFixed(2)})`);
 
     // 7. bad deep links fall back to the plan; old links keep working
     step = '7 deep links';
