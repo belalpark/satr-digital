@@ -77,6 +77,9 @@ jobs:
 
   deploy:
     needs: build
+    # Explicit condition: on a dispatched run `test` is skipped, and the default
+    # success() would skip every job downstream of a skipped one.
+    if: always() && needs.build.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       pages: write
