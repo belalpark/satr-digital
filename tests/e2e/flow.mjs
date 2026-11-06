@@ -27,6 +27,7 @@ let failures = 0;
 async function flow(name, contextOptions, { mobile, team }) {
   const ctx = await browser.newContext(contextOptions);
   const page = await ctx.newPage();
+  page.setDefaultTimeout(60000); // software WebGL (SwiftShader) can block the main thread for a while right after the model loads
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => {
@@ -75,8 +76,8 @@ async function flow(name, contextOptions, { mobile, team }) {
     // 2. live 3D model, two tabs, sidebar list, dots legend
     step = '2 plan';
     await click('#btn-start');
-    await page.waitForFunction(() => location.hash === '#/plan');
     await modelReady();
+    await page.waitForFunction(() => location.hash === '#/plan');
     await page.waitForTimeout(1200);
     assert.equal(await page.locator('.scene-tab').count(), 2, 'two scene tabs');
     assert.equal((await page.textContent('.scene-tab[data-scene="current"]')).trim(), 'توزيعات المكاتب');
@@ -197,6 +198,14 @@ async function flow(name, contextOptions, { mobile, team }) {
     await page.goto(`${url}/#/room/bleachers/photos`);
     await page.waitForFunction(() => location.hash === '#/room/bleachers');
 
+    // 5b. details deep link for a room that has no real photos: no gallery crash, message + model snapshot
+    step = '5b details without photos';
+    await page.goto(`${url}/#/room/bleachers/details`);
+    await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'details', null, { timeout: 15000 });
+    assert.ok((await page.textContent('#details-photos')).includes('لا توجد صور حقيقية'), 'no-photos message');
+    await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 20000 });
+    assert.ok(await page.isHidden('#btn-photos'), 'no photos button for a room without photos');
+
     // 5. details: render in the centre, features, photos
     step = '5 details';
     await page.goto(`${url}/#/room/meeting-large/details`);
@@ -237,6 +246,62 @@ async function flow(name, contextOptions, { mobile, team }) {
     await page.waitForTimeout(1500);
     assert.equal(await page.locator('#overlay-dots .room-marker.is-dim').count(), 0, 'no stale dimming after a race');
     assert.ok(await page.isHidden('#room-card'), 'no stale card after a race');
+
+    // 6c. race: an animated focus superseded by an immediate one (photos of another room) must not drift back
+    step = '6c tween cancel';
+    await page.goto(`${url}/#/room/ceo`);
+    await page.waitForTimeout(200);
+    await page.goto(`${url}/#/room/reception/photos`);
+    await page.waitForFunction(() => document.getElementById('plan-stage').dataset.focus === 'reception', null, { timeout: 30000 });
+    await page.waitForTimeout(1500); // longer than the superseded flight
+    const drift = await page.evaluate(async () => {
+      const twin = document.getElementById('plan-stage').__twin;
+      const a = twin.project(0, 0, 0);
+      await new Promise((r) => setTimeout(r, 700));
+      const b = twin.project(0, 0, 0);
+      return { focus: twin.getFocus(), moved: Math.hypot(a.x - b.x, a.y - b.y) };
+    });
+    assert.equal(drift.focus, 'reception', 'focus follows the latest route');
+    assert.ok(drift.moved < 0.5, `camera is still after the immediate focus (moved ${drift.moved.toFixed(1)}px)`);
+    await page.goto(`${url}/#/room/reception`);
+    await page.waitForTimeout(800);
+    await focusedOn('reception');
+    const recPx = await page.evaluate(() => {
+      const st = document.getElementById('plan-stage');
+      const b = st.__twin.roomScreenBox('reception');
+      return { size: Math.max(b.w, b.h), stage: Math.min(st.clientWidth, st.clientHeight), inside: b.x >= -b.w && b.x + b.w <= st.clientWidth + b.w };
+    });
+    assert.ok(recPx.inside && recPx.size > recPx.stage * 0.18, `camera sits on the reception after the superseded flight (room ${recPx.size.toFixed(0)}px)`);
+
+    // 6d. the route stripes keep animating after the visitor has interacted; the loop idles when they are hidden
+    step = '6d route animation';
+    await page.goto(`${url}/#/plan?scene=paths`);
+    await page.waitForFunction(() => !document.getElementById('plan-stage').dataset.focus, null, { timeout: 30000 });
+    await page.waitForTimeout(600);
+    const frames = await page.evaluate(async () => {
+      const twin = document.getElementById('plan-stage').__twin;
+      twin.stopIdle();
+      // software GL can need >2 s per frame on the phone profile: wait for k frames instead of a fixed window
+      const waitFrames = (k, cap) => new Promise((res) => {
+        let n = 0;
+        const t0 = performance.now();
+        const off = twin.onFrame(() => { n += 1; if (n >= k) { off(); res(performance.now() - t0); } });
+        setTimeout(() => { off(); if (n < k) res(-n); }, cap);
+      });
+      await new Promise((r) => setTimeout(r, 300));
+      const ms = await waitFrames(3, 20000); // > 0: time the three frames took
+      twin.setRoutesVisible(false);
+      const gap = Math.max(800, ms > 0 ? (ms / 3) * 2 : 3000);
+      await new Promise((r) => setTimeout(r, gap)); // the frame that hides the routes drains here
+      let idleFrames = 0;
+      const off = twin.onFrame(() => { idleFrames += 1; });
+      await new Promise((r) => setTimeout(r, gap));
+      off();
+      twin.setRoutesVisible(true);
+      return { ms, idleFrames };
+    });
+    assert.ok(frames.ms > 0, `routes keep animating without camera input (${frames.ms < 0 ? -frames.ms : 3} frames in 20 s)`);
+    assert.ok(frames.idleFrames <= 1, `render loop idles when nothing animates (${frames.idleFrames} frames)`);
 
     // 7. bad deep links fall back to the plan; old links keep working
     step = '7 deep links';

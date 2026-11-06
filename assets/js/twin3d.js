@@ -296,8 +296,21 @@ export async function createTwin3D(container, data, opts = {}) {
   // tweening between camera states
   let tween = null;
   let tweenResolve = null;
+  /** Ends the flight in progress (its promise resolves) so a direct placement is not undone by later frames. */
+  function cancelTween() {
+    if (!tween && !tweenResolve) return;
+    const r = tweenResolve;
+    tween = null;
+    tweenResolve = null;
+    if (r) r();
+  }
+  /** Immediate camera placement that also supersedes any flight in progress. */
+  function jumpTo(target, azimuth, polar, distance) {
+    cancelTween();
+    placeCamera(target, azimuth, polar, distance);
+  }
   function flyTo(target, azimuth, polar, distance, ms = 1100) {
-    if (tweenResolve) { const r = tweenResolve; tweenResolve = null; tween = null; r(); } // supersede the flight in progress
+    cancelTween(); // supersede the flight in progress
     if (reducedMotion) { placeCamera(target, azimuth, polar, distance); requestRender(); return Promise.resolve(); }
     const from = {
       target: controls.target.clone(),
@@ -356,7 +369,7 @@ export async function createTwin3D(container, data, opts = {}) {
     container.dataset.focus = id;
     const az = home.azimuth;
     if (animate) await flyTo(c, az, polar, distance);
-    else placeCamera(c, az, polar, distance);
+    else jumpTo(c, az, polar, distance);
     requestRender();
   }
 
@@ -367,7 +380,7 @@ export async function createTwin3D(container, data, opts = {}) {
     delete container.dataset.focus;
     const d = home.distance || fitBox(bounds, home.target, home.azimuth, home.polar);
     if (animate) await flyTo(home.target, home.azimuth, home.polar, d);
-    else placeCamera(home.target, home.azimuth, home.polar, d);
+    else jumpTo(home.target, home.azimuth, home.polar, d);
     requestRender();
   }
 
@@ -375,7 +388,7 @@ export async function createTwin3D(container, data, opts = {}) {
     home.distance = fitBox(bounds, home.target, home.azimuth, home.polar);
     if (!focusId) {
       if (animate) flyTo(home.target, home.azimuth, home.polar, home.distance, 700);
-      else placeCamera(home.target, home.azimuth, home.polar, home.distance);
+      else jumpTo(home.target, home.azimuth, home.polar, home.distance);
     }
   }
 
@@ -407,18 +420,22 @@ export async function createTwin3D(container, data, opts = {}) {
   // ---------- render loop (on demand) ----------
   let needsRender = true;
   let rafId = 0;
+  let stageVisible = false; // kept current by the IntersectionObserver below
   const listeners = new Set();
   function requestRender() {
     needsRender = true;
     if (!rafId) rafId = requestAnimationFrame(frame);
   }
+  // the route stripes keep moving (while the stage is on screen) even when the camera is still
+  const routesAnimating = () => routeGroup.visible && !reducedMotion && stageVisible && !document.hidden;
   function frame(now) {
     rafId = 0;
     if (tween) {
       tween(now);
       needsRender = true;
     }
-    if (routeGroup.visible && !reducedMotion) {
+    const animating = routesAnimating();
+    if (animating) {
       for (const m of animatedMaps) m.offset.x = -(now / 1400) % 1;
       needsRender = true;
     }
@@ -428,7 +445,7 @@ export async function createTwin3D(container, data, opts = {}) {
       needsRender = false;
       for (const fn of listeners) fn();
     }
-    if (tween || moved || needsRender) rafId = requestAnimationFrame(frame);
+    if (tween || moved || needsRender || animating) rafId = requestAnimationFrame(frame);
   }
   controls.addEventListener('change', requestRender);
   controls.addEventListener('start', () => container.classList.add('is-orbiting'));
@@ -437,19 +454,24 @@ export async function createTwin3D(container, data, opts = {}) {
   // slow idle turntable until the visitor interacts: only while the stage is on screen
   let idle = !!opts.idleSpin && !reducedMotion;
   let idleRaf = 0;
-  let stageVisible = false;
   if (typeof IntersectionObserver !== 'undefined') {
     new IntersectionObserver((entries) => {
       stageVisible = entries.some((e) => e.isIntersecting && e.intersectionRatio > 0.2);
+      if (stageVisible) requestRender(); // resumes the route animation and the idle spin
       if (stageVisible && idle && !idleRaf) idleRaf = requestAnimationFrame(spin);
     }, { threshold: [0, 0.2, 0.6] }).observe(container);
   } else {
     stageVisible = true;
   }
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && idle && stageVisible && !idleRaf) idleRaf = requestAnimationFrame(spin); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    requestRender();
+    if (idle && stageVisible && !idleRaf) idleRaf = requestAnimationFrame(spin);
+  });
   function spin() {
     idleRaf = 0;
     if (!idle || focusId || !stageVisible || document.hidden) return;
+    if (tween) { idleRaf = requestAnimationFrame(spin); return; } // never fight a flight in progress
     const az = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) + 0.0009;
     const polar = Math.acos((camera.position.y - controls.target.y) / camera.position.distanceTo(controls.target));
     placeCamera(controls.target, az, polar, camera.position.distanceTo(controls.target));

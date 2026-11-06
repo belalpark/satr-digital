@@ -21,7 +21,7 @@ export function createRoom(view, data) {
   let index = 0;
 
   function select(i, { preloadNeighbours = true } = {}) {
-    if (!room) return;
+    if (!room || !room.photos.length) return; // rooms without photos are shown via details/3D only
     const n = room.photos.length;
     index = ((i % n) + n) % n;
     const photo = room.photos[index];
@@ -55,8 +55,20 @@ export function createRoom(view, data) {
     el.capacity.textContent = room.capacity ? `السعة: ${seatsLabel(room.capacity.seats)}` : '';
     el.capacity.hidden = !room.capacity;
     el.pano.hidden = !room.pano;
+    const photos = room.photos || [];
+    if (!photos.length) {
+      // empty set (e.g. a details deep link for a room that has no real photos yet)
+      index = 0;
+      el.photo.removeAttribute('src');
+      el.photo.alt = '';
+      el.photo.classList.remove('is-loaded');
+      el.backdrop.style.backgroundImage = '';
+      el.caption.textContent = 'لا توجد صور حقيقية لهذه الغرفة بعد.';
+      el.thumbs.replaceChildren();
+      return true;
+    }
     el.thumbs.replaceChildren(
-      ...room.photos.map((p, i) => {
+      ...photos.map((p, i) => {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'thumb';
