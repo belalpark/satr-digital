@@ -142,6 +142,10 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.ok((await page.locator('#details-photos button').count()) >= 3, '2D red dot -> details with photos');
     await click('#btn-close-details');
     await page.waitForFunction(() => location.hash === '#/room/reception');
+    // back to the whole plan (no focus, hash #/plan) before the gesture checks
+    await page.goto(`${url}/#/plan`);
+    await page.waitForFunction(() => location.hash === '#/plan' && !document.getElementById('plan2d-stage').dataset.focus);
+    await page.waitForTimeout(800);
     // pinch-zoom keeps the plan point under the fingers still (the midpoint is converted to the stage's frame)
     const pinch = await page.evaluate(() => {
       const st = document.getElementById('plan2d-stage');
@@ -190,6 +194,25 @@ async function flow(name, contextOptions, { mobile, team }) {
       return { right, later };
     });
     assert.ok(Math.abs(pinchVsFlight.later - pinchVsFlight.right) < pinchVsFlight.right * 0.01, `the flight does not override the pinch (${pinchVsFlight.right.toFixed(0)} -> ${pinchVsFlight.later.toFixed(0)}px)`);
+    // a pinch with one finger still, released quickly, is not a tap: no room gets picked
+    const afterGesture = await page.evaluate(async () => {
+      const st = document.getElementById('plan2d-stage');
+      const r = st.getBoundingClientRect();
+      const mx = r.left + r.width / 2;
+      const my = r.top + r.height / 2;
+      const ev = (type, id, x, y) => st.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', isPrimary: id === 1, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+      ev('pointerdown', 1, mx - 40, my);
+      ev('pointerdown', 2, mx + 40, my); // the second (still) finger
+      ev('pointermove', 1, mx - 70, my); // the first finger spreads
+      ev('pointerup', 2, mx + 40, my); // the still finger lifts first, in place and within 600 ms
+      ev('pointerup', 1, mx - 70, my);
+      await new Promise((res) => setTimeout(res, 400));
+      return { hash: location.hash, focus: st.dataset.focus || null };
+    });
+    assert.equal(afterGesture.hash, '#/plan', `no room picked after a pinch (${JSON.stringify(afterGesture)})`);
+    assert.equal(afterGesture.focus, null, 'no focus after a pinch');
+    await page.evaluate(() => document.getElementById('plan2d-stage').__twin.resetView());
+    await page.waitForTimeout(800);
     // a list-only space (the corridors) opens its details straight from the list
     await click('#room-list .room-item-btn[data-id="corridors"]');
     await page.waitForFunction(() => location.hash === '#/room/corridors/details');
@@ -562,6 +585,10 @@ async function flow(name, contextOptions, { mobile, team }) {
     await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'details', null, { timeout: 60000 });
     await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && !i.hidden && i.complete && i.naturalWidth > 0; }, null, { timeout: 60000 });
     assert.ok((await page.getAttribute('#details-stage .details-render', 'src')).startsWith('data:image/jpeg'), 'cold 2D details shows the plan snapshot');
+    // the explicit ?view=2d in the link wins over the saved 3D preference: the 3D model is not even loaded
+    assert.equal(await page.$eval('#plan-stage-wrap', (w) => w.dataset.mode), '2d', 'details deep link keeps its view');
+    assert.equal(await page.evaluate(() => localStorage.getItem('view')), '2d', 'the explicit view is remembered');
+    assert.ok(!(await page.$('#plan-stage.is-ready')), '3D model not loaded for a 2D deep link');
 
     assert.deepEqual(errors, [], 'no console/page errors');
     console.log(`✓ ${name}: ${n} screenshots, all steps passed`);

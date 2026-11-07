@@ -18,6 +18,10 @@ test('room focus, photos and details routes', () => {
   assert.deepEqual(parseHash('#/room/meeting-large/photos'), { view: 'photos', roomId: 'meeting-large' });
   assert.deepEqual(parseHash('#/room/meeting-large/details'), { view: 'details', roomId: 'meeting-large' });
   assert.deepEqual(parseHash('#/room/meeting-large/nope'), { view: 'plan' });
+  // an explicit view in a photos / details link is kept (it overrides the visitor's saved view)
+  assert.deepEqual(parseHash('#/room/cfo/details?view=2d'), { view: 'details', roomId: 'cfo', mode: '2d' });
+  assert.deepEqual(parseHash('#/room/cfo/photos?view=3d'), { view: 'photos', roomId: 'cfo', mode: '3d' });
+  assert.deepEqual(parseHash('#/room/cfo/details?view=nope'), { view: 'details', roomId: 'cfo' });
 });
 
 test('unknown routes fall back to plan', () => {
@@ -31,6 +35,9 @@ test('buildHash round-trips', () => {
   assert.equal(buildHash({ view: 'room', roomId: 'ceo' }), '#/room/ceo');
   assert.equal(buildHash({ view: 'photos', roomId: 'ceo' }), '#/room/ceo/photos');
   assert.equal(buildHash({ view: 'details', roomId: 'ceo' }), '#/room/ceo/details');
+  assert.equal(buildHash({ view: 'details', roomId: 'ceo', mode: '2d' }), '#/room/ceo/details?view=2d');
+  assert.equal(buildHash({ view: 'photos', roomId: 'ceo', mode: '3d' }), '#/room/ceo/photos?view=3d');
+  for (const h of ['#/room/ceo/details?view=2d', '#/room/ceo/photos?view=3d', '#/room/ceo?view=3d', '#/plan?scene=paths&view=2d']) assert.equal(buildHash(parseHash(h)), h);
 });
 
 test('team name is decoded, trimmed, limited and defaulted', () => {

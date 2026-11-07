@@ -108,9 +108,20 @@ export async function init() {
     let down = null;
     // the overlay's dots and labels have their own handlers: a press on them is not a plan click
     const onControl = (e) => !!(e.target && e.target.closest && e.target.closest('.room-marker, .room-tag, button, a'));
-    el.addEventListener('pointerdown', (e) => { down = onControl(e) ? null : { x: e.clientX, y: e.clientY, t: Date.now() }; });
+    // a tap is one pointer down and up in place; once a second pointer joins (pinch), nothing in
+    // that gesture picks a room, whichever finger lifts first
+    const active = new Set();
+    let multi = false;
+    el.addEventListener('pointerdown', (e) => {
+      active.add(e.pointerId);
+      if (active.size > 1) { multi = true; down = null; return; }
+      down = onControl(e) ? null : { x: e.clientX, y: e.clientY, t: Date.now() };
+    });
+    const release = (e) => { active.delete(e.pointerId); const wasMulti = multi; if (active.size === 0) multi = false; return wasMulti; };
+    el.addEventListener('pointercancel', (e) => { release(e); if (active.size === 0) down = null; });
     el.addEventListener('pointerup', (e) => {
-      if (!down || onControl(e)) { down = null; return; }
+      const wasMulti = release(e);
+      if (wasMulti || !down || onControl(e)) { if (active.size === 0) down = null; return; }
       const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 || Date.now() - down.t > 600;
       down = null;
       if (moved) return;
