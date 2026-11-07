@@ -234,6 +234,9 @@ export function createPlan2D(container, data, opts = {}) {
     if (pinch && pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       const d = Math.hypot(a.x - b.x, a.y - b.y);
+      // like drag and wheel: the gesture takes over from any flight in progress, and the framing is
+      // the visitor's from now on (a later resize keeps it instead of re-framing the focused room)
+      if (!pinch.live) { pinch.live = true; cancelTween(); userMoved = true; }
       // the midpoint in stage-local coordinates, like the wheel handler: zoomAt() works in the stage's frame
       const r = container.getBoundingClientRect();
       zoomAt(pinch.scale * (d / pinch.d) / scale, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top);

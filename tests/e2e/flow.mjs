@@ -168,6 +168,28 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.ok(pinch.drift < 3, `the point under the fingers stays put (drift ${pinch.drift.toFixed(1)}px)`);
     await page.evaluate(() => document.getElementById('plan2d-stage').__twin.resetView());
     await page.waitForTimeout(800);
+    // a pinch that starts during a focus flight takes over: the flight must not snap the plan back afterwards
+    const pinchVsFlight = await page.evaluate(async () => {
+      const st = document.getElementById('plan2d-stage');
+      const eng = st.__twin;
+      const r = st.getBoundingClientRect();
+      const mx = r.left + r.width / 2;
+      const my = r.top + r.height / 2;
+      const ev = (type, id, x, y) => st.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', isPrimary: id === 1, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+      eng.focusRoom('meeting-large'); // animated flight (700 ms)
+      await new Promise((res) => setTimeout(res, 120));
+      ev('pointerdown', 1, mx - 60, my);
+      ev('pointerdown', 2, mx + 60, my);
+      for (let k = 1; k <= 4; k++) { ev('pointermove', 1, mx - 60 - 5 * k, my); ev('pointermove', 2, mx + 60 + 5 * k, my); }
+      const right = eng.planPixelSize();
+      ev('pointerup', 1, mx - 80, my);
+      ev('pointerup', 2, mx + 80, my);
+      await new Promise((res) => setTimeout(res, 900)); // longer than the flight
+      const later = eng.planPixelSize();
+      await eng.unfocus({ animate: false });
+      return { right, later };
+    });
+    assert.ok(Math.abs(pinchVsFlight.later - pinchVsFlight.right) < pinchVsFlight.right * 0.01, `the flight does not override the pinch (${pinchVsFlight.right.toFixed(0)} -> ${pinchVsFlight.later.toFixed(0)}px)`);
     // a list-only space (the corridors) opens its details straight from the list
     await click('#room-list .room-item-btn[data-id="corridors"]');
     await page.waitForFunction(() => location.hash === '#/room/corridors/details');
