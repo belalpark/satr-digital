@@ -60,7 +60,7 @@ if [ ! -f "$out/index.html" ]; then
 main{max-width:640px;margin:auto}h1{font-size:24px}ul{padding:0;list-style:none}li{margin:10px 0}
 a{display:block;padding:14px 18px;background:#fff;border:1px solid #e3ddd3;border-radius:12px;color:#9a4521;text-decoration:none;font-weight:600}
 p{color:#7a7368}</style></head><body><main>
-<h1>التوأم الرقمي للمكتب — معاينات الفروع</h1>
+<h1>جولة المكتب — معاينات الفروع</h1>
 <p>الفرع الرئيسي لا يحوي نسخة منشورة بعد. اختر معاينة:</p><ul>
 HTML
     for b in "${previews[@]}"; do

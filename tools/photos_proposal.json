@@ -1,0 +1,1039 @@
+{
+  "rooms": {
+    "reception": {
+      "confidence": "high",
+      "why": "Reception counter at the entrance (first series shot); unique furniture, no other candidate.",
+      "photos": [
+        {
+          "src": "media/rooms/reception/01.webp",
+          "thumb": "media/rooms/reception/thumbs/01.webp",
+          "caption": "كاونتر الاستقبال مع إضاءة سقفية مميزة",
+          "source": "IMG_0134.JPG"
+        },
+        {
+          "src": "media/rooms/reception/02.webp",
+          "thumb": "media/rooms/reception/thumbs/02.webp",
+          "caption": "واجهة الاستقبال من زاوية جانبية",
+          "source": "IMG_0137.JPG"
+        },
+        {
+          "src": "media/rooms/reception/03.webp",
+          "thumb": "media/rooms/reception/thumbs/03.webp",
+          "caption": "الاستقبال وخلفه الجدار الأخضر والممر",
+          "source": "IMG_0138.JPG"
+        },
+        {
+          "src": "media/rooms/reception/04.webp",
+          "thumb": "media/rooms/reception/thumbs/04.webp",
+          "caption": "تفاصيل كاونتر الاستقبال والرفوف الخلفية",
+          "source": "IMG_0136.JPG"
+        }
+      ]
+    },
+    "lounge": {
+      "confidence": "high",
+      "why": "U-shaped grey sofa on the SE curtain wall beside the wooden bleacher steps; the same sofa is visible through the field-qc glass.",
+      "photos": [
+        {
+          "src": "media/rooms/lounge/01.webp",
+          "thumb": "media/rooms/lounge/thumbs/01.webp",
+          "caption": "جلسة استقبال بكنب مريح على الواجهة الزجاجية",
+          "source": "IMG_0147.JPG"
+        },
+        {
+          "src": "media/rooms/lounge/02.webp",
+          "thumb": "media/rooms/lounge/thumbs/02.webp",
+          "caption": "الجلسة من الداخل مع السقف الخشبي",
+          "source": "IMG_0169.JPG"
+        },
+        {
+          "src": "media/rooms/lounge/03.webp",
+          "thumb": "media/rooms/lounge/thumbs/03.webp",
+          "caption": "الكنب الرمادي بإضاءة طبيعية وفيرة",
+          "source": "IMG_0152.JPG"
+        },
+        {
+          "src": "media/rooms/lounge/04.webp",
+          "thumb": "media/rooms/lounge/thumbs/04.webp",
+          "caption": "زاوية الجلسة بجوار المدرّج الخشبي",
+          "source": "IMG_0170.JPG"
+        },
+        {
+          "src": "media/rooms/lounge/05.webp",
+          "thumb": "media/rooms/lounge/thumbs/05.webp",
+          "caption": "الجلسة مع طاولات جانبية ونباتات",
+          "source": "IMG_0148.JPG"
+        },
+        {
+          "src": "media/rooms/lounge/06.webp",
+          "thumb": "media/rooms/lounge/thumbs/06.webp",
+          "caption": "منظر عام للجلسة قرب الواجهة",
+          "source": "IMG_0149.JPG"
+        }
+      ]
+    },
+    "field-qc": {
+      "confidence": "high",
+      "why": "Open desks directly north of the lounge: the lounge sofa is visible through the glass behind these desks.",
+      "photos": [
+        {
+          "src": "media/rooms/field-qc/01.webp",
+          "thumb": "media/rooms/field-qc/thumbs/01.webp",
+          "caption": "مكاتب مفتوحة بإضاءة طبيعية من الواجهة الزجاجية",
+          "source": "IMG_0178.JPG"
+        },
+        {
+          "src": "media/rooms/field-qc/02.webp",
+          "thumb": "media/rooms/field-qc/thumbs/02.webp",
+          "caption": "مكاتب مزدوجة مع شاشات ومقاعد شبكية",
+          "source": "IMG_0177.JPG"
+        },
+        {
+          "src": "media/rooms/field-qc/03.webp",
+          "thumb": "media/rooms/field-qc/thumbs/03.webp",
+          "caption": "المكاتب المفتوحة والجدار الأخضر المجاور",
+          "source": "IMG_0174.JPG"
+        },
+        {
+          "src": "media/rooms/field-qc/04.webp",
+          "thumb": "media/rooms/field-qc/thumbs/04.webp",
+          "caption": "مكاتب مع أحواض نباتات خشبية فاصلة",
+          "source": "IMG_0193.JPG"
+        },
+        {
+          "src": "media/rooms/field-qc/05.webp",
+          "thumb": "media/rooms/field-qc/thumbs/05.webp",
+          "caption": "مكاتب مفتوحة وجلسة بجوار الواجهة",
+          "source": "IMG_0196.JPG"
+        },
+        {
+          "src": "media/rooms/field-qc/06.webp",
+          "thumb": "media/rooms/field-qc/thumbs/06.webp",
+          "caption": "منظر عام للمكاتب المفتوحة والنباتات",
+          "source": "IMG_0194.JPG"
+        }
+      ]
+    },
+    "ceo": {
+      "confidence": "high",
+      "why": "Only room combining exec desk, meeting table and sofa corner, NW corner glass; award-shelf angles excluded.",
+      "photos": [
+        {
+          "src": "media/rooms/ceo/01.webp",
+          "thumb": "media/rooms/ceo/thumbs/01.webp",
+          "caption": "مكتب الإدارة مع طاولة اجتماعات وسقف خشبي",
+          "source": "IMG_0218.JPG"
+        },
+        {
+          "src": "media/rooms/ceo/02.webp",
+          "thumb": "media/rooms/ceo/thumbs/02.webp",
+          "caption": "منظر عام للمكتب والواجهة الزجاجية",
+          "source": "IMG_0217.JPG"
+        },
+        {
+          "src": "media/rooms/ceo/03.webp",
+          "thumb": "media/rooms/ceo/thumbs/03.webp",
+          "caption": "طاولة اجتماعات بمقاعد جلدية وإطلالة",
+          "source": "IMG_0210.JPG"
+        },
+        {
+          "src": "media/rooms/ceo/04.webp",
+          "thumb": "media/rooms/ceo/thumbs/04.webp",
+          "caption": "ركن جلوس بكنب وشاشة عرض",
+          "source": "IMG_0205.JPG"
+        },
+        {
+          "src": "media/rooms/ceo/05.webp",
+          "thumb": "media/rooms/ceo/thumbs/05.webp",
+          "caption": "الجلسة والنباتات بجوار النافذة",
+          "source": "IMG_0206.JPG"
+        },
+        {
+          "src": "media/rooms/ceo/06.webp",
+          "thumb": "media/rooms/ceo/thumbs/06.webp",
+          "caption": "طاولة الاجتماعات الملحقة بالمكتب",
+          "source": "IMG_0207.JPG"
+        },
+        {
+          "src": "media/rooms/ceo/07.webp",
+          "thumb": "media/rooms/ceo/thumbs/07.webp",
+          "caption": "طاولة الاجتماعات بإضاءة طبيعية",
+          "source": "IMG_0209.JPG"
+        }
+      ]
+    },
+    "data-analysis": {
+      "confidence": "medium",
+      "why": "Open desk clusters with planters in the north strip, shot right before the marketing room; part of the set may be the marketing side.",
+      "photos": [
+        {
+          "src": "media/rooms/data-analysis/01.webp",
+          "thumb": "media/rooms/data-analysis/thumbs/01.webp",
+          "caption": "مكاتب مفتوحة بشاشات مزدوجة ومقاعد بيضاء",
+          "source": "IMG_0228.JPG"
+        },
+        {
+          "src": "media/rooms/data-analysis/02.webp",
+          "thumb": "media/rooms/data-analysis/thumbs/02.webp",
+          "caption": "تجمعات مكاتب مع أحواض نباتات",
+          "source": "IMG_0226.JPG"
+        },
+        {
+          "src": "media/rooms/data-analysis/03.webp",
+          "thumb": "media/rooms/data-analysis/thumbs/03.webp",
+          "caption": "مكاتب مفتوحة على الواجهة الزجاجية",
+          "source": "IMG_0229.JPG"
+        },
+        {
+          "src": "media/rooms/data-analysis/04.webp",
+          "thumb": "media/rooms/data-analysis/thumbs/04.webp",
+          "caption": "زاوية من المكاتب المفتوحة والنباتات",
+          "source": "IMG_0230.JPG"
+        },
+        {
+          "src": "media/rooms/data-analysis/05.webp",
+          "thumb": "media/rooms/data-analysis/thumbs/05.webp",
+          "caption": "مكاتب بشاشات وأدراج متحركة",
+          "source": "IMG_0221.JPG"
+        },
+        {
+          "src": "media/rooms/data-analysis/06.webp",
+          "thumb": "media/rooms/data-analysis/thumbs/06.webp",
+          "caption": "مكاتب مفتوحة بجوار الواجهة والنباتات",
+          "source": "IMG_0225.JPG"
+        }
+      ]
+    },
+    "marketing": {
+      "confidence": "medium",
+      "why": "Small open room with four desks and a planter next to the CEO glass wall; sticker clusters on the dividers inpainted.",
+      "photos": [
+        {
+          "src": "media/rooms/marketing/01.webp",
+          "thumb": "media/rooms/marketing/thumbs/01.webp",
+          "caption": "مكاتب مزدوجة مع حوض نباتات خشبي",
+          "source": "IMG_0233.JPG"
+        },
+        {
+          "src": "media/rooms/marketing/02.webp",
+          "thumb": "media/rooms/marketing/thumbs/02.webp",
+          "caption": "مكاتب بشاشات وفواصل مكتبية",
+          "source": "IMG_0232.JPG"
+        },
+        {
+          "src": "media/rooms/marketing/03.webp",
+          "thumb": "media/rooms/marketing/thumbs/03.webp",
+          "caption": "مكاتب العمل من زاوية قريبة",
+          "source": "IMG_0235.JPG"
+        },
+        {
+          "src": "media/rooms/marketing/04.webp",
+          "thumb": "media/rooms/marketing/thumbs/04.webp",
+          "caption": "المكاتب مع النباتات والممر الجانبي",
+          "source": "IMG_0234.JPG"
+        }
+      ]
+    },
+    "finance": {
+      "confidence": "medium",
+      "why": "Two-desk units with printers and calculators facing a planter and the corridor glass; room inferred from desk use and shooting order.",
+      "photos": [
+        {
+          "src": "media/rooms/finance/01.webp",
+          "thumb": "media/rooms/finance/thumbs/01.webp",
+          "caption": "مكاتب مزدوجة مع طابعات وهواتف",
+          "source": "IMG_0266.JPG"
+        },
+        {
+          "src": "media/rooms/finance/02.webp",
+          "thumb": "media/rooms/finance/thumbs/02.webp",
+          "caption": "وحدة مكتبين مع شاشات وطابعة",
+          "source": "IMG_0268.JPG"
+        },
+        {
+          "src": "media/rooms/finance/03.webp",
+          "thumb": "media/rooms/finance/thumbs/03.webp",
+          "caption": "مكاتب العمل مع خزائن جانبية",
+          "source": "IMG_0265.JPG"
+        },
+        {
+          "src": "media/rooms/finance/04.webp",
+          "thumb": "media/rooms/finance/thumbs/04.webp",
+          "caption": "المكاتب والنباتات خلف الزجاج",
+          "source": "IMG_0267.JPG"
+        },
+        {
+          "src": "media/rooms/finance/05.webp",
+          "thumb": "media/rooms/finance/thumbs/05.webp",
+          "caption": "مكتبان متقابلان بتجهيزات كاملة",
+          "source": "IMG_0270.JPG"
+        }
+      ]
+    },
+    "inner-1": {
+      "confidence": "low",
+      "why": "Windowless office with printer (name card inpainted); IMG_0377 shows it from the corridor beside an open office; could be inner-2 or coo instead.",
+      "photos": [
+        {
+          "src": "media/rooms/inner-1/01.webp",
+          "thumb": "media/rooms/inner-1/thumbs/01.webp",
+          "caption": "مكتب مغلق بطاولة على شكل L",
+          "source": "IMG_0246.JPG"
+        },
+        {
+          "src": "media/rooms/inner-1/02.webp",
+          "thumb": "media/rooms/inner-1/thumbs/02.webp",
+          "caption": "المكتب مع طابعة وكرسي زائر",
+          "source": "IMG_0250.JPG"
+        },
+        {
+          "src": "media/rooms/inner-1/03.webp",
+          "thumb": "media/rooms/inner-1/thumbs/03.webp",
+          "caption": "زاوية المكتب والمقاعد",
+          "source": "IMG_0249.JPG"
+        },
+        {
+          "src": "media/rooms/inner-1/04.webp",
+          "thumb": "media/rooms/inner-1/thumbs/04.webp",
+          "caption": "المكتب من الممر عبر الواجهة الزجاجية",
+          "source": "IMG_0377.JPG"
+        }
+      ]
+    },
+    "inner-2": {
+      "confidence": "low",
+      "why": "L-desk office whose glass wall looks onto the north open offices (planter, white chairs); could equally be inner-3.",
+      "photos": [
+        {
+          "src": "media/rooms/inner-2/01.webp",
+          "thumb": "media/rooms/inner-2/thumbs/01.webp",
+          "caption": "مكتب مغلق مطل على المكاتب المفتوحة",
+          "source": "IMG_0237.JPG"
+        },
+        {
+          "src": "media/rooms/inner-2/02.webp",
+          "thumb": "media/rooms/inner-2/thumbs/02.webp",
+          "caption": "طاولة العمل مع الهاتف والشاشة",
+          "source": "IMG_0240.JPG"
+        },
+        {
+          "src": "media/rooms/inner-2/03.webp",
+          "thumb": "media/rooms/inner-2/thumbs/03.webp",
+          "caption": "زاوية المكتب مع وحدة أدراج",
+          "source": "IMG_0242.JPG"
+        },
+        {
+          "src": "media/rooms/inner-2/04.webp",
+          "thumb": "media/rooms/inner-2/thumbs/04.webp",
+          "caption": "المكتب المغلق بإضاءة هادئة",
+          "source": "IMG_0238.JPG"
+        }
+      ]
+    },
+    "inner-4": {
+      "confidence": "medium",
+      "why": "Glass cube with dark frames shot between the research room and office-l2; matches the central-south block; branded items inpainted.",
+      "photos": [
+        {
+          "src": "media/rooms/inner-4/01.webp",
+          "thumb": "media/rooms/inner-4/thumbs/01.webp",
+          "caption": "مكتب زجاجي بإطارات داكنة لموظفين",
+          "source": "IMG_0362.JPG"
+        },
+        {
+          "src": "media/rooms/inner-4/02.webp",
+          "thumb": "media/rooms/inner-4/thumbs/02.webp",
+          "caption": "المكتب الزجاجي من الجهة الأمامية",
+          "source": "IMG_0365.JPG"
+        },
+        {
+          "src": "media/rooms/inner-4/03.webp",
+          "thumb": "media/rooms/inner-4/thumbs/03.webp",
+          "caption": "المكتب الزجاجي وسط المكاتب المفتوحة",
+          "source": "IMG_0363.JPG"
+        }
+      ]
+    },
+    "cfo": {
+      "confidence": "medium",
+      "why": "Exec office with round table and mobile TV, photographed two minutes after the adjacent medium meeting room.",
+      "photos": [
+        {
+          "src": "media/rooms/cfo/01.webp",
+          "thumb": "media/rooms/cfo/thumbs/01.webp",
+          "caption": "مكتب تنفيذي مع طاولة اجتماعات مستديرة",
+          "source": "IMG_0319.JPG"
+        },
+        {
+          "src": "media/rooms/cfo/02.webp",
+          "thumb": "media/rooms/cfo/thumbs/02.webp",
+          "caption": "المكتب والطاولة المستديرة على الواجهة",
+          "source": "IMG_0323.JPG"
+        },
+        {
+          "src": "media/rooms/cfo/03.webp",
+          "thumb": "media/rooms/cfo/thumbs/03.webp",
+          "caption": "زاوية الاجتماعات الصغيرة بجوار النافذة",
+          "source": "IMG_0324.JPG"
+        },
+        {
+          "src": "media/rooms/cfo/04.webp",
+          "thumb": "media/rooms/cfo/thumbs/04.webp",
+          "caption": "طاولة العمل على شكل L",
+          "source": "IMG_0321.JPG"
+        },
+        {
+          "src": "media/rooms/cfo/05.webp",
+          "thumb": "media/rooms/cfo/thumbs/05.webp",
+          "caption": "شاشة عرض متنقلة ومقعد تنفيذي",
+          "source": "IMG_0326.JPG"
+        },
+        {
+          "src": "media/rooms/cfo/06.webp",
+          "thumb": "media/rooms/cfo/thumbs/06.webp",
+          "caption": "المكتب مع خزانة عرض وشاشة",
+          "source": "IMG_0322.JPG"
+        }
+      ]
+    },
+    "coo": {
+      "confidence": "low",
+      "why": "Mirror-image twin of the cfo office (round table, mobile TV), shot at the end of the west-wing series; cfo/coo could be swapped.",
+      "photos": [
+        {
+          "src": "media/rooms/coo/01.webp",
+          "thumb": "media/rooms/coo/thumbs/01.webp",
+          "caption": "مكتب تنفيذي مع طاولة مستديرة ونبات",
+          "source": "IMG_0258.JPG"
+        },
+        {
+          "src": "media/rooms/coo/02.webp",
+          "thumb": "media/rooms/coo/thumbs/02.webp",
+          "caption": "طاولة العمل والشاشة المتنقلة",
+          "source": "IMG_0259.JPG"
+        },
+        {
+          "src": "media/rooms/coo/03.webp",
+          "thumb": "media/rooms/coo/thumbs/03.webp",
+          "caption": "المكتب بإضاءة طبيعية من النافذة",
+          "source": "IMG_0261.JPG"
+        },
+        {
+          "src": "media/rooms/coo/04.webp",
+          "thumb": "media/rooms/coo/thumbs/04.webp",
+          "caption": "المكتب التنفيذي من زاوية مختلفة",
+          "source": "IMG_0260.JPG"
+        },
+        {
+          "src": "media/rooms/coo/05.webp",
+          "thumb": "media/rooms/coo/thumbs/05.webp",
+          "caption": "الطاولة المستديرة لاجتماعات صغيرة",
+          "source": "IMG_0262.JPG"
+        }
+      ]
+    },
+    "office-l1": {
+      "confidence": "medium",
+      "why": "Office with printer and binder cabinet; IMG_0375 shows it from the corridor directly north of office-l2 (window wall behind).",
+      "photos": [
+        {
+          "src": "media/rooms/office-l1/01.webp",
+          "thumb": "media/rooms/office-l1/thumbs/01.webp",
+          "caption": "مكتب مغلق مع خزانة ملفات وطابعة",
+          "source": "IMG_0251.JPG"
+        },
+        {
+          "src": "media/rooms/office-l1/02.webp",
+          "thumb": "media/rooms/office-l1/thumbs/02.webp",
+          "caption": "خزانة الملفات ووحدة الطابعة",
+          "source": "IMG_0252.JPG"
+        },
+        {
+          "src": "media/rooms/office-l1/03.webp",
+          "thumb": "media/rooms/office-l1/thumbs/03.webp",
+          "caption": "المكتب بإطلالة من النافذة",
+          "source": "IMG_0253.JPG"
+        },
+        {
+          "src": "media/rooms/office-l1/04.webp",
+          "thumb": "media/rooms/office-l1/thumbs/04.webp",
+          "caption": "طاولة العمل والمقعد الشبكي",
+          "source": "IMG_0254.JPG"
+        }
+      ]
+    },
+    "office-l2": {
+      "confidence": "medium",
+      "why": "Office with palm plant; appears beside office-l1 in IMG_0375 and was re-shot right after the inner-4 cube across the corridor.",
+      "photos": [
+        {
+          "src": "media/rooms/office-l2/01.webp",
+          "thumb": "media/rooms/office-l2/thumbs/01.webp",
+          "caption": "مكتب مغلق مع نباتات وإضاءة نهارية",
+          "source": "IMG_0301.JPG"
+        },
+        {
+          "src": "media/rooms/office-l2/02.webp",
+          "thumb": "media/rooms/office-l2/thumbs/02.webp",
+          "caption": "طاولة العمل وكرسي الزائر",
+          "source": "IMG_0308.JPG"
+        },
+        {
+          "src": "media/rooms/office-l2/03.webp",
+          "thumb": "media/rooms/office-l2/thumbs/03.webp",
+          "caption": "المكتب على شكل L بجوار النافذة",
+          "source": "IMG_0309.JPG"
+        },
+        {
+          "src": "media/rooms/office-l2/04.webp",
+          "thumb": "media/rooms/office-l2/thumbs/04.webp",
+          "caption": "المقعد الشبكي وطاولة العمل",
+          "source": "IMG_0302.JPG"
+        }
+      ]
+    },
+    "office-l3": {
+      "confidence": "low",
+      "why": "Two-desk office shot straight after office-l1 in the same series; its position along the wing is inferred from shooting order only.",
+      "photos": [
+        {
+          "src": "media/rooms/office-l3/01.webp",
+          "thumb": "media/rooms/office-l3/thumbs/01.webp",
+          "caption": "مكتب مغلق بطاولتين على الواجهة",
+          "source": "IMG_0255.JPG"
+        },
+        {
+          "src": "media/rooms/office-l3/02.webp",
+          "thumb": "media/rooms/office-l3/thumbs/02.webp",
+          "caption": "طاولتا عمل مع شاشة جدارية",
+          "source": "IMG_0256.JPG"
+        },
+        {
+          "src": "media/rooms/office-l3/03.webp",
+          "thumb": "media/rooms/office-l3/thumbs/03.webp",
+          "caption": "المكتب المزدوج بإضاءة طبيعية",
+          "source": "IMG_0257.JPG"
+        }
+      ]
+    },
+    "research": {
+      "confidence": "medium",
+      "why": "Long narrow room with two rows of bench desks along one window wall and a glass entrance; matches the west-wing plan.",
+      "photos": [
+        {
+          "src": "media/rooms/research/01.webp",
+          "thumb": "media/rooms/research/thumbs/01.webp",
+          "caption": "مكاتب مفتوحة على طول الواجهة الزجاجية",
+          "source": "IMG_0352.JPG"
+        },
+        {
+          "src": "media/rooms/research/02.webp",
+          "thumb": "media/rooms/research/thumbs/02.webp",
+          "caption": "صفوف مكاتب مع مقاعد بيضاء",
+          "source": "IMG_0356.JPG"
+        },
+        {
+          "src": "media/rooms/research/03.webp",
+          "thumb": "media/rooms/research/thumbs/03.webp",
+          "caption": "المكاتب خلف الفاصل الزجاجي",
+          "source": "IMG_0358.JPG"
+        },
+        {
+          "src": "media/rooms/research/04.webp",
+          "thumb": "media/rooms/research/thumbs/04.webp",
+          "caption": "صف المكاتب بإضاءة الشمس",
+          "source": "IMG_0360.JPG"
+        },
+        {
+          "src": "media/rooms/research/05.webp",
+          "thumb": "media/rooms/research/thumbs/05.webp",
+          "caption": "مكاتب مع خزائن منخفضة وطابعة",
+          "source": "IMG_0349.JPG"
+        },
+        {
+          "src": "media/rooms/research/06.webp",
+          "thumb": "media/rooms/research/thumbs/06.webp",
+          "caption": "المكاتب المطلة على النافذة",
+          "source": "IMG_0353.JPG"
+        },
+        {
+          "src": "media/rooms/research/07.webp",
+          "thumb": "media/rooms/research/thumbs/07.webp",
+          "caption": "منظر عام لصالة المكاتب",
+          "source": "IMG_0359.JPG"
+        }
+      ]
+    },
+    "hr-pmo-ops": {
+      "confidence": "medium",
+      "why": "Largest open office with wooden planters and windows on two sides, shot two minutes after meeting-large; could include the coo side.",
+      "photos": [
+        {
+          "src": "media/rooms/hr-pmo-ops/01.webp",
+          "thumb": "media/rooms/hr-pmo-ops/thumbs/01.webp",
+          "caption": "صالة مكاتب واسعة بأحواض نباتات",
+          "source": "IMG_0293.JPG"
+        },
+        {
+          "src": "media/rooms/hr-pmo-ops/02.webp",
+          "thumb": "media/rooms/hr-pmo-ops/thumbs/02.webp",
+          "caption": "مكاتب مفتوحة بجوار الواجهة الزجاجية",
+          "source": "IMG_0290.JPG"
+        },
+        {
+          "src": "media/rooms/hr-pmo-ops/03.webp",
+          "thumb": "media/rooms/hr-pmo-ops/thumbs/03.webp",
+          "caption": "النباتات الفاصلة بين تجمعات المكاتب",
+          "source": "IMG_0294.JPG"
+        },
+        {
+          "src": "media/rooms/hr-pmo-ops/04.webp",
+          "thumb": "media/rooms/hr-pmo-ops/thumbs/04.webp",
+          "caption": "زاوية المكاتب مع النوافذ الجانبية",
+          "source": "IMG_0299.JPG"
+        },
+        {
+          "src": "media/rooms/hr-pmo-ops/05.webp",
+          "thumb": "media/rooms/hr-pmo-ops/thumbs/05.webp",
+          "caption": "المكاتب المفتوحة بسقف مكشوف",
+          "source": "IMG_0291.JPG"
+        }
+      ]
+    },
+    "meeting-medium": {
+      "confidence": "high",
+      "why": "Long meeting table with TV in the NE corner glass room; the TV (tenant calendar, name, QR) painted as switched off.",
+      "photos": [
+        {
+          "src": "media/rooms/meeting-medium/01.webp",
+          "thumb": "media/rooms/meeting-medium/thumbs/01.webp",
+          "caption": "قاعة اجتماعات بطاولة طويلة وشاشة",
+          "source": "IMG_0313.JPG"
+        },
+        {
+          "src": "media/rooms/meeting-medium/02.webp",
+          "thumb": "media/rooms/meeting-medium/thumbs/02.webp",
+          "caption": "القاعة بإطلالة من الواجهة الزجاجية",
+          "source": "IMG_0316.JPG"
+        },
+        {
+          "src": "media/rooms/meeting-medium/03.webp",
+          "thumb": "media/rooms/meeting-medium/thumbs/03.webp",
+          "caption": "طاولة الاجتماعات ومقاعد شبكية",
+          "source": "IMG_0317.JPG"
+        },
+        {
+          "src": "media/rooms/meeting-medium/04.webp",
+          "thumb": "media/rooms/meeting-medium/thumbs/04.webp",
+          "caption": "القاعة من الطرف المقابل للشاشة",
+          "source": "IMG_0318.JPG"
+        },
+        {
+          "src": "media/rooms/meeting-medium/05.webp",
+          "thumb": "media/rooms/meeting-medium/thumbs/05.webp",
+          "caption": "الطاولة مع هاتف اجتماعات وشاشة",
+          "source": "IMG_0314.JPG"
+        }
+      ]
+    },
+    "women-area": {
+      "confidence": "medium",
+      "why": "Beige L-sofa lounge; only two (near-identical) photos exist in the set.",
+      "photos": [
+        {
+          "src": "media/rooms/women-area/01.webp",
+          "thumb": "media/rooms/women-area/thumbs/01.webp",
+          "caption": "جلسة بكنب على شكل L وطاولة",
+          "source": "IMG_0331.JPG"
+        },
+        {
+          "src": "media/rooms/women-area/02.webp",
+          "thumb": "media/rooms/women-area/thumbs/02.webp",
+          "caption": "الجلسة من زاوية قريبة",
+          "source": "IMG_0332.JPG"
+        }
+      ]
+    },
+    "wc-men": {
+      "confidence": "medium",
+      "why": "Men's door signs; the washroom interior was shot 40 s before the men's door, so it is probably the men's side.",
+      "photos": [
+        {
+          "src": "media/rooms/wc-men/01.webp",
+          "thumb": "media/rooms/wc-men/thumbs/01.webp",
+          "caption": "مغاسل بمرايا وإضاءة حديثة",
+          "source": "IMG_0310.JPG"
+        },
+        {
+          "src": "media/rooms/wc-men/02.webp",
+          "thumb": "media/rooms/wc-men/thumbs/02.webp",
+          "caption": "مدخل دورة مياه الرجال",
+          "source": "IMG_0311.JPG"
+        },
+        {
+          "src": "media/rooms/wc-men/03.webp",
+          "thumb": "media/rooms/wc-men/thumbs/03.webp",
+          "caption": "باب دورة المياه مع الجدار الأخضر",
+          "source": "IMG_0327.JPG"
+        }
+      ]
+    },
+    "wc-women": {
+      "confidence": "low",
+      "why": "Only the door-sign photo exists; no interior photo of the women's washroom.",
+      "photos": [
+        {
+          "src": "media/rooms/wc-women/01.webp",
+          "thumb": "media/rooms/wc-women/thumbs/01.webp",
+          "caption": "مدخل دورة مياه النساء",
+          "source": "IMG_0328.JPG"
+        }
+      ]
+    }
+  },
+  "excluded": [
+    {
+      "source": "IMG_0135.JPG",
+      "reason": "logo (award sign board with ministry emblem behind the counter)"
+    },
+    {
+      "source": "IMG_0141.JPG",
+      "reason": "logo (tenant logo wall)"
+    },
+    {
+      "source": "IMG_0142.JPG",
+      "reason": "logo (tenant logo wall)"
+    },
+    {
+      "source": "IMG_0146.JPG",
+      "reason": "duplicate (lounge)"
+    },
+    {
+      "source": "IMG_0154.JPG",
+      "reason": "logo (branded cubes on the bleachers)"
+    },
+    {
+      "source": "IMG_0158.JPG",
+      "reason": "logo (branded cubes on the bleachers)"
+    },
+    {
+      "source": "IMG_0159.JPG",
+      "reason": "logo (branded cubes on the bleachers)"
+    },
+    {
+      "source": "IMG_0179.JPG",
+      "reason": "duplicate (field-qc)"
+    },
+    {
+      "source": "IMG_0180.JPG",
+      "reason": "duplicate (field-qc)"
+    },
+    {
+      "source": "IMG_0182.JPG",
+      "reason": "duplicate (field-qc)"
+    },
+    {
+      "source": "IMG_0186.JPG",
+      "reason": "duplicate (field-qc)"
+    },
+    {
+      "source": "IMG_0187.JPG",
+      "reason": "duplicate (field-qc)"
+    },
+    {
+      "source": "IMG_0188.JPG",
+      "reason": "duplicate (field-qc)"
+    },
+    {
+      "source": "IMG_0189.JPG",
+      "reason": "duplicate (field-qc)"
+    },
+    {
+      "source": "IMG_0192.JPG",
+      "reason": "duplicate (field-qc)"
+    },
+    {
+      "source": "IMG_0195.JPG",
+      "reason": "duplicate (field-qc)"
+    },
+    {
+      "source": "IMG_0203.JPG",
+      "reason": "duplicate (ceo)"
+    },
+    {
+      "source": "IMG_0204.JPG",
+      "reason": "duplicate (ceo)"
+    },
+    {
+      "source": "IMG_0208.JPG",
+      "reason": "duplicate (ceo)"
+    },
+    {
+      "source": "IMG_0211.JPG",
+      "reason": "logo (award/certificate shelf with plaques)"
+    },
+    {
+      "source": "IMG_0212.JPG",
+      "reason": "logo (award/certificate shelf with plaques)"
+    },
+    {
+      "source": "IMG_0213.JPG",
+      "reason": "logo (award/certificate shelf with plaques)"
+    },
+    {
+      "source": "IMG_0214.JPG",
+      "reason": "logo (award/certificate shelf with plaques)"
+    },
+    {
+      "source": "IMG_0215.JPG",
+      "reason": "logo (award/certificate shelf with plaques)"
+    },
+    {
+      "source": "IMG_0216.JPG",
+      "reason": "logo (award/certificate shelf with plaques)"
+    },
+    {
+      "source": "IMG_0220.JPG",
+      "reason": "duplicate (data-analysis)"
+    },
+    {
+      "source": "IMG_0222.JPG",
+      "reason": "duplicate (data-analysis)"
+    },
+    {
+      "source": "IMG_0223.JPG",
+      "reason": "duplicate (data-analysis)"
+    },
+    {
+      "source": "IMG_0224.JPG",
+      "reason": "duplicate (data-analysis)"
+    },
+    {
+      "source": "IMG_0227.JPG",
+      "reason": "duplicate (data-analysis)"
+    },
+    {
+      "source": "IMG_0236.JPG",
+      "reason": "person (employee at desk)"
+    },
+    {
+      "source": "IMG_0239.JPG",
+      "reason": "duplicate (inner-2)"
+    },
+    {
+      "source": "IMG_0241.JPG",
+      "reason": "duplicate (inner-2)"
+    },
+    {
+      "source": "IMG_0244.JPG",
+      "reason": "person (employee at desk)"
+    },
+    {
+      "source": "IMG_0245.JPG",
+      "reason": "person (employee at desk)"
+    },
+    {
+      "source": "IMG_0269.JPG",
+      "reason": "duplicate (finance)"
+    },
+    {
+      "source": "IMG_0274.JPG",
+      "reason": "duplicate (meeting-large series, already curated)"
+    },
+    {
+      "source": "IMG_0276.JPG",
+      "reason": "duplicate (meeting-large series, already curated)"
+    },
+    {
+      "source": "IMG_0277.JPG",
+      "reason": "duplicate (meeting-large series, already curated)"
+    },
+    {
+      "source": "IMG_0280.JPG",
+      "reason": "duplicate (meeting-large series, already curated)"
+    },
+    {
+      "source": "IMG_0281.JPG",
+      "reason": "duplicate (meeting-large series, already curated)"
+    },
+    {
+      "source": "IMG_0282.JPG",
+      "reason": "duplicate (meeting-large series, already curated)"
+    },
+    {
+      "source": "IMG_0285.JPG",
+      "reason": "duplicate (meeting-large series, already curated)"
+    },
+    {
+      "source": "IMG_0288.JPG",
+      "reason": "person (behind the glass; meeting-large series)"
+    },
+    {
+      "source": "IMG_0292.JPG",
+      "reason": "duplicate (hr-pmo-ops)"
+    },
+    {
+      "source": "IMG_0295.JPG",
+      "reason": "duplicate (hr-pmo-ops)"
+    },
+    {
+      "source": "IMG_0296.JPG",
+      "reason": "logo (sticker cluster and logo stand on desk divider)"
+    },
+    {
+      "source": "IMG_0297.JPG",
+      "reason": "logo (sticker cluster and logo stand on desk divider)"
+    },
+    {
+      "source": "IMG_0298.JPG",
+      "reason": "logo (sticker cluster and logo stand on desk divider)"
+    },
+    {
+      "source": "IMG_0303.JPG",
+      "reason": "duplicate (office-l2)"
+    },
+    {
+      "source": "IMG_0304.JPG",
+      "reason": "duplicate (office-l2)"
+    },
+    {
+      "source": "IMG_0305.JPG",
+      "reason": "duplicate (office-l2)"
+    },
+    {
+      "source": "IMG_0312.JPG",
+      "reason": "logo (TV showing tenant calendar and QR; near-duplicate of IMG_0313)"
+    },
+    {
+      "source": "IMG_0315.JPG",
+      "reason": "duplicate (meeting-medium; screen content reflected)"
+    },
+    {
+      "source": "IMG_0320.JPG",
+      "reason": "duplicate (ceo)"
+    },
+    {
+      "source": "IMG_0325.JPG",
+      "reason": "logo (external building signage readable through the window)"
+    },
+    {
+      "source": "IMG_0333.JPG",
+      "reason": "not a room (building exterior / parking)"
+    },
+    {
+      "source": "IMG_0334.JPG",
+      "reason": "not a room (building exterior / parking)"
+    },
+    {
+      "source": "IMG_0335.JPG",
+      "reason": "not a room (building exterior / parking)"
+    },
+    {
+      "source": "IMG_0336.JPG",
+      "reason": "not a room (building exterior / parking)"
+    },
+    {
+      "source": "IMG_0337.JPG",
+      "reason": "not a room (building exterior / parking)"
+    },
+    {
+      "source": "IMG_0338.JPG",
+      "reason": "not a room (building exterior / parking)"
+    },
+    {
+      "source": "IMG_0339.JPG",
+      "reason": "not a room (building exterior / parking)"
+    },
+    {
+      "source": "IMG_0340.JPG",
+      "reason": "not a room (building exterior / parking)"
+    },
+    {
+      "source": "IMG_0341.JPG",
+      "reason": "not a room (building exterior / parking)"
+    },
+    {
+      "source": "IMG_0342.JPG",
+      "reason": "not a room (building exterior / parking)"
+    },
+    {
+      "source": "IMG_0343.JPG",
+      "reason": "not a room (building exterior / parking)"
+    },
+    {
+      "source": "IMG_0344.JPG",
+      "reason": "not a room (building exterior / parking)"
+    },
+    {
+      "source": "IMG_0346.JPG",
+      "reason": "not a room (building exterior / parking)"
+    },
+    {
+      "source": "IMG_0347.JPG",
+      "reason": "not a room (cluttered storage with product boxes)"
+    },
+    {
+      "source": "IMG_0348.JPG",
+      "reason": "logo (door with tenant logo)"
+    },
+    {
+      "source": "IMG_0350.JPG",
+      "reason": "duplicate (research)"
+    },
+    {
+      "source": "IMG_0351.JPG",
+      "reason": "duplicate (research)"
+    },
+    {
+      "source": "IMG_0354.JPG",
+      "reason": "duplicate (research)"
+    },
+    {
+      "source": "IMG_0355.JPG",
+      "reason": "duplicate (research)"
+    },
+    {
+      "source": "IMG_0361.JPG",
+      "reason": "duplicate (inner-4; branded items, three cleaned angles kept)"
+    },
+    {
+      "source": "IMG_0364.JPG",
+      "reason": "duplicate (inner-4; branded items, three cleaned angles kept)"
+    },
+    {
+      "source": "IMG_0366.JPG",
+      "reason": "logo (award stand with emblem and framed photo on desk; office-l2 has enough)"
+    },
+    {
+      "source": "IMG_0367.JPG",
+      "reason": "logo (award stand with emblem and framed photo on desk; office-l2 has enough)"
+    },
+    {
+      "source": "IMG_0370.JPG",
+      "reason": "not a room (framed fire-escape plan)"
+    },
+    {
+      "source": "IMG_0371.JPG",
+      "reason": "not a room (framed fire-escape plan)"
+    },
+    {
+      "source": "IMG_0374.JPG",
+      "reason": "duplicate (ceo)"
+    },
+    {
+      "source": "IMG_0378.JPG",
+      "reason": "not a room (cluttered storage with product boxes)"
+    }
+  ],
+  "unassigned": [
+    "IMG_0164.JPG",
+    "IMG_0165.JPG",
+    "IMG_0167.JPG",
+    "IMG_0357.JPG",
+    "IMG_0368.JPG",
+    "IMG_0369.JPG",
+    "IMG_0372.JPG",
+    "IMG_0373.JPG",
+    "IMG_0375.JPG"
+  ]
+}

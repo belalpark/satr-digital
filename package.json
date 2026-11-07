@@ -1,0 +1,16 @@
+{
+  "name": "satr-digital",
+  "version": "0.1.0",
+  "private": true,
+  "description": "جولة المكتب — موقع تفاعلي ثلاثي الأبعاد لتسويق مكتب للإيجار",
+  "type": "module",
+  "scripts": {
+    "serve": "node tests/e2e/serve.mjs . 8080",
+    "test": "node --test tests/unit/*.test.mjs",
+    "test:e2e": "node tests/e2e/flow.mjs",
+    "test:all": "npm test && npm run test:e2e"
+  },
+  "devDependencies": {
+    "playwright": "^1.50.0"
+  }
+}
