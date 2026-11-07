@@ -127,14 +127,47 @@ async function flow(name, contextOptions, { mobile, team }) {
     await click('#room-list .room-item-btn[data-id="meeting-large"]');
     await page.waitForFunction(() => location.hash === '#/plan');
     await page.waitForFunction(() => !document.getElementById('plan2d-stage').dataset.focus);
-    // the red dot opens the room details (photos included), not the photos directly
-    await click('#plan2d-stage .room-marker[data-id="reception"] .dot-red');
+    // the red dot opens the room details (photos included), not the photos directly — a real pointer
+    // click: the stage's pan handler must not capture the pointer away from the dot. Phones show the
+    // red dot only for the focused room (or when zoomed in), so focus the reception first there.
+    if (mobile) {
+      await click('#room-list .room-item-btn[data-id="reception"]');
+      await page.waitForFunction(() => document.getElementById('plan2d-stage').dataset.focus === 'reception');
+      await page.waitForTimeout(900);
+    }
+    await page.locator('#plan2d-stage .room-marker[data-id="reception"] .dot-red').click();
     await page.waitForFunction(() => location.hash === '#/room/reception/details');
     await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'details');
     await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; });
     assert.ok((await page.locator('#details-photos button').count()) >= 3, '2D red dot -> details with photos');
     await click('#btn-close-details');
     await page.waitForFunction(() => location.hash === '#/room/reception');
+    // pinch-zoom keeps the plan point under the fingers still (the midpoint is converted to the stage's frame)
+    const pinch = await page.evaluate(() => {
+      const st = document.getElementById('plan2d-stage');
+      const eng = st.__twin;
+      const r = st.getBoundingClientRect();
+      const mx = r.left + r.width * 0.62;
+      const my = r.top + r.height * 0.58;
+      const o = eng.project(0, 0);
+      const ux = eng.project(1, 0).x - o.x; // stage px per plan px
+      const uy = eng.project(0, 1).y - o.y;
+      const plan = { x: (mx - r.left - o.x) / ux, y: (my - r.top - o.y) / uy }; // the plan point under the midpoint
+      const ev = (type, id, x, y) => st.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', isPrimary: id === 1, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+      ev('pointerdown', 1, mx - 60, my);
+      ev('pointerdown', 2, mx + 60, my);
+      for (let k = 1; k <= 6; k++) { ev('pointermove', 1, mx - 60 - 5 * k, my); ev('pointermove', 2, mx + 60 + 5 * k, my); } // fingers 120 -> 180 px apart: 1.5x
+      const after = eng.project(plan.x, plan.y);
+      ev('pointerup', 1, mx - 90, my);
+      ev('pointerup', 2, mx + 90, my);
+      const drift = Math.hypot(after.x - (mx - r.left), after.y - (my - r.top));
+      const zoom = (eng.project(1, 0).x - eng.project(0, 0).x) / ux;
+      return { drift, zoom };
+    });
+    assert.ok(Math.abs(pinch.zoom - 1.5) < 0.05, `pinch zooms by the finger spread (${pinch.zoom.toFixed(2)}x)`);
+    assert.ok(pinch.drift < 3, `the point under the fingers stays put (drift ${pinch.drift.toFixed(1)}px)`);
+    await page.evaluate(() => document.getElementById('plan2d-stage').__twin.resetView());
+    await page.waitForTimeout(800);
     // a list-only space (the corridors) opens its details straight from the list
     await click('#room-list .room-item-btn[data-id="corridors"]');
     await page.waitForFunction(() => location.hash === '#/room/corridors/details');
@@ -205,7 +238,7 @@ async function flow(name, contextOptions, { mobile, team }) {
 
     // 3. blue dot -> the room in its 3D context; the card appears in the sidebar
     step = '3 focus';
-    await click('#overlay-dots .room-marker[data-id="meeting-large"] .dot-blue');
+    await page.locator('#overlay-dots .room-marker[data-id="meeting-large"] .dot-blue').click({ timeout: 60000 });
     await page.waitForFunction(() => location.hash === '#/room/meeting-large', null, { timeout: 60000 });
     await focusedOn('meeting-large');
     await settled();
@@ -501,6 +534,12 @@ async function flow(name, contextOptions, { mobile, team }) {
     await page.waitForFunction(() => document.getElementById('plan-stage-wrap').dataset.mode === '3d');
     await focusedOn('ceo');
     assert.equal(await page.evaluate(() => localStorage.getItem('view')), '3d', 'the chosen view is remembered');
+    // a cold details deep link in 2D for a room without a render: the centre image is a snapshot of the loaded plan
+    await page.goto('about:blank');
+    await page.goto(`${url}/#/room/cfo/details?view=2d`);
+    await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'details', null, { timeout: 60000 });
+    await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && !i.hidden && i.complete && i.naturalWidth > 0; }, null, { timeout: 60000 });
+    assert.ok((await page.getAttribute('#details-stage .details-render', 'src')).startsWith('data:image/jpeg'), 'cold 2D details shows the plan snapshot');
 
     assert.deepEqual(errors, [], 'no console/page errors');
     console.log(`✓ ${name}: ${n} screenshots, all steps passed`);

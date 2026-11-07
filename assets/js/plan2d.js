@@ -117,10 +117,17 @@ export function createPlan2D(container, data, opts = {}) {
     world.style.width = `${planW * fit}px`;
     world.style.height = `${planH * fit}px`;
     const focused = focusId ? rooms.find((x) => x.id === focusId) : null;
+    // a flight computed for the old stage size would keep steering toward a frame that no longer
+    // fits (the room card opens below the stage right as a focus flight starts): end it and
+    // continue toward the frame for the new size
+    const wasFlying = !!tween;
+    if (wasFlying) cancelTween();
     if (focused && !userMoved) {
       // the stage changed size (e.g. the room card opened below it): re-frame the focused room
       const short = viewH < 420 || viewH < viewW * 0.6;
-      ({ scale, tx, ty } = boxTarget(bbox(focused.polygon), short ? 0.1 : 0.16));
+      const target = boxTarget(bbox(focused.polygon), short ? 0.1 : 0.16);
+      if (wasFlying) { animateTo(target, 350); return; }
+      ({ scale, tx, ty } = target);
     } else if (keep && scale > 1) {
       tx = viewW / 2 - keep.cx * fit * scale;
       ty = viewH / 2 - keep.cy * fit * scale;
@@ -207,15 +214,19 @@ export function createPlan2D(container, data, opts = {}) {
   const pointers = new Map();
   let drag = null;
   let pinch = null;
+  // the overlay's dots and labels sit inside the stage: a press on them is theirs (capturing the
+  // pointer here would retarget their click to the stage and swallow it)
+  const onControl = (e) => !!(e.target && e.target.closest && e.target.closest('.room-marker, .room-tag, button, a'));
   container.addEventListener('pointerdown', (e) => {
+    if (onControl(e)) return;
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 1) drag = { x: e.clientX, y: e.clientY, tx, ty, moved: false };
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
-      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), scale, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
+      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), scale };
       drag = null;
     }
-    container.setPointerCapture(e.pointerId);
+    try { container.setPointerCapture(e.pointerId); } catch (_) { /* synthetic events have no active pointer */ }
   });
   container.addEventListener('pointermove', (e) => {
     if (!pointers.has(e.pointerId)) return;
@@ -223,7 +234,9 @@ export function createPlan2D(container, data, opts = {}) {
     if (pinch && pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       const d = Math.hypot(a.x - b.x, a.y - b.y);
-      zoomAt(pinch.scale * (d / pinch.d) / scale, (a.x + b.x) / 2, (a.y + b.y) / 2);
+      // the midpoint in stage-local coordinates, like the wheel handler: zoomAt() works in the stage's frame
+      const r = container.getBoundingClientRect();
+      zoomAt(pinch.scale * (d / pinch.d) / scale, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top);
       return;
     }
     if (drag) {

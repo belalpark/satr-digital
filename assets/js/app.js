@@ -106,9 +106,11 @@ export async function init() {
   // click on a stage: once = focus, again on the same room = back to the plan; hover shows the name
   function wireStage(el, eng, tipText) {
     let down = null;
-    el.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: Date.now() }; });
+    // the overlay's dots and labels have their own handlers: a press on them is not a plan click
+    const onControl = (e) => !!(e.target && e.target.closest && e.target.closest('.room-marker, .room-tag, button, a'));
+    el.addEventListener('pointerdown', (e) => { down = onControl(e) ? null : { x: e.clientX, y: e.clientY, t: Date.now() }; });
     el.addEventListener('pointerup', (e) => {
-      if (!down) return;
+      if (!down || onControl(e)) { down = null; return; }
       const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 || Date.now() - down.t > 600;
       down = null;
       if (moved) return;
@@ -158,6 +160,7 @@ export async function init() {
   function engine() { return mode === '3d' ? twin : plan2d; }
   async function ensureEngine() {
     if (mode === '3d') { await loadTwin(); return twin; }
+    await plan2d.ready; // a cold details deep link snapshots the plan image: wait until it has pixels
     return plan2d;
   }
   function applyMode() {
