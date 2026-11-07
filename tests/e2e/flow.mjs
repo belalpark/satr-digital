@@ -535,6 +535,29 @@ async function flow(name, contextOptions, { mobile, team }) {
     });
     assert.ok(resumed >= 2, `route animation resumes when the plan view returns (${resumed} frames)`);
 
+    // 6d2. a wheel/drag during a 3D focus flight takes over: the flight must not finish on top of the gesture
+    step = '6d2 interaction cancels the flight';
+    const takeover = await page.evaluate(async () => {
+      const twin = document.getElementById('plan-stage').__twin;
+      await twin.focusRoom('ceo'); // a completed flight: the framing the flight would reach
+      await twin.settled();
+      const focused = twin.planPixelSize();
+      await twin.unfocus({ animate: false });
+      const home = twin.planPixelSize();
+      twin.focusRoom('ceo'); // animated again, not awaited
+      await new Promise((r) => setTimeout(r, 150));
+      const canvas = document.querySelector('#plan-stage canvas');
+      canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true })); // the visitor zooms out
+      await new Promise((r) => setTimeout(r, 2500)); // longer than the 1.1 s flight (and a few software-GL frames)
+      await twin.settled();
+      const after = twin.planPixelSize();
+      await twin.unfocus({ animate: false });
+      return { focused, home, after };
+    });
+    // with the flight cancelled the camera stays wherever the wheel left it (≤ 0.94× the flight's framing
+    // for one notch); if the flight had finished on top of the gesture the size would equal `focused`
+    assert.ok(takeover.after < takeover.focused * 0.96, `the flight did not override the wheel (after ${takeover.after.toFixed(0)}px, flight target ${takeover.focused.toFixed(0)}px, home ${takeover.home.toFixed(0)}px)`);
+
     // 6e. details requested while the flight to the room is still in progress: the snapshot is taken at the end of the flight
     // (the CFO office has no Cycles render yet, so its details page shows the live snapshot)
     step = '6e details mid-flight';

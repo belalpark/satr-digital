@@ -544,8 +544,9 @@ export async function createTwin3D(container, data, opts = {}) {
     idleRaf = requestAnimationFrame(spin);
   }
   const stopIdle = () => { idle = false; if (idleRaf) { cancelAnimationFrame(idleRaf); idleRaf = 0; } };
-  renderer.domElement.addEventListener('pointerdown', () => { stopIdle(); userMoved = true; }, { once: true });
-  renderer.domElement.addEventListener('wheel', () => { stopIdle(); userMoved = true; }, { once: true, passive: true });
+  // every manual interaction (drag, pinch, wheel — OrbitControls' 'start') takes over: the turntable
+  // stops, the framing is the visitor's, and a flight in progress ends instead of overwriting the gesture
+  controls.addEventListener('start', () => { stopIdle(); userMoved = true; cancelTween(); });
 
   function resize() {
     const w = container.clientWidth;
