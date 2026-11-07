@@ -433,8 +433,12 @@ export async function createTwin3D(container, data, opts = {}) {
   let frameSamples = 0;
   let frameSum = 0;
   let qualityStep = 0; // 0 = full, 1 = 1x pixels, 2 = also no shadows
+  const createdAt = performance.now();
   function governor(ms) {
     if (qualityStep >= 2) return;
+    // the first seconds compile shaders and upload textures on any GPU; a single long gap is a
+    // hitch (tab switch, GC), not sustained load — neither says anything about the GPU
+    if (performance.now() - createdAt < 2500 || ms > 250) return;
     frameSamples += 1;
     frameSum += ms;
     if (frameSamples < 24) return;
@@ -456,9 +460,15 @@ export async function createTwin3D(container, data, opts = {}) {
   let active = opts.active !== false; // false while the page shows another view over the stage (views hide by visibility, not display)
   const onScreen = () => active && stageVisible && !document.hidden;
   const listeners = new Set();
-  function requestRender() {
+  // `paced` = the caller drives one frame per animation tick (the turntable), so the gap to the
+  // previous frame measures the GPU; any other request after an idle loop starts a new pacing chain
+  let inFrame = false; // requests raised while a frame runs (controls' change event) keep the chain
+  function requestRender(paced = false) {
     needsRender = true;
-    if (!rafId) rafId = requestAnimationFrame(frame);
+    if (!rafId) {
+      if (paced !== true && !inFrame) lastFrameAt = 0;
+      rafId = requestAnimationFrame(frame);
+    }
   }
   // the route stripes keep moving (while the stage is on screen) even when the camera is still
   // the stripes only need frames while at least one route can actually be seen: the paths scene
@@ -467,6 +477,7 @@ export async function createTwin3D(container, data, opts = {}) {
   const routesAnimating = () => routeGroup.visible && anyRouteVisible() && !reducedMotion && onScreen();
   function frame(now) {
     rafId = 0;
+    inFrame = true;
     if (tween) {
       tween(now);
       needsRender = true;
@@ -490,8 +501,9 @@ export async function createTwin3D(container, data, opts = {}) {
     // controls.update() above may already have queued the next frame through its
     // synchronous 'change' event; never queue a second callback for the same tick
     if (!rafId && (tween || moved || needsRender || animating)) rafId = requestAnimationFrame(frame);
+    inFrame = false;
   }
-  controls.addEventListener('change', requestRender);
+  controls.addEventListener('change', () => requestRender());
   controls.addEventListener('start', () => container.classList.add('is-orbiting'));
   controls.addEventListener('end', () => container.classList.remove('is-orbiting'));
 
@@ -527,8 +539,8 @@ export async function createTwin3D(container, data, opts = {}) {
     if (tween) { idleRaf = requestAnimationFrame(spin); return; } // never fight a flight in progress
     const az = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) + 0.0009;
     const polar = Math.acos((camera.position.y - controls.target.y) / camera.position.distanceTo(controls.target));
+    requestRender(true); // before placeCamera: its synchronous 'change' request then finds the frame already queued
     placeCamera(controls.target, az, polar, camera.position.distanceTo(controls.target));
-    requestRender();
     idleRaf = requestAnimationFrame(spin);
   }
   const stopIdle = () => { idle = false; if (idleRaf) { cancelAnimationFrame(idleRaf); idleRaf = 0; } };
