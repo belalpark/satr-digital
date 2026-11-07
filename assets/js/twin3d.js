@@ -599,8 +599,13 @@ export async function createTwin3D(container, data, opts = {}) {
     },
     onFrame: (fn) => { listeners.add(fn); return () => listeners.delete(fn); },
     requestRender,
-    resetView: () => (focusId ? focusRoom(focusId) : fitHome(true)),
+    // the reset returns the framing to the automatic one (a later resize re-fits it again)
+    resetView: () => { userMoved = false; return focusId ? focusRoom(focusId) : fitHome(true); },
+    // the +/− buttons are the visitor's input like a drag, the wheel or a pinch: the framing is theirs
+    // from now on, so a resize keeps it instead of re-fitting the home view or re-framing the room
     zoom: (factor) => {
+      stopIdle();
+      userMoved = true;
       const d = camera.position.distanceTo(controls.target) / factor;
       const az = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
       const polar = Math.acos((camera.position.y - controls.target.y) / camera.position.distanceTo(controls.target));

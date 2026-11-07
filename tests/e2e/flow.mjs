@@ -213,6 +213,33 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.equal(afterGesture.focus, null, 'no focus after a pinch');
     await page.evaluate(() => document.getElementById('plan2d-stage').__twin.resetView());
     await page.waitForTimeout(800);
+    // the +/− buttons are the visitor's framing like the wheel and the pinch: a resize afterwards (the
+    // phone rotates, the browser chrome shows) keeps their zoom instead of re-framing the focused room
+    step = '2b button zoom survives a resize (2D)';
+    await click('#room-list .room-item-btn[data-id="meeting-large"]');
+    await page.waitForFunction(() => document.getElementById('plan2d-stage').dataset.focus === 'meeting-large');
+    await page.waitForTimeout(1200); // the focus flight (and, on phones, the re-frame once the card opens below the stage)
+    // the visitor's zoom over the fitted plan: stage px per plan px, divided by the fit (the world's untransformed width / the plan's)
+    const zoomOf2d = () => page.evaluate(() => {
+      const st = document.getElementById('plan2d-stage');
+      const fit = parseFloat(st.querySelector('.plan2d-world').style.width) / st.querySelector('.plan2d-image').naturalWidth;
+      return (st.__twin.project(1, 0).x - st.__twin.project(0, 0).x) / fit;
+    });
+    const framed2d = await zoomOf2d();
+    await click('.zoom-btn[data-zoom="in"]');
+    await click('.zoom-btn[data-zoom="in"]');
+    const zoomed2d = await zoomOf2d();
+    assert.ok(zoomed2d > framed2d * 1.3, `2D: + twice zooms in on the focused room (${framed2d.toFixed(2)}x -> ${zoomed2d.toFixed(2)}x)`);
+    const vp2d = page.viewportSize();
+    await page.setViewportSize({ width: vp2d.width, height: Math.round(vp2d.height * 0.78) });
+    await page.waitForTimeout(600); // ResizeObserver -> resize()
+    const resized2d = await zoomOf2d();
+    assert.ok(Math.abs(resized2d - zoomed2d) < zoomed2d * 0.01, `2D: the button zoom is kept across a resize (${zoomed2d.toFixed(2)}x -> ${resized2d.toFixed(2)}x; the room's own frame is ${framed2d.toFixed(2)}x)`);
+    await page.setViewportSize(vp2d);
+    await page.waitForTimeout(600);
+    await click('#room-list .room-item-btn[data-id="meeting-large"]'); // the same item again: back to the plan
+    await page.waitForFunction(() => location.hash === '#/plan' && !document.getElementById('plan2d-stage').dataset.focus);
+    await page.waitForTimeout(800);
     // a list-only space (the corridors) opens its details straight from the list
     await click('#room-list .room-item-btn[data-id="corridors"]');
     await page.waitForFunction(() => location.hash === '#/room/corridors/details');
@@ -557,6 +584,45 @@ async function flow(name, contextOptions, { mobile, team }) {
     // with the flight cancelled the camera stays wherever the wheel left it (≤ 0.94× the flight's framing
     // for one notch); if the flight had finished on top of the gesture the size would equal `focused`
     assert.ok(takeover.after < takeover.focused * 0.96, `the flight did not override the wheel (after ${takeover.after.toFixed(0)}px, flight target ${takeover.focused.toFixed(0)}px, home ${takeover.home.toFixed(0)}px)`);
+
+    // 6d3. the +/− buttons are the visitor's framing too: a resize keeps their zoom instead of re-fitting the
+    // home view; the reset returns to the automatic framing, which the next resize fits to the new size again
+    step = '6d3 button zoom survives a resize (3D)';
+    // the camera's zoom independent of the stage size: with a fixed vertical field of view, what a still camera
+    // projects scales with the stage height alone
+    const zoomOf3d = () => page.evaluate(() => { const st = document.getElementById('plan-stage'); return st.__twin.planPixelSize() / st.clientHeight; });
+    await page.evaluate(() => document.getElementById('plan-stage').__twin.resetView());
+    await settled();
+    const home3d = await zoomOf3d();
+    await click('.zoom-btn[data-zoom="in"]');
+    await settled();
+    await click('.zoom-btn[data-zoom="in"]');
+    await settled();
+    const zoomed3d = await zoomOf3d();
+    assert.ok(zoomed3d > home3d * 1.3, `3D: + twice zooms in (${home3d.toFixed(3)} -> ${zoomed3d.toFixed(3)})`);
+    const vp3d = page.viewportSize();
+    await page.setViewportSize({ width: vp3d.width, height: Math.round(vp3d.height * 0.78) });
+    await page.waitForTimeout(600); // ResizeObserver -> resize()
+    await settled();
+    const resized3d = await zoomOf3d();
+    assert.ok(Math.abs(resized3d - zoomed3d) < zoomed3d * 0.01, `3D: the button zoom is kept across a resize (${zoomed3d.toFixed(3)} -> ${resized3d.toFixed(3)}; home ${home3d.toFixed(3)})`);
+    await page.setViewportSize(vp3d);
+    await page.waitForTimeout(600);
+    await settled();
+    // after the reset a resize re-fits the home view: the same frame an explicit reset gives at the new size
+    await page.evaluate(() => document.getElementById('plan-stage').__twin.resetView());
+    await settled();
+    await page.setViewportSize({ width: vp3d.width, height: Math.round(vp3d.height * 1.35) }); // a taller (narrower) stage: the horizontal fit tightens, so the fit distance moves
+    await page.waitForTimeout(600);
+    await settled();
+    const refit3d = await zoomOf3d();
+    await page.evaluate(() => document.getElementById('plan-stage').__twin.resetView());
+    await settled();
+    const explicit3d = await zoomOf3d();
+    assert.ok(Math.abs(refit3d - explicit3d) < explicit3d * 0.01, `3D: after a reset the resize re-fits the home view (${refit3d.toFixed(3)} vs an explicit reset ${explicit3d.toFixed(3)})`);
+    await page.setViewportSize(vp3d);
+    await page.waitForTimeout(600);
+    await settled();
 
     // 6e. details requested while the flight to the room is still in progress: the snapshot is taken at the end of the flight
     // (the CFO office has no Cycles render yet, so its details page shows the live snapshot)

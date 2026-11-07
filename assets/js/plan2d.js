@@ -365,7 +365,9 @@ export function createPlan2D(container, data, opts = {}) {
     onFrame: (fn) => { listeners.add(fn); return () => listeners.delete(fn); },
     requestRender: apply,
     resetView: () => { userMoved = false; return focusId ? focusRoom(focusId) : unfocus(); },
-    zoom: (factor) => { cancelTween(); zoomAt(factor, viewW / 2, viewH / 2); },
+    // the +/− buttons are the visitor's input like the wheel and the pinch: the framing is theirs from
+    // now on, so a later resize keeps it instead of re-framing the focused room
+    zoom: (factor) => { cancelTween(); userMoved = true; zoomAt(factor, viewW / 2, viewH / 2); },
     stopIdle() {},
     snapshot,
     dispose: () => { world.remove(); },
