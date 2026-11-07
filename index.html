@@ -6,7 +6,7 @@
   <title>جولة المكتب</title>
   <meta name="description" content="استكشفوا تجربة المكتب وشاهدوا المكاتب الإدارية بتوأمة رقمية إبداعية.">
   <meta name="robots" content="noindex">
-  <meta name="theme-color" content="#121418">
+  <meta name="theme-color" content="#051b30">
   <link rel="preload" href="assets/fonts/IBMPlexSansArabic-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/IBMPlexSansArabic-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/app.css">
@@ -22,31 +22,49 @@
       </a>
       <nav class="site-nav" aria-label="التنقل">
         <a href="#/" data-nav="welcome">الرئيسية</a>
-        <a href="#/plan" data-nav="plan">المخطط ثلاثي الأبعاد</a>
+        <a href="#/plan?view=2d" data-nav="plan2d">مخطط المكتب</a>
+        <a href="#/plan?view=3d" data-nav="plan3d">المخطط ثلاثي الأبعاد</a>
         <a href="#/plan?scene=paths" data-nav="paths">المسارات</a>
       </nav>
       <span class="team-chip" id="plan-team-chip" hidden></span>
+      <a class="header-owner" id="header-owner" href="https://www.satr-ksa.com" target="_blank" rel="noopener" aria-label="شركة سطر العقارية — الموقع الرسمي">
+        <span class="owner-mark" aria-hidden="true"></span>
+        <span class="owner-name">شركة سطر العقارية</span>
+      </a>
     </header>
 
     <!-- 1. الترحيب -->
     <section id="view-welcome" class="view view-welcome" data-view="welcome" aria-labelledby="welcome-title">
       <img id="welcome-photo" class="welcome-photo" alt="" decoding="async">
       <div class="welcome-shade" aria-hidden="true"></div>
+      <div class="welcome-panel" aria-hidden="true"></div>
       <div class="welcome-content">
+        <div class="welcome-brand" id="welcome-brand">
+          <span class="welcome-brand-mark" aria-hidden="true"></span>
+          <span class="welcome-brand-text">
+            <strong id="welcome-brand-name">سطر العقارية</strong>
+            <small id="welcome-brand-en">SATR REAL ESTATE</small>
+          </span>
+        </div>
+        <p id="welcome-location" class="welcome-location"></p>
         <h1 id="welcome-title" class="welcome-title">مرحبًا بكم</h1>
         <p id="welcome-subtitle" class="welcome-subtitle"></p>
         <p id="welcome-atmosphere" class="welcome-atmosphere"></p>
         <div class="welcome-actions">
           <a id="btn-start" class="btn btn-primary btn-lg" href="#/plan">ابدأ الجولة</a>
         </div>
+        <p id="welcome-slogan" class="welcome-slogan"></p>
       </div>
-      <!-- يُملأ في آخر مرحلة ببيانات المسوّق (فوتر جاهز من صاحب المشروع) -->
-      <footer id="app-footer" class="app-footer" hidden></footer>
+      <footer id="app-footer" class="app-footer"></footer>
     </section>
 
     <!-- 2. النموذج ثلاثي الأبعاد الحي -->
     <section id="view-plan" class="view view-plan" data-view="plan" aria-label="النموذج ثلاثي الأبعاد">
       <div class="scenebar" role="toolbar" aria-label="المشاهد">
+        <div class="scene-tabs view-tabs" role="tablist" aria-label="طريقة العرض" id="view-tabs">
+          <button type="button" class="scene-tab" role="tab" data-view="2d" aria-selected="true">المخطط ثنائي الأبعاد</button>
+          <button type="button" class="scene-tab" role="tab" data-view="3d" aria-selected="false">المخطط ثلاثي الأبعاد</button>
+        </div>
         <div class="scene-tabs" role="tablist" aria-label="اختر مشهدًا" id="scene-tabs"></div>
         <ul class="route-legend" id="route-legend" aria-label="مفتاح المسارات" hidden></ul>
         <div class="scene-tools">
@@ -60,8 +78,12 @@
       </div>
 
       <div class="plan-layout">
-        <div class="plan-stage-wrap">
-          <div id="plan-stage" class="plan-stage" aria-label="النموذج ثلاثي الأبعاد للمكتب">
+        <div class="plan-stage-wrap" id="plan-stage-wrap" data-mode="2d">
+          <div id="plan2d-stage" class="plan-stage plan-stage-2d" aria-label="مخطط المكتب">
+            <svg class="overlay-svg" aria-hidden="true"></svg>
+            <div class="overlay-dots"></div>
+          </div>
+          <div id="plan-stage" class="plan-stage plan-stage-3d" aria-label="النموذج ثلاثي الأبعاد للمكتب" hidden>
             <div class="twin-loading" id="twin-loading"><span class="spinner" aria-hidden="true"></span>يُحمَّل النموذج ثلاثي الأبعاد…</div>
             <svg class="overlay-svg" id="overlay-svg" aria-hidden="true"></svg>
             <div class="overlay-dots" id="overlay-dots"></div>
@@ -69,14 +91,21 @@
           <div class="plan-badge" id="plan-badge">توزيعات المكاتب</div>
           <div class="dots-legend" id="dots-legend">
             <span><i class="dot dot-blue" aria-hidden="true"></i> منظور قريب</span>
-            <span><i class="dot dot-red" aria-hidden="true"></i> الصور الحقيقية</span>
+            <span><i class="dot dot-red" aria-hidden="true"></i> تفاصيل الغرفة والصور</span>
           </div>
           <div class="zoom-controls" aria-label="التحكم بالعرض">
             <button type="button" class="zoom-btn" data-zoom="in" aria-label="تكبير">+</button>
             <button type="button" class="zoom-btn" data-zoom="out" aria-label="تصغير">−</button>
-            <button type="button" class="zoom-btn" data-zoom="fit" aria-label="إعادة الضبط">⤢</button>
+            <button type="button" class="zoom-btn zoom-reset" data-zoom="fit" aria-label="إعادة الوضع الافتراضي" title="إعادة الوضع الافتراضي">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                <ellipse cx="12" cy="12" rx="3.4" ry="8.2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M3.9 12h16.2M5.3 8.3h13.4M5.3 15.7h13.4" fill="none" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M15.2 15.6l1.2 3.1c.3.8-.3 1.5-1.1 1.5h-3.6c-.6 0-1-.3-1.3-.8l-1.5-2.4c-.3-.5.1-1.1.7-1l1.4.4v-3.6c0-.5.4-.9.9-.9s.9.4.9.9v2.1l2.4.7z" fill="currentColor"/>
+              </svg>
+            </button>
           </div>
-          <p class="plan-help" id="plan-help"><span class="help-desktop">اسحب للتدوير، العجلة للتكبير، والزر الأيمن للتحريك — انقر الغرفة لعرضها</span><span class="help-mobile">اسحب للتدوير، اقرص للتكبير، وبإصبعين للتحريك — اضغط الغرفة لعرضها</span></p>
+          <p class="plan-help" id="plan-help"><span class="help-2d">اسحب للتحريك، العجلة للتكبير — انقر الغرفة لعرضها</span><span class="help-3d help-desktop">اسحب للتدوير حول المكتب، العجلة للتكبير — انقر الغرفة لعرضها</span><span class="help-3d help-mobile">اسحب للتدوير، اقرص للتكبير — اضغط الغرفة لعرضها</span></p>
         </div>
 
         <!-- القائمة العمودية الثابتة على اليمين -->
@@ -97,6 +126,7 @@
             <div class="focus-actions">
               <button id="btn-photos" class="btn btn-primary" type="button">الصور الحقيقية</button>
               <button id="btn-focus-details" class="btn btn-ghost-light" type="button">تفاصيل الغرفة</button>
+              <button id="btn-focus-mode" class="btn btn-ghost-light btn-mode" type="button">العرض ثلاثي الأبعاد</button>
             </div>
           </div>
         </aside>

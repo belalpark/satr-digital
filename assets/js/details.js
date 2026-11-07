@@ -12,11 +12,18 @@ export function createDetails(view, data, { onOpenPhoto, snapshot } = {}) {
     stage: view.querySelector('#details-stage'),
     tabs: [...view.querySelectorAll('.details-tabs .tab')],
   };
+  // a soft, blurred copy of the picture fills the stage behind it, so a landscape Cycles
+  // render can be shown whole (letterboxed) inside the tall desktop column
+  const bg = document.createElement('img');
+  bg.className = 'details-render-bg';
+  bg.alt = '';
+  bg.decoding = 'async';
+  bg.setAttribute('aria-hidden', 'true');
   const img = document.createElement('img');
   img.className = 'details-render';
   img.alt = '';
   img.decoding = 'async';
-  el.stage.append(img);
+  el.stage.append(bg, img);
   let roomId = null;
 
   function setTab(name) {
@@ -91,12 +98,23 @@ export function createDetails(view, data, { onOpenPhoto, snapshot } = {}) {
     );
   }
 
+  const caption = view.querySelector('.details-plan-caption');
   function refreshImage() {
     const room = data.rooms.find((r) => r.id === roomId);
     if (!room) return;
-    const shot = room.focus && room.focus.image ? room.focus.image : (snapshot ? snapshot() : '');
+    // a rendered close perspective of the room (Cycles) when one exists, else the pre-rendered
+    // focus crop, else a snapshot of whichever plan view is showing
+    const render = room.render && room.render.image;
+    const shot = render || (room.focus && room.focus.image ? room.focus.image : (snapshot ? snapshot() : ''));
     if (shot) img.src = shot;
     img.hidden = !shot;
+    // the whole render is shown (contain) over its blurred copy; snapshots keep filling the stage
+    el.stage.classList.toggle('is-render', !!render);
+    if (render) bg.src = render;
+    bg.hidden = !render;
+    if (render) img.alt = `لقطة من النموذج ثلاثي الأبعاد: ${room.name}`;
+    else img.alt = '';
+    if (caption) caption.textContent = render ? 'لقطة من النموذج ثلاثي الأبعاد للغرفة بفرشها' : 'الغرفة وما حولها في المخطط';
   }
 
   function show(id, { deferImage = false } = {}) {

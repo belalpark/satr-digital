@@ -198,7 +198,9 @@ def main():
     # --- room anchors / metadata for the viewer
     rooms = []
     for r in office['rooms']:
-        poly = r['polygon']
+        poly = r.get('polygon')
+        if not poly:
+            continue  # list-only spaces (e.g. the corridors) have no floor in the model
         cx = sum(p[0] for p in poly) / len(poly)
         cy = sum(p[1] for p in poly) / len(poly)
         rooms.append({

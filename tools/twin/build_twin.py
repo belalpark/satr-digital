@@ -229,6 +229,11 @@ def build_materials():
     textured('stone', (0.5, 0.49, 0.47), (0.6, 0.59, 0.57), 0.55, 'stone', bump=0.05)
     textured('stone_light', (0.74, 0.71, 0.66), (0.84, 0.81, 0.76), 0.3, 'tiles', bump=0.04)
     textured('slab', (0.62, 0.6, 0.57), (0.7, 0.68, 0.64), 0.6, 'stone', bump=0.0)
+    textured('tile_grey', (0.55, 0.54, 0.52), (0.62, 0.61, 0.59), 0.32, 'tiles', scale=0.8, bump=0.03)   # corridors / reception: large grey porcelain (photos 0357, 0375, 0134)
+    textured('walnut_dark', (0.09, 0.055, 0.035), (0.17, 0.1, 0.06), 0.3, 'grain', bump=0.04)              # CEO desk / meeting table (photos 0203-0218)
+    principled('cabinet_white', (0.84, 0.83, 0.81), 0.28, coat=0.25)
+    principled('shelf_black', (0.045, 0.045, 0.05), 0.5)
+    principled('cushion_blue', (0.2, 0.3, 0.46), 0.92, sheen=0.5)                                       # lounge loose cushions (photos 0146-0152)
     textured('oak', (0.5, 0.33, 0.18), (0.68, 0.48, 0.28), 0.42, 'grain', bump=0.04)
     textured('walnut', (0.16, 0.09, 0.05), (0.3, 0.18, 0.1), 0.35, 'grain', bump=0.04)
     textured('concrete', (0.36, 0.38, 0.41), (0.47, 0.49, 0.52), 0.75, 'stone', bump=0.08)
@@ -444,16 +449,17 @@ def make_chair_guest(b):
     b.box('mesh_dark', (0, 0.25, 0.78), (0.48, 0.05, 0.56), bevel=0.02, tilt=math.radians(-8))
 
 
-def make_desk_exec(b, length):
+def make_desk_exec(b, length, top_mat='desk_white', base_mat=None):
     d = 0.8
     top = 0.75
-    b.box('desk_white', (0, 0, top - 0.015), (length, d, 0.03), bevel=0.006)
+    base_mat = base_mat or top_mat
+    b.box(top_mat, (0, 0, top - 0.015), (length, d, 0.03), bevel=0.006)
     for sx in (-length / 2 + 0.03, length / 2 - 0.03):
         b.box('metal_dark', (sx, 0, (top - 0.03) / 2), (0.05, d - 0.06, top - 0.03))
-    b.box('desk_white', (0, -d / 2 + 0.03, 0.45), (length - 0.1, 0.02, 0.45))
+    b.box(base_mat, (0, -d / 2 + 0.03, 0.45), (length - 0.1, 0.02, 0.45))
     # return on the right-hand side
-    b.box('desk_white', (length / 2 - 0.25, d / 2 + 0.4, top - 0.015), (0.5, 0.8, 0.03), bevel=0.006)
-    b.box('desk_white', (length / 2 - 0.25, d / 2 + 0.4, 0.33), (0.46, 0.76, 0.62), bevel=0.006)
+    b.box(top_mat, (length / 2 - 0.25, d / 2 + 0.4, top - 0.015), (0.5, 0.8, 0.03), bevel=0.006)
+    b.box(base_mat, (length / 2 - 0.25, d / 2 + 0.4, 0.33), (0.46, 0.76, 0.62), bevel=0.006)
     # monitor, keyboard, phone
     b.box('metal_dark', (0.1, -0.22, top + 0.08), (0.08, 0.06, 0.16))
     b.box('screen', (0.1, -0.24, top + 0.32), (0.62, 0.025, 0.36), bevel=0.004)
@@ -502,6 +508,94 @@ def make_sofa(b, length, fabric):
 
 def make_armchair(b, fabric):
     make_sofa(b, 0.92, fabric)
+
+
+def make_sofa_lounge(b, length, fabric):
+    """Lounge modular sofa (photos 0146-0152, 0169-0170): low square modules without arms,
+    a slim upright back and loose lighter cushions. The back is on local +y."""
+    depth, seat_h = 0.95, 0.42
+    n = max(1, round(length / 0.85))
+    mw = length / n
+    b.box(fabric, (0, 0.0, seat_h / 2), (length, depth, seat_h), bevel=0.035)
+    for i in range(n):
+        x = -length / 2 + mw / 2 + i * mw
+        b.box(fabric, (x, 0.02, seat_h + 0.05), (mw - 0.025, depth - 0.3, 0.1), bevel=0.04)      # seat cushion
+        b.box(fabric, (x, depth / 2 - 0.14, seat_h + 0.16), (mw - 0.02, 0.26, 0.34), bevel=0.05)  # back
+        if i % 2 == 0:
+            b.box('cushion_blue', (x + 0.05, depth / 2 - 0.32, seat_h + 0.3), (0.5, 0.14, 0.44), bevel=0.05, tilt=math.radians(-12))
+    for sx in (-length / 2 + 0.12, length / 2 - 0.12):
+        for sy in (-depth / 2 + 0.1, depth / 2 - 0.1):
+            b.box('metal_dark', (sx, sy, 0.02), (0.05, 0.05, 0.04))
+
+
+def make_round_seat(b, r, fabric):
+    """Round ottoman with a curved high back over half of its rim (the centre piece of the lounge U);
+    the back opens toward local -y."""
+    b.cyl(fabric, (0, 0, 0.05), r, 0.4, segs=40)
+    b.cyl(fabric, (0, 0, 0.45), r - 0.04, 0.08, segs=40)
+    segs = 14
+    for i in range(segs):
+        a0 = math.pi * i / segs
+        a1 = math.pi * (i + 1) / segs
+        am = (a0 + a1) / 2
+        cx, cy = (r - 0.12) * math.cos(am), (r - 0.12) * math.sin(am)
+        w = 2 * (r - 0.12) * math.sin((a1 - a0) / 2) + 0.03
+        b.box(fabric, (cx, cy, 0.62), (w, 0.24, 0.46), rot=am + math.pi / 2, bevel=0.03)
+    b.cyl('metal_dark', (0, 0, 0.0), 0.3, 0.05, segs=24)
+
+
+def make_side_table_dark(b, r=0.3, h=0.45):
+    b.cyl('walnut', (0, 0, h - 0.03), r, 0.03, segs=32)
+    b.cyl('metal_dark', (0, 0, 0.0), 0.03, h - 0.03, segs=12)
+    b.cyl('metal_dark', (0, 0, 0.0), r * 0.7, 0.02, segs=32)
+
+
+def make_bookcase(b, length):
+    """CEO bookcase (photos 0211-0216): tall black open unit, lit shelves, oak side panels; back on local +y."""
+    h, d = 2.3, 0.38
+    b.box('shelf_black', (0, d / 2 - 0.01, h / 2), (length, 0.02, h))
+    for sx in (-length / 2 + 0.015, length / 2 - 0.015):
+        b.box('oak', (sx, 0, h / 2), (0.03, d, h), bevel=0.004)
+    cols = max(2, round(length / 0.6))
+    cw = (length - 0.06) / cols
+    for z in (0.02, 0.5, 0.95, 1.4, 1.85, h - 0.02):
+        b.box('shelf_black', (0, 0, z), (length - 0.06, d - 0.02, 0.03))
+        if 0.3 < z < h - 0.1:
+            b.box('led_soft', (0, d / 2 - 0.03, z - 0.03), (length - 0.08, 0.02, 0.01))
+    for i in range(1, cols):
+        x = -length / 2 + 0.03 + i * cw
+        b.box('shelf_black', (x, 0, h / 2), (0.025, d - 0.02, h - 0.04))
+    # a few objects on the shelves
+    random.seed(11)
+    for i in range(cols):
+        x = -length / 2 + 0.03 + cw * (i + 0.5)
+        for z in (0.52, 0.97, 1.42):
+            if random.random() < 0.7:
+                b.box(random.choice(['porcelain', 'walnut', 'cabinet_white']), (x + random.uniform(-0.12, 0.12), 0.02, z + 0.12), (random.uniform(0.08, 0.2), 0.12, random.uniform(0.16, 0.28)), bevel=0.004)
+
+
+def make_tv_cabinet(b, length):
+    """CEO sitting-area wall (photos 0205-0206): white full-height cabinets with a black TV inset
+    and a low white bench; the wall is on local +y, the TV faces -y."""
+    h, d = 2.4, 0.42
+    b.box('cabinet_white', (0, d / 2 - 0.01, h / 2), (length, 0.02, h))
+    for sx in (-length / 2 + 0.3, length / 2 - 0.3):
+        b.box('cabinet_white', (sx, 0, h / 2), (0.6, d, h), bevel=0.006)
+        for z in (0.6, 1.2, 1.8):
+            b.box('shelf_black', (sx, -d / 2 + 0.002, z), (0.56, 0.004, 0.006))
+    b.box('cabinet_white', (0, 0.05, 0.22), (length - 1.2, d - 0.1, 0.44), bevel=0.008)
+    b.box('shelf_black', (0, d / 2 - 0.08, 1.35), (length - 1.3, 0.06, 1.4), bevel=0.004)
+    b.box('tv', (0, d / 2 - 0.12, 1.35), (1.7, 0.03, 0.98), bevel=0.006)
+
+
+def make_tv_stand(b):
+    """Mobile TV stand (photos 0313-0319, 0323): black screen on two posts with a wheeled base; faces -y."""
+    b.box('metal_dark', (0, 0.1, 0.03), (0.9, 0.5, 0.06), bevel=0.01)
+    for sx in (-0.18, 0.18):
+        b.box('metal_dark', (sx, 0.16, 0.9), (0.04, 0.04, 1.7))
+    b.box('metal_dark', (0, 0.14, 1.75), (0.5, 0.02, 0.06))
+    b.box('tv', (0, 0.1, 1.3), (1.5, 0.04, 0.86), bevel=0.006)
+    b.box('metal_dark', (0, 0.16, 0.95), (0.6, 0.02, 0.03))
 
 
 def make_coffee_table(b, length, w):
@@ -625,11 +719,13 @@ def build_architecture(col, office):
     arch = Builder('architecture')
     outline_w = [tuple(W(x, y)[:2]) for x, y in L.OUTLINE]
     # model base (slab): corridor floor on top, stone sides
-    arch.prism('wood', outline_w, -L.SLAB, 0.0, side_mat='slab')
+    arch.prism('tile_grey', outline_w, -L.SLAB, 0.0, side_mat='slab')
 
     rooms = {r['id']: r for r in office['rooms']}
     floors = []
     for r in office['rooms']:
+        if not r.get('polygon'):
+            continue
         mat = L.FLOOR_BY_ROOM.get(r['id'], 'missing')
         if mat == 'missing':
             mat = L.FLOOR_BY_KIND.get(r['kind'])
@@ -897,6 +993,8 @@ def build_furniture(col):
             place(col, asset('chair_exec', make_chair_exec), f['x'], f['y'], f['rot'] + jitter)
         elif t == 'chair_guest':
             place(col, asset('chair_guest', make_chair_guest), f['x'], f['y'], f['rot'] + jitter)
+        elif t == 'desk_exec' and f.get('top'):
+            place(col, asset(f'deskexec{f["len"]}{f["top"]}', lambda b, f=f: make_desk_exec(b, f['len'], f['top'], f.get('base'))), f['x'], f['y'], f['rot'])
         elif t == 'desk_exec':
             mesh = asset(f'desk_exec{f["len"]}', lambda b, f=f: make_desk_exec(b, f['len']))
             place(col, mesh, f['x'], f['y'], f['rot'])
@@ -914,6 +1012,19 @@ def build_furniture(col):
             place(col, mesh, f['x'], f['y'], f['rot'], z=on_platform(f['x'], f['y']))
         elif t == 'armchair':
             place(col, asset(f'armchair{f["fabric"]}', lambda b, f=f: make_armchair(b, f['fabric'])), f['x'], f['y'], f['rot'])
+        elif t == 'sofa_lounge':
+            mesh = asset(f'sofalounge{f["len"]}{f["fabric"]}', lambda b, f=f: make_sofa_lounge(b, f['len'], f['fabric']))
+            place(col, mesh, f['x'], f['y'], f['rot'], z=on_platform(f['x'], f['y']))
+        elif t == 'round_seat':
+            place(col, asset(f'roundseat{f["r"]}{f["fabric"]}', lambda b, f=f: make_round_seat(b, f['r'], f['fabric'])), f['x'], f['y'], f['rot'], z=on_platform(f['x'], f['y']))
+        elif t == 'side_table_dark':
+            place(col, asset('sidetabledark', make_side_table_dark), f['x'], f['y'], 0, z=on_platform(f['x'], f['y']))
+        elif t == 'bookcase':
+            place(col, asset(f'bookcase{f["len"]}', lambda b, f=f: make_bookcase(b, f['len'])), f['x'], f['y'], f['rot'])
+        elif t == 'tv_cabinet':
+            place(col, asset(f'tvcabinet{f["len"]}', lambda b, f=f: make_tv_cabinet(b, f['len'])), f['x'], f['y'], f['rot'])
+        elif t == 'tv_stand':
+            place(col, asset('tvstand', make_tv_stand), f['x'], f['y'], f['rot'])
         elif t == 'coffee_table':
             place(col, asset(f'coffee{f["len"]}{f["w"]}', lambda b, f=f: make_coffee_table(b, f['len'], f['w'])), f['x'], f['y'], 0,
                   z=on_platform(f['x'], f['y']))
@@ -988,7 +1099,9 @@ def build_lights(col, office, energy):
 
     step = 3.6 * S
     for r in office['rooms']:
-        poly = r['polygon']
+        poly = r.get('polygon')
+        if not poly:
+            continue
         xs = [p[0] for p in poly]
         ys = [p[1] for p in poly]
         x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
@@ -1049,6 +1162,122 @@ def setup_hero_camera(scene):
     cam_data.dof.focus_distance = (target - eye).length * 0.9
     bpy.context.view_layer.update()
     return cam
+
+
+def setup_room_camera(scene, office, room_id, lens=30.0, pitch=36.0, yaw=None, margin=0.06):
+    """Close perspective of one room ("لقطة واقعية"): a 30 mm camera looking down at ~36 deg from
+    above the room's open side, fitted so the room's floor polygon and wall tops fill the frame."""
+    rooms = {r['id']: r for r in office['rooms']}
+    poly = rooms[room_id]['polygon']
+    xs = [p[0] for p in poly]
+    ys = [p[1] for p in poly]
+    cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+    cam_data = bpy.data.cameras.new('room')
+    cam_data.lens = lens
+    cam_data.sensor_width = 36
+    cam_data.sensor_fit = 'HORIZONTAL'
+    cam_data.dof.use_dof = True
+    cam_data.dof.aperture_fstop = 4.0
+    cam = bpy.data.objects.new('room', cam_data)
+    scene.collection.objects.link(cam)
+    scene.camera = cam
+    target = W(cx, cy, 0.7)
+    pts = [W(x, y, z) for x, y in poly for z in (0.0, L.WALL_H + 0.3)]
+    aspect = scene.render.resolution_x / scene.render.resolution_y
+    pr = math.radians(pitch)
+
+    def place(back):
+        """Put the camera on the `back` side of the room (unit vector, world XY) and fit the room."""
+        direction = Vector((back.x * math.cos(pr), back.y * math.cos(pr), math.sin(pr)))
+
+        def fit(dist):
+            cam.location = target + direction * dist
+            cam.rotation_euler = (target - cam.location).to_track_quat('-Z', 'Y').to_euler()
+            cam_data.shift_x = cam_data.shift_y = 0
+            bpy.context.view_layer.update()
+            us = [world_to_camera_view(scene, cam, p) for p in pts]
+            return min(u.x for u in us), max(u.x for u in us), min(u.y for u in us), max(u.y for u in us)
+
+        lo, hi = 2.0, 80.0
+        for _ in range(40):
+            mid = (lo + hi) / 2
+            u0, u1, v0, v1 = fit(mid)
+            if u0 >= margin and u1 <= 1 - margin and v0 >= margin and v1 <= 1 - margin:
+                hi = mid
+            else:
+                lo = mid
+        u0, u1, v0, v1 = fit(hi)
+        cam_data.shift_x = (u0 + u1 - 1) / 2
+        cam_data.shift_y = (v0 + v1 - 1) / 2 / aspect
+        cam_data.dof.focus_distance = hi
+        bpy.context.view_layer.update()
+
+    def unit(v):
+        v = Vector((v.x, v.y, 0))
+        return v.normalized() if v.length > 1e-3 else Vector((0, -1, 0))
+
+    # by default the camera stands on the corridor side of the room (toward the office centre),
+    # so the far walls and the furniture backs face it; `yaw` (degrees, world) overrides that
+    if yaw is not None:
+        yr = math.radians(yaw)
+        place(Vector((math.cos(yr), math.sin(yr), 0)))
+        cam['yaw'] = yaw
+        cam['visible'] = cam['visible_default'] = room_visibility(scene, cam, poly)
+        return cam
+    default = unit(W(650, 600, 0) - W(cx, cy, 0))
+    # ... unless something in front (the service core, a neighbouring block) hides the room from
+    # there: score every direction by the share of the room's floor the camera actually reaches
+    # (ray casts against the built scene) and keep the default only while it is nearly as good
+    scores = []
+    candidates = [default] + [Vector((math.cos(math.radians(a)), math.sin(math.radians(a)), 0)) for a in range(0, 360, 30)]
+    for back in candidates:
+        place(back)
+        scores.append(room_visibility(scene, cam, poly))
+    best = max(scores)
+    chosen = default if scores[0] >= best - 0.08 else candidates[scores.index(best)]
+    place(chosen)
+    cam['yaw'] = math.degrees(math.atan2(chosen.y, chosen.x))
+    cam['visible'] = scores[0] if chosen is default else best
+    cam['visible_default'] = scores[0]
+    return cam
+
+
+def room_visibility(scene, cam, poly, step_px=12):
+    """Share of sample points on the room's floor whose line of sight from the camera first
+    meets something inside the room's footprint (its floor, furniture or own partitions)."""
+    xs = [p[0] for p in poly]
+    ys = [p[1] for p in poly]
+    samples = [
+        (x, y)
+        for x in range(int(min(xs)) + step_px // 2, int(max(xs)), step_px)
+        for y in range(int(min(ys)) + step_px // 2, int(max(ys)), step_px)
+        if point_in_poly(x, y, poly)
+    ]
+    if not samples:
+        return 0.0
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    origin = cam.matrix_world.translation
+    tol = 0.25 * S  # a hit on the room's own walls or glass (on the polygon edge) still counts
+    seen = 0
+    for x, y in samples:
+        p = W(x, y, 0.05)
+        d = (p - origin)
+        hit, loc, _n, _i, _o, _m = scene.ray_cast(depsgraph, origin, d.normalized(), distance=d.length + 1.0)
+        if not hit:
+            continue
+        px, py = loc.x * S + CX, CY - loc.y * S
+        if point_in_poly(px, py, poly) or min(dist_to_segment(px, py, a, b) for a, b in zip(poly, poly[1:] + poly[:1])) <= tol:
+            seen += 1
+    return seen / len(samples)
+
+
+def dist_to_segment(px, py, a, b):
+    (ax, ay), (bx, by) = a, b
+    dx, dy = bx - ax, by - ay
+    if dx == 0 and dy == 0:
+        return math.hypot(px - ax, py - ay)
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)))
+    return math.hypot(px - (ax + t * dx), py - (ay + t * dy))
 
 
 def add_key_light(col, energy):
@@ -1208,6 +1437,8 @@ def main():
     ap.add_argument('--save-blend', default='')
     ap.add_argument('--hero', action='store_true', help='render the welcome perspective instead of the plan views')
     ap.add_argument('--daylight', action='store_true', help='daylight rig (strong sun, bright sky) instead of the evening pools')
+    ap.add_argument('--room', default='', help='comma-separated room ids: render a close perspective per room (room-<id>.png) instead of the plan views')
+    ap.add_argument('--camera-report', action='store_true', help='with --room: print the chosen direction and floor visibility per room, no render')
     args = ap.parse_args(sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:])
 
     res = tuple(int(v) for v in args.res.lower().split('x'))
@@ -1239,6 +1470,18 @@ def main():
         add_key_light(col, args.key)
         add_ground(col)
         setup_world(scene, args.ambient)
+    if args.room:
+        scene.render.resolution_x, scene.render.resolution_y = res
+        scene.render.film_transparent = False
+        print(f'scene built in {time.time() - t0:.1f}s, objects: {len(bpy.data.objects)}', flush=True)
+        for rid in [r for r in args.room.split(',') if r]:
+            cam = setup_room_camera(scene, office, rid)
+            print(f'{rid}: camera yaw {cam["yaw"]:.0f} deg, floor visible {cam["visible"]:.2f} (toward the centre: {cam["visible_default"]:.2f})', flush=True)
+            if not args.camera_report:
+                render_to(scene, os.path.join(args.out, f'room-{rid}{"-preview" if args.preview else ""}.png'))
+            bpy.data.objects.remove(cam, do_unlink=True)
+        print('done')
+        return
     if args.hero:
         cam = setup_hero_camera(scene)
     else:

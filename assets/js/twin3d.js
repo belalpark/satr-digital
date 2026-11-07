@@ -18,7 +18,9 @@ export async function createTwin3D(container, data, opts = {}) {
 
   // ---------- renderer / scene ----------
   const renderer = new T.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  // 1.5x is plenty for a model this size; the adaptive governor below drops to 1x on weak GPUs
+  let pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+  renderer.setPixelRatio(pixelRatio);
   renderer.toneMapping = T.ACESFilmicToneMapping;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = T.PCFShadowMap;
@@ -39,14 +41,16 @@ export async function createTwin3D(container, data, opts = {}) {
   controls.minPolarAngle = 8 * DEG;
   controls.minDistance = 6;
   controls.maxDistance = 120;
-  controls.enablePan = true;
-  controls.zoomToCursor = true;
+  // the model orbits around a fixed pivot (the office centre, or the focused room): no free panning,
+  // and zooming keeps the pivot, so the model can never drift off the stage
+  controls.enablePan = false;
+  controls.zoomToCursor = false;
 
   // ---------- lighting rigs ----------
   const sun = new T.DirectionalLight(0xfff1dc, 2.4);
   sun.position.set(-16, 34, 20);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(1024, 1024);
   Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 100 });
   sun.shadow.bias = -0.0005;
   sun.shadow.normalBias = 0.02;
@@ -71,7 +75,7 @@ export async function createTwin3D(container, data, opts = {}) {
     p.position.set(l.pos[0], l.pos[2], -l.pos[1]);
     nightGroup.add(p);
   }
-  scene.add(nightGroup);
+  // the point lights only join the scene in the evening mode: by day the shaders carry no point lights at all
 
   function kmeans(points, k) {
     if (!points.length) return [];
@@ -99,6 +103,8 @@ export async function createTwin3D(container, data, opts = {}) {
     sky.intensity = night ? 0.12 : 0.9;
     sky.color.set(night ? 0x3a4a7a : 0xd6e6ff);
     for (const l of nightGroup.children) l.intensity = night ? l.userData.on : 0;
+    if (night && nightGroup.parent !== scene) scene.add(nightGroup);
+    if (!night && nightGroup.parent === scene) scene.remove(nightGroup);
     renderer.toneMappingExposure = night ? 1.25 : 0.95;
     scene.environmentIntensity = night ? 0.12 : 1.0;
     container.dataset.lighting = mode;
@@ -421,8 +427,30 @@ export async function createTwin3D(container, data, opts = {}) {
     return project(a.label[0], a.label[1], info.wallHeight + 0.15);
   }
 
+  // ---------- adaptive quality: weak GPUs get 1x pixels and no shadows ----------
+  // fed with the time between consecutive rendered frames (turntable / flights / route animation):
+  // under 30 fps on average means the GPU cannot keep up, so the viewer steps down and stays there
+  let frameSamples = 0;
+  let frameSum = 0;
+  let qualityStep = 0; // 0 = full, 1 = 1x pixels, 2 = also no shadows
+  function governor(ms) {
+    if (qualityStep >= 2) return;
+    frameSamples += 1;
+    frameSum += ms;
+    if (frameSamples < 24) return;
+    const avg = frameSum / frameSamples;
+    frameSamples = 0;
+    frameSum = 0;
+    if (avg <= 34) return;
+    qualityStep += 1;
+    if (qualityStep === 1 && pixelRatio > 1) { pixelRatio = 1; renderer.setPixelRatio(1); container.dataset.quality = 'reduced'; }
+    else if (qualityStep >= 1) { renderer.shadowMap.enabled = false; for (const m of scene.children) if (m.isMesh) m.material.needsUpdate = true; model.traverse((o) => { if (o.isMesh) { const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const mt of ms) if (mt) mt.needsUpdate = true; } }); qualityStep = 2; container.dataset.quality = 'low'; }
+    requestRender();
+  }
+
   // ---------- render loop (on demand) ----------
   let needsRender = true;
+  let lastFrameAt = 0;
   let rafId = 0;
   let stageVisible = false; // kept current by the IntersectionObserver below
   let active = opts.active !== false; // false while the page shows another view over the stage (views hide by visibility, not display)
@@ -433,7 +461,10 @@ export async function createTwin3D(container, data, opts = {}) {
     if (!rafId) rafId = requestAnimationFrame(frame);
   }
   // the route stripes keep moving (while the stage is on screen) even when the camera is still
-  const routesAnimating = () => routeGroup.visible && !reducedMotion && onScreen();
+  // the stripes only need frames while at least one route can actually be seen: the paths scene
+  // shows the group, and the chips toggle the individual routes inside it
+  const anyRouteVisible = () => { for (const g of routeMeshes.values()) if (g.visible) return true; return false; };
+  const routesAnimating = () => routeGroup.visible && anyRouteVisible() && !reducedMotion && onScreen();
   function frame(now) {
     rafId = 0;
     if (tween) {
@@ -448,8 +479,13 @@ export async function createTwin3D(container, data, opts = {}) {
     const moved = controls.update();
     if (moved || needsRender) {
       renderer.render(scene, camera);
+      // frame pacing over consecutive rendered frames is the honest proxy for GPU load
+      if (lastFrameAt) governor(now - lastFrameAt);
+      lastFrameAt = now;
       needsRender = false;
       for (const fn of listeners) fn();
+    } else {
+      lastFrameAt = 0;
     }
     // controls.update() above may already have queued the next frame through its
     // synchronous 'change' event; never queue a second callback for the same tick
@@ -483,9 +519,11 @@ export async function createTwin3D(container, data, opts = {}) {
     requestRender();
     if (onScreen() && idle && !idleRaf) idleRaf = requestAnimationFrame(spin);
   }
+  const idleStart = performance.now();
   function spin() {
     idleRaf = 0;
     if (!idle || focusId || !onScreen()) return;
+    if (performance.now() - idleStart > 30000) { idle = false; return; } // the turntable stops by itself after half a minute
     if (tween) { idleRaf = requestAnimationFrame(spin); return; } // never fight a flight in progress
     const az = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) + 0.0009;
     const polar = Math.acos((camera.position.y - controls.target.y) / camera.position.distanceTo(controls.target));

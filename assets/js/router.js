@@ -1,7 +1,7 @@
 // Hash router. Routes:
 //   #/                      welcome
-//   #/plan[?scene=<id>]     3D plan (scene: current | paths)
-//   #/room/<id>             the room's second shot: 3D plan focused on the room
+//   #/plan[?scene=<id>][&view=2d|3d]   plan (scene: current | paths; view = 2D plan or live 3D model)
+//   #/room/<id>[?view=2d|3d]           the room focused in the plan (2D highlight or 3D close-up)
 //   #/room/<id>/photos      real photos of the room
 //   #/room/<id>/details     details panel
 
@@ -12,12 +12,16 @@ export function parseHash(hash) {
   const [path, query = ''] = raw.split('?');
   const parts = path.split('/').filter(Boolean);
   if (parts.length === 0) return { view: 'welcome' };
+  const q = new URLSearchParams(query);
+  const mode = q.get('view') === '3d' ? '3d' : q.get('view') === '2d' ? '2d' : null; // optional 2D / 3D view in deep links
   if (parts[0] === 'plan') {
-    const scene = new URLSearchParams(query).get('scene');
-    return scene ? { view: 'plan', scene } : { view: 'plan' };
+    const scene = q.get('scene');
+    const r = scene ? { view: 'plan', scene } : { view: 'plan' };
+    if (mode) r.mode = mode;
+    return r;
   }
   if (parts[0] === 'room' && parts[1] && ROOM_ID.test(parts[1])) {
-    if (parts.length === 2) return { view: 'room', roomId: parts[1] };
+    if (parts.length === 2) return mode ? { view: 'room', roomId: parts[1], mode } : { view: 'room', roomId: parts[1] };
     if (parts.length === 3 && parts[2] === 'photos') return { view: 'photos', roomId: parts[1] };
     if (parts.length === 3 && parts[2] === 'details') return { view: 'details', roomId: parts[1] };
   }
@@ -28,10 +32,14 @@ export function buildHash(route) {
   switch (route.view) {
     case 'welcome':
       return '#/';
-    case 'plan':
-      return route.scene && route.scene !== 'current' ? `#/plan?scene=${encodeURIComponent(route.scene)}` : '#/plan';
+    case 'plan': {
+      const q = [];
+      if (route.scene && route.scene !== 'current') q.push(`scene=${encodeURIComponent(route.scene)}`);
+      if (route.mode) q.push(`view=${route.mode}`);
+      return q.length ? `#/plan?${q.join('&')}` : '#/plan';
+    }
     case 'room':
-      return `#/room/${route.roomId}`;
+      return route.mode ? `#/room/${route.roomId}?view=${route.mode}` : `#/room/${route.roomId}`;
     case 'photos':
       return `#/room/${route.roomId}/photos`;
     case 'details':

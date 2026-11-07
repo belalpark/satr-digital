@@ -17,6 +17,7 @@ test('room ids are unique and non-empty', () => {
 
 test('every polygon has >= 3 points inside the reference plan', () => {
   for (const r of data.rooms) {
+    if (!r.polygon) { assert.equal(r.hasModel, false, `${r.id}: a room without a polygon cannot be in the model`); continue; }
     assert.ok(r.polygon.length >= 3, r.id);
     for (const [x, y] of r.polygon) {
       assert.ok(x >= 0 && x <= ref.width && y >= 0 && y <= ref.height, `${r.id} point ${x},${y}`);
@@ -78,10 +79,21 @@ test('every room polygon projects inside the rendered image', () => {
     return [(H[0] * x + H[1] * y + H[2]) / w, (H[3] * x + H[4] * y + H[5]) / w];
   };
   for (const r of data.rooms) {
-    for (const p of r.polygon) {
+    for (const p of r.polygon || []) {
       const [u, v] = project(p);
       assert.ok(u >= 0 && u <= width && v >= 0 && v <= height, `${r.id} ${p} -> ${u.toFixed(0)},${v.toFixed(0)}`);
     }
+  }
+});
+
+test('room perspective renders (where present) exist and only belong to modelled rooms', () => {
+  const rendered = data.rooms.filter((r) => r.render);
+  assert.ok(rendered.length >= 10, `expected the main rooms to carry a render, got ${rendered.length}`);
+  for (const r of rendered) {
+    assert.notEqual(r.hasModel, false, `${r.id} has no model but carries a render`);
+    assert.match(r.render.image, /^media\/twin\/rooms\/[a-z0-9-]+\.webp$/, `${r.id} render path`);
+    assert.ok(existsSync(resolve(root, r.render.image)), `missing ${r.render.image}`);
+    assert.ok(r.render.width > r.render.height, `${r.id} render is landscape`);
   }
 });
 
@@ -101,6 +113,23 @@ test('welcome copy: no totals, the agreed lines only', () => {
   assert.equal(w.cta, 'ابدأ الجولة');
 });
 
+test('footer: condensed Satr essentials — both phone numbers, general location, no invented e-mail', () => {
+  const f = data.office.footer;
+  assert.equal(f.name, 'شركة سطر العقارية');
+  assert.match(f.tagline, /نفهم الأصل/);
+  const numbers = f.phones.map((p) => p.display);
+  assert.deepEqual(numbers, ['+966 55 585 5057', '+966 54 417 1356'], 'Satr number first, the extra number beside it');
+  for (const p of f.phones) assert.match(p.tel, /^\+9665\d{8}$/, `${p.display} tel link`);
+  assert.match(f.location, /واجهة روشن للأعمال/);
+  assert.ok(!/mailto:|[\w.]+@[\w-]+\.[a-z]{2,}/i.test(JSON.stringify(f)), 'no e-mail address is shown (the site hides it)');
+  assert.ok(f.social.length >= 4 && f.social.every((s) => /^https:\/\//.test(s.href)));
+  assert.match(f.copyright, /سطر العقارية/);
+  assert.match(data.office.welcome.location, /واجهة روشن للأعمال/);
+  const b = data.office.brand;
+  assert.equal(b.name, 'سطر العقارية');
+  assert.ok(b.logo === null || existsSync(resolve(root, b.logo)), 'brand logo file exists when set');
+});
+
 test('no booking call to action and no proposed layouts', () => {
   const text = JSON.stringify(data);
   assert.ok(!('booking' in data.office), 'booking removed');
@@ -117,7 +146,8 @@ test('scenes: current state and three coloured routes over existing rooms', () =
   assert.deepEqual(routes.map((r) => r.id), ['employees', 'executive', 'guests']);
   // employees loop past every employee office area; guests reach both meeting rooms and the lounge
   const empStops = new Set(routes[0].stops.map((s) => s.roomId));
-  for (const id of ['hr-pmo-ops', 'research', 'marketing', 'data-analysis', 'finance', 'field-qc']) assert.ok(empStops.has(id), `employees -> ${id}`);
+  // the client's key plan: employee offices are 03a-03f (open-a, field-qc, finance, inner-1, research, hr-pmo-ops)
+  for (const r of data.rooms.filter((x) => x.key && x.key.startsWith('03'))) assert.ok(empStops.has(r.id), `employees -> ${r.id} (${r.key})`);
   const guestStops = new Set(routes[2].stops.map((s) => s.roomId));
   for (const id of ['meeting-medium', 'meeting-large', 'lounge', 'reception']) assert.ok(guestStops.has(id), `guests -> ${id}`);
   const emp = routes[0].points;
@@ -182,7 +212,7 @@ test('office.json camera data matches the published render (media/twin/twin.json
 test('web model scene data matches the office record', () => {
   const sceneInfo = JSON.parse(readFileSync(resolve(root, data.office.model.scene), 'utf8'));
   const ids = new Set(data.rooms.map((r) => r.id));
-  assert.equal(sceneInfo.rooms.length, data.rooms.length, 'one anchor per room');
+  assert.equal(sceneInfo.rooms.length, data.rooms.filter((r) => r.polygon).length, 'one anchor per room with a floor polygon');
   for (const a of sceneInfo.rooms) {
     assert.ok(ids.has(a.id), `anchor for unknown room ${a.id}`);
     assert.ok(a.floor.length >= 3 && a.label.length === 2, a.id);

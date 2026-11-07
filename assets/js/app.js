@@ -2,6 +2,7 @@
 // router to the views (welcome → 3D plan → room focus → photos / details).
 import { parseHash, navigate, teamNameFromSearch } from './router.js';
 import { createTwin3D } from './twin3d.js';
+import { createPlan2D } from './plan2d.js';
 import { createOverlay } from './overlay.js';
 import { createRoom } from './room.js';
 import { createDetails } from './details.js';
@@ -70,6 +71,11 @@ export async function init() {
   document.getElementById('welcome-subtitle').textContent = W.subtitle;
   document.getElementById('welcome-atmosphere').textContent = W.atmosphere;
   document.getElementById('btn-start').textContent = W.cta;
+  const locEl = document.getElementById('welcome-location');
+  locEl.textContent = W.location || '';
+  locEl.hidden = !W.location;
+  renderBrand(data.office.brand || {});
+  renderFooter(document.getElementById('app-footer'), data.office.footer);
   const hero = document.getElementById('welcome-photo');
   hero.src = data.office.heroImage;
   hero.addEventListener('error', () => { if (data.office.heroFallback && hero.src.indexOf(data.office.heroFallback) < 0) hero.src = data.office.heroFallback; }, { once: true });
@@ -77,8 +83,18 @@ export async function init() {
   // ---------- header nav state ----------
   const navLinks = [...document.querySelectorAll('.site-nav a')];
   function setNav(key) {
+    if (key === 'plan') key = mode === '3d' ? 'plan3d' : 'plan2d';
     for (const a of navLinks) a.classList.toggle('is-active', a.dataset.nav === key);
   }
+
+  // ---------- view mode: the 2D plan (default) or the live 3D model ----------
+  const stageWrap = document.getElementById('plan-stage-wrap');
+  const plan2dStage = document.getElementById('plan2d-stage');
+  const viewTabs = [...document.querySelectorAll('#view-tabs [data-view]')];
+  let mode = readPref('view', (data.office.defaultView === '3d' ? '3d' : '2d'));
+  const plan2d = createPlan2D(plan2dStage, data, {});
+  plan2dStage.__twin = plan2d; // test hook
+  let overlay2d = null;
 
   // ---------- 3D plan ----------
   const planStage = document.getElementById('plan-stage');
@@ -87,40 +103,46 @@ export async function init() {
   let overlay = null;
   let twinError = null;
   let twinPromise = null;
+  // click on a stage: once = focus, again on the same room = back to the plan; hover shows the name
+  function wireStage(el, eng, tipText) {
+    let down = null;
+    el.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: Date.now() }; });
+    el.addEventListener('pointerup', (e) => {
+      if (!down) return;
+      const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 || Date.now() - down.t > 600;
+      down = null;
+      if (moved) return;
+      const id = eng.roomAt(e.clientX, e.clientY);
+      if (id) toggleRoom(id);
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      const id = eng.roomAt(e.clientX, e.clientY);
+      const r = id ? roomsById.get(id) : null;
+      const ok = r && r.status === 'ready' && r.hasModel !== false;
+      el.style.cursor = ok ? 'pointer' : '';
+      showTip(ok ? `${r.name} — ${tipText}` : '', e.clientX, e.clientY);
+    });
+    el.addEventListener('pointerleave', () => showTip(''));
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+  const dotHandlers = {
+    onModel: (id) => toggleRoom(id),
+    onPhotos: (id) => navigate({ view: 'details', roomId: id }), // the red dot opens the room details (photos included)
+  };
+
   function loadTwin() {
     if (twinPromise) return twinPromise;
     twinPromise = (async () => {
     try {
-      twin = await createTwin3D(planStage, data, { base: data.office.model.base, lighting: readPref('lighting', 'day'), idleSpin: true, active: currentView === 'plan' });
-      twin.setActive(currentView === 'plan'); // the view may have changed while the model was loading
-      overlay = createOverlay(planStage, twin, data, {
-        onModel: (id) => toggleRoom(id),
-        onPhotos: (id) => navigate({ view: 'photos', roomId: id }),
-      });
+      twin = await createTwin3D(planStage, data, { base: data.office.model.base, lighting: readPref('lighting', 'day'), idleSpin: true, active: currentView === 'plan' && mode === '3d' });
+      twin.setActive(currentView === 'plan' && mode === '3d'); // the view may have changed while the model was loading
+      overlay = createOverlay(planStage, twin, data, dotHandlers);
       overlay.setOutside(readPref('labels', 'inside') === 'outside');
       loading.hidden = true;
       planStage.classList.add('is-ready');
       planStage.__twin = twin; // test hook (read-only use by the e2e suite)
-      // click on the model itself: once = focus, again on the same room = back to the plan
-      let down = null;
-      twin.element.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: Date.now() }; });
-      twin.element.addEventListener('pointerup', (e) => {
-        if (!down) return;
-        const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 || Date.now() - down.t > 600;
-        down = null;
-        if (moved) return;
-        const id = twin.roomAt(e.clientX, e.clientY);
-        if (id) toggleRoom(id);
-      });
-      twin.element.addEventListener('pointermove', (e) => {
-        if (e.pointerType !== 'mouse') return;
-        const id = twin.roomAt(e.clientX, e.clientY);
-        const r = id ? roomsById.get(id) : null;
-        twin.element.style.cursor = r && r.status === 'ready' ? 'pointer' : '';
-        showTip(r && r.status === 'ready' ? `${r.name} — انقر للمنظور القريب` : '', e.clientX, e.clientY);
-      });
-      twin.element.addEventListener('pointerleave', () => showTip(''));
-      twin.element.addEventListener('contextmenu', (e) => e.preventDefault());
+      wireStage(twin.element, twin, 'انقر للمنظور القريب');
       updateLightingButton();
       syncSceneToTwin();
     } catch (err) {
@@ -131,6 +153,50 @@ export async function init() {
     })();
     return twinPromise;
   }
+
+  // the engine behind the visible stage; the 3D model loads on first use
+  function engine() { return mode === '3d' ? twin : plan2d; }
+  async function ensureEngine() {
+    if (mode === '3d') { await loadTwin(); return twin; }
+    return plan2d;
+  }
+  function applyMode() {
+    stageWrap.dataset.mode = mode;
+    planStage.hidden = mode !== '3d';
+    plan2dStage.hidden = mode !== '2d';
+    for (const b of viewTabs) {
+      const on = b.dataset.view === mode;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-selected', String(on));
+    }
+    lightingBtn.hidden = mode !== '3d';
+    document.getElementById('btn-focus-mode').textContent = mode === '3d' ? 'المخطط ثنائي الأبعاد' : 'العرض ثلاثي الأبعاد';
+    if (twin) twin.setActive(currentView === 'plan' && mode === '3d');
+    if (overlay2d) overlay2d.layout();
+    if (overlay) overlay.layout();
+  }
+  async function switchMode(next, { replace = true } = {}) {
+    if (next !== '2d' && next !== '3d') return;
+    if (next === mode) return;
+    mode = next;
+    writePref('view', mode);
+    applyMode();
+    if (lastRoute && (lastRoute.view === 'plan' || lastRoute.view === 'room')) setNav(lastRoute.view === 'plan' && currentScene === 'paths' ? 'paths' : 'plan');
+    // carry the current state (focused room or the full plan) into the newly shown engine
+    const seq = ++routeSeq;
+    const current = () => seq === routeSeq;
+    const eng = await ensureEngine();
+    if (!eng || !current()) return;
+    syncSceneToTwin();
+    const r = focusRoomId ? roomsById.get(focusRoomId) : null;
+    if (r && r.hasModel !== false) { eng.stopIdle(); if (eng.getFocus() !== r.id) await eng.focusRoom(r.id, { animate: false }); }
+    else if (eng.getFocus()) await eng.unfocus({ animate: false });
+    const ov = mode === '3d' ? overlay : overlay2d;
+    if (ov && current()) ov.setFocus(r ? r.id : null);
+    if (replace && lastRoute && lastRoute.mode && current()) navigate({ ...lastRoute, mode }, { replace: true });
+  }
+  for (const b of viewTabs) b.addEventListener('click', () => switchMode(b.dataset.view));
+  document.getElementById('btn-focus-mode').addEventListener('click', () => switchMode(mode === '3d' ? '2d' : '3d'));
 
   const tip = document.getElementById('plan-tip');
   function showTip(text, x, y) {
@@ -143,7 +209,8 @@ export async function init() {
 
   function toggleRoom(id) {
     const r = roomsById.get(id);
-    if (!r || r.status !== 'ready' || !r.hasModel) return;
+    if (!r || r.status !== 'ready') return;
+    if (r.hasModel === false) { if (r.hasPhotos) navigate({ view: 'details', roomId: id }); return; } // list-only spaces (corridors)
     const route = parseHash(location.hash);
     if (route.view === 'room' && route.roomId === id) navigate({ view: 'plan', scene: currentScene });
     else navigate({ view: 'room', roomId: id });
@@ -151,11 +218,12 @@ export async function init() {
 
   for (const b of document.querySelectorAll('.zoom-btn')) {
     b.addEventListener('click', () => {
-      if (!twin) return;
-      twin.stopIdle();
-      if (b.dataset.zoom === 'in') twin.zoom(1.35);
-      else if (b.dataset.zoom === 'out') twin.zoom(1 / 1.35);
-      else twin.resetView();
+      const eng = engine();
+      if (!eng) return;
+      eng.stopIdle();
+      if (b.dataset.zoom === 'in') eng.zoom(1.35);
+      else if (b.dataset.zoom === 'out') eng.zoom(1 / 1.35);
+      else eng.resetView(); // one click: back to the default view (or the room's close-up)
     });
   }
 
@@ -176,9 +244,9 @@ export async function init() {
   });
   const labelsBtn = document.getElementById('btn-labels');
   labelsBtn.addEventListener('click', () => {
-    if (!overlay) return;
-    const next = !overlay.isOutside();
-    overlay.setOutside(next);
+    const next = readPref('labels', 'inside') !== 'outside';
+    if (overlay) overlay.setOutside(next);
+    if (overlay2d) overlay2d.setOutside(next);
     labelsBtn.setAttribute('aria-pressed', String(next));
     writePref('labels', next ? 'outside' : 'inside');
   });
@@ -211,16 +279,18 @@ export async function init() {
         const on = b.getAttribute('aria-pressed') !== 'true';
         b.setAttribute('aria-pressed', String(on));
         routeState.set(r.id, on);
-        if (twin) twin.setRouteVisible(r.id, on);
+        for (const eng of [plan2d, twin]) if (eng) eng.setRouteVisible(r.id, on);
       });
       li.append(b);
       return li;
     }),
   );
   function syncSceneToTwin() {
-    if (!twin) return;
-    twin.setRoutesVisible(currentScene === 'paths');
-    for (const [id, on] of routeState) twin.setRouteVisible(id, on);
+    for (const eng of [plan2d, twin]) {
+      if (!eng) continue;
+      eng.setRoutesVisible(currentScene === 'paths');
+      for (const [id, on] of routeState) eng.setRouteVisible(id, on);
+    }
   }
   function applyScene(id) {
     currentScene = SCENE_ORDER.includes(id) ? id : 'current';
@@ -308,11 +378,11 @@ export async function init() {
   let pendingPhoto = null;
   const details = createDetails(views.details, data, {
     onOpenPhoto: (roomId, index) => { pendingPhoto = index; navigate({ view: 'photos', roomId }); },
-    snapshot: () => (twin ? twin.snapshot() : ''),
+    snapshot: () => { const eng = engine(); return eng ? eng.snapshot() : ''; },
   });
   document.getElementById('btn-back-plan').addEventListener('click', () => {
     const r = room.currentRoom();
-    navigate(r ? { view: 'room', roomId: r.id } : { view: 'plan' });
+    navigate(r && r.hasModel !== false ? { view: 'room', roomId: r.id } : { view: 'plan', scene: currentScene });
   });
   document.getElementById('btn-details').addEventListener('click', () => {
     const r = room.currentRoom();
@@ -320,7 +390,9 @@ export async function init() {
   });
   document.getElementById('btn-close-details').addEventListener('click', () => {
     const id = details.currentRoom();
-    if (id) navigate({ view: 'room', roomId: id });
+    const r = id ? roomsById.get(id) : null;
+    if (r && r.hasModel !== false) navigate({ view: 'room', roomId: id });
+    else navigate({ view: 'plan', scene: currentScene }); // list-only spaces have no close-up to return to
   });
 
   // ---------- view switching ----------
@@ -330,7 +402,7 @@ export async function init() {
     const prev = currentView;
     currentView = name;
     app.dataset.currentView = name;
-    if (twin) twin.setActive(name === 'plan'); // no rendering or turntable behind the photos/details/welcome views
+    if (twin) twin.setActive(name === 'plan' && mode === '3d'); // no rendering or turntable behind the photos/details/welcome views
     const order = { welcome: 0, plan: 1, photos: 2, details: 3 };
     const goingUp = !prev || order[name] > order[prev];
     for (const [key, v] of Object.entries(views)) {
@@ -349,18 +421,20 @@ export async function init() {
   }
 
   async function ensureFocus(r, animate, current = () => true) {
-    await loadTwin();
-    if (!twin || !current()) return;
-    twin.stopIdle();
-    if (twin.getFocus() !== r.id) await twin.focusRoom(r.id, { animate });
-    else await twin.settled(); // the flight to this room may still be in progress (e.g. details opened mid-flight)
-    if (overlay && current()) overlay.setFocus(r.id);
+    const eng = await ensureEngine();
+    if (!eng || !current()) return;
+    eng.stopIdle();
+    if (eng.getFocus() !== r.id) await eng.focusRoom(r.id, { animate });
+    else await eng.settled(); // the flight to this room may still be in progress (e.g. details opened mid-flight)
+    const ov = mode === '3d' ? overlay : overlay2d;
+    if (ov && current()) ov.setFocus(r.id);
   }
   async function ensureUnfocus(current = () => true) {
-    await loadTwin();
-    if (!twin || !current()) return;
-    if (overlay) overlay.setFocus(null);
-    if (twin.getFocus()) await twin.unfocus({ animate: true });
+    const eng = await ensureEngine();
+    if (!eng || !current()) return;
+    const ov = mode === '3d' ? overlay : overlay2d;
+    if (ov) ov.setFocus(null);
+    if (eng.getFocus()) await eng.unfocus({ animate: true });
   }
 
   let lastRoute = null;
@@ -376,7 +450,9 @@ export async function init() {
       navigate({ view: 'plan', scene: route.scene }, { replace: true });
       return;
     }
+    if (route.mode && route.mode !== mode) { mode = route.mode; writePref('view', mode); applyMode(); } // deep link chose the 2D / 3D view
     if (route.view === 'room' && !openableRoom(route.roomId)) { navigate({ view: 'plan' }, { replace: true }); return; }
+    if (route.view === 'room' && roomsById.get(route.roomId).hasModel === false) { navigate({ view: 'details', roomId: route.roomId }, { replace: true }); return; }
     if (route.view === 'photos' && !openableRoom(route.roomId, { needPhotos: true })) {
       navigate(openableRoom(route.roomId) ? { view: 'room', roomId: route.roomId } : { view: 'plan' }, { replace: true });
       return;
@@ -428,7 +504,11 @@ export async function init() {
       if (room.currentRoom() !== r) room.show(r.id);
       showView('details');
       showRoomCard(r);
-      if (r.focus && r.focus.image) {
+      if (r.hasModel === false) {
+        // a list-only space: the centre shows the whole plan, with nothing highlighted
+        details.show(r.id, { deferImage: true });
+        ensureUnfocus(current).then(() => { if (current() && details.currentRoom() === r.id) details.refreshImage(); });
+      } else if (r.focus && r.focus.image) {
         details.show(r.id); // the pre-rendered view exists: no need to wait for the model
         ensureFocus(r, false, current);
       } else {
@@ -439,11 +519,111 @@ export async function init() {
     }
   }
 
+  overlay2d = createOverlay(plan2dStage, plan2d, data, dotHandlers);
+  overlay2d.setOutside(readPref('labels', 'inside') === 'outside');
+  wireStage(plan2dStage, plan2d, 'انقر لعرض الغرفة');
+  applyMode();
   window.addEventListener('hashchange', () => { render(); });
   await render();
   app.classList.add('is-ready');
-  // warm the model while the visitor reads the welcome
-  setTimeout(loadTwin, 600);
+  // warm the 3D model while the visitor reads the welcome — only when the 3D view is the chosen one
+  if (mode === '3d') setTimeout(loadTwin, 600);
+}
+
+// Satr's identity on the welcome page and in the header: wordmark text always, the logo file
+// (brand.logo) when the client supplies it — nothing is requested from the server otherwise
+function renderBrand(brand) {
+  const name = document.getElementById('welcome-brand-name');
+  const en = document.getElementById('welcome-brand-en');
+  if (name && brand.name) name.textContent = brand.name;
+  if (en) { en.textContent = brand.nameEn || ''; en.hidden = !brand.nameEn; }
+  const slogan = document.getElementById('welcome-slogan');
+  if (slogan) { slogan.textContent = brand.slogan || ''; slogan.hidden = !brand.slogan; }
+  const owner = document.getElementById('header-owner');
+  if (owner && brand.website) owner.href = brand.website;
+  if (owner) owner.querySelector('.owner-name').textContent = brand.legalName || brand.name || 'شركة سطر العقارية';
+  if (brand.logo) {
+    for (const [mark, cls] of [[document.querySelector('.welcome-brand-mark'), 'welcome-brand-logo'], [document.querySelector('.owner-mark'), 'owner-logo']]) {
+      if (!mark) continue;
+      const img = document.createElement('img');
+      img.src = brand.logo;
+      img.alt = '';
+      img.decoding = 'async';
+      img.className = cls;
+      img.addEventListener('error', () => { img.remove(); mark.classList.remove('has-logo'); }, { once: true });
+      mark.classList.add('has-logo');
+      mark.replaceChildren(img);
+    }
+  }
+}
+
+function renderFooter(root, footer) {
+  if (!root) return;
+  if (!footer) { root.hidden = true; return; }
+  root.replaceChildren();
+  const link = (href, label, external = /^https?:/.test(href)) => {
+    const a = document.createElement('a');
+    a.href = href;
+    a.textContent = label;
+    if (external) { a.target = '_blank'; a.rel = 'noopener'; }
+    return a;
+  };
+  const block = (cls, heading) => {
+    const d = document.createElement('div');
+    d.className = `footer-block ${cls}`;
+    if (heading) { const h = document.createElement('h3'); h.className = 'footer-heading'; h.textContent = heading; d.append(h); }
+    return d;
+  };
+  // 1. the company
+  const brand = block('footer-brand');
+  const name = document.createElement('strong');
+  name.className = 'footer-name';
+  name.textContent = footer.name || '';
+  brand.append(name);
+  if (footer.nameEn) brand.append(el('span', 'footer-name-en', footer.nameEn));
+  if (footer.tagline) brand.append(el('p', 'footer-tagline', footer.tagline));
+  if (footer.about) brand.append(el('p', 'footer-about', footer.about));
+  root.append(brand);
+  // 2. contact: phones (tel: links, LTR digits), location, website
+  const contact = block('footer-contact', 'للتواصل');
+  const ul = document.createElement('ul');
+  ul.className = 'footer-contacts';
+  for (const p of footer.phones || []) {
+    const li = document.createElement('li');
+    li.className = 'footer-phone';
+    if (p.label) li.append(el('span', 'footer-phone-label', p.label));
+    const a = link(`tel:${p.tel}`, p.display, false);
+    a.dir = 'ltr';
+    a.className = 'footer-phone-number';
+    li.append(a);
+    if (p.whatsapp) { const w = link(p.whatsapp, 'واتساب'); w.className = 'footer-whatsapp'; li.append(w); }
+    ul.append(li);
+  }
+  if (footer.location) { const li = document.createElement('li'); li.className = 'footer-location'; li.textContent = footer.location; ul.append(li); }
+  if (footer.website) { const li = document.createElement('li'); li.className = 'footer-website'; li.append(link(footer.website.href, footer.website.label)); ul.append(li); }
+  contact.append(ul);
+  root.append(contact);
+  // 3. social accounts + legal links
+  if ((footer.social && footer.social.length) || (footer.links && footer.links.length)) {
+    const more = block('footer-more', 'حسابات سطر');
+    if (footer.social && footer.social.length) {
+      const nav = document.createElement('nav');
+      nav.className = 'footer-social';
+      nav.setAttribute('aria-label', 'حسابات التواصل');
+      for (const sItem of footer.social) nav.append(link(sItem.href, sItem.label));
+      more.append(nav);
+    }
+    if (footer.links && footer.links.length) {
+      const nav = document.createElement('nav');
+      nav.className = 'footer-links';
+      nav.setAttribute('aria-label', 'روابط');
+      for (const l of footer.links) nav.append(link(l.href, l.label));
+      more.append(nav);
+    }
+    root.append(more);
+  }
+  if (footer.copyright) root.append(el('p', 'footer-copy', footer.copyright));
+  root.hidden = false;
 }
 
 init().catch((err) => {

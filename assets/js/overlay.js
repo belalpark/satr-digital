@@ -7,7 +7,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 export function createOverlay(stage, twin, data, opts = {}) {
   const svg = stage.querySelector('#overlay-svg') || stage.querySelector('.overlay-svg');
   const dotsEl = stage.querySelector('#overlay-dots') || stage.querySelector('.overlay-dots');
-  const rooms = data.rooms.filter((r) => r.status !== 'info');
+  const rooms = data.rooms.filter((r) => r.status !== 'info' && r.hasModel !== false); // list-only spaces have no dot
   const items = new Map();
   let outside = false;
   let focusId = null;

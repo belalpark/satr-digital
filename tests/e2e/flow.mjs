@@ -76,34 +76,82 @@ async function flow(name, contextOptions, { mobile, team }) {
     for (const banned of ['احجز معاينة', 'التوأم الرقمي للمكتب', 'محطة عمل', 'مكتبًا إداريًا', 'الوضع الحالي']) {
       assert.ok(!body.includes(banned), `welcome must not contain «${banned}»`);
     }
+    // Satr identity on the welcome page: wordmark, general location, slogan; footer with both numbers
+    assert.equal((await page.textContent('#welcome-brand-name')).trim(), 'سطر العقارية', 'Satr wordmark');
+    assert.match(await page.textContent('#welcome-location'), /واجهة روشن للأعمال/, 'general location on the welcome');
+    assert.match(await page.textContent('#welcome-slogan'), /نفهم الأصل/, 'Satr slogan');
+    const footerText = await page.textContent('#app-footer');
+    for (const must of ['+966 55 585 5057', '+966 54 417 1356', 'واجهة روشن للأعمال', 'جميع الحقوق محفوظة']) assert.ok(footerText.includes(must), `footer has «${must}»`);
+    assert.equal(await page.$$eval('#app-footer a[href^="tel:"]', (as) => as.length), 2, 'two tel links');
+    assert.ok(!footerText.includes('@'), 'no e-mail in the footer');
+    const ctaStyle = await page.$eval('#btn-start', (b) => { const r = b.getBoundingClientRect(); return { inView: r.top >= 0 && r.bottom <= innerHeight, w: r.width }; });
+    assert.ok(ctaStyle.inView && ctaStyle.w > 90, `call to action visible on the first screen (${JSON.stringify(ctaStyle)})`);
     await shot('welcome');
-    // the model preloads behind the welcome screen but must not render or spin there
-    await page.waitForSelector('#plan-stage.is-ready', { state: 'attached', timeout: 120000 });
-    const behindWelcome = await page.evaluate(async () => {
-      // the initial renders (lighting, fit, scene sync) drain first; a turntable would then keep
-      // producing frames, so look for a quiet window longer than any software-GL frame
-      const twin = document.getElementById('plan-stage').__twin;
-      let last = performance.now();
-      const off = twin.onFrame(() => { last = performance.now(); });
-      const t0 = performance.now();
-      let quiet = 0;
-      while (performance.now() - t0 < 60000) {
-        await new Promise((r) => setTimeout(r, 500));
-        quiet = performance.now() - last;
-        if (quiet > 8000) break;
-      }
-      off();
-      return Math.round(quiet);
-    });
-    assert.ok(behindWelcome > 8000, `no turntable behind the welcome screen (longest quiet window ${behindWelcome} ms)`);
-
-    // 2. live 3D model, two tabs, sidebar list, dots legend
-    step = '2 plan';
+    // 2. the 2D plan opens by default: view tabs, dots, sidebar, routes, focus, red dot -> details
+    step = '2a plan 2D';
     await click('#btn-start');
-    await modelReady();
     await page.waitForFunction(() => location.hash === '#/plan');
+    await page.waitForFunction(() => document.querySelector('.plan2d-image') && document.querySelector('.plan2d-image').naturalWidth > 0);
+    await page.waitForTimeout(600);
+    assert.equal(await page.$eval('#plan-stage-wrap', (w) => w.dataset.mode), '2d', '2D is the default view');
+    assert.ok(await page.isHidden('#plan-stage'), '3D stage hidden in 2D mode');
+    assert.equal(await page.getAttribute('#view-tabs [data-view="2d"]', 'aria-selected'), 'true', '2D tab selected');
+    assert.equal((await page.textContent('.site-nav a.is-active')).trim(), 'مخطط المكتب', 'header highlights مخطط المكتب');
+    assert.equal((await page.textContent('#header-owner')).trim(), 'شركة سطر العقارية', 'owner name at the end of the header');
+    assert.ok((await page.locator('#plan2d-stage .dot-blue').count()) >= 20, '2D: blue dot per room');
+    assert.ok((await page.locator('#plan2d-stage .dot-red').count()) >= 10, '2D: red dot where photos exist');
+    const vis2d = await page.$$eval('#plan2d-stage .dot-blue', (els) => els.filter((e) => { const r = e.getBoundingClientRect(); return r.width > 4 && r.left >= 0 && r.right <= innerWidth; }).length);
+    assert.ok(vis2d >= 20, `2D dots on screen (${vis2d})`);
+    await shot('plan-2d');
+    // routes on the 2D plan
+    await click('.scene-tab[data-scene="paths"]');
+    await page.waitForFunction(() => location.hash === '#/plan?scene=paths');
+    await page.waitForTimeout(500);
+    assert.equal(await page.locator('#plan2d-stage .route2d').count(), 3, '2D: three routes');
+    assert.ok(await page.$eval('#plan2d-stage .plan2d-routes', (g) => getComputedStyle(g).display !== 'none'), '2D: routes shown on the paths tab');
+    await shot('paths-2d');
+    await click('.scene-tab[data-scene="current"]');
+    await page.waitForFunction(() => location.hash === '#/plan');
+    assert.ok(await page.$eval('#plan2d-stage .plan2d-routes', (g) => getComputedStyle(g).display === 'none'), '2D: routes hidden on the layout tab');
+    // focus a room on the 2D plan from the list: zoom-in, veil, card; the same item again returns to the plan
+    await click('#room-list .room-item-btn[data-id="meeting-large"]');
+    await page.waitForFunction(() => location.hash === '#/room/meeting-large');
+    await page.waitForFunction(() => document.getElementById('plan2d-stage').dataset.focus === 'meeting-large');
+    await page.waitForTimeout(900);
+    assert.ok(await page.isVisible('#room-card'), '2D: room card shown');
+    assert.match(await page.textContent('#focus-title'), /08b/, '2D: the room name carries its key code');
+    assert.ok(await page.$eval('#plan2d-stage .plan2d-veil', (v) => getComputedStyle(v).display !== 'none'), '2D: neighbours dimmed');
+    const box2d = await page.evaluate(() => { const st = document.getElementById('plan2d-stage'); const b = st.__twin.roomScreenBox('meeting-large'); return { size: Math.max(b.w, b.h), stage: Math.min(st.clientWidth, st.clientHeight) }; });
+    assert.ok(box2d.size > box2d.stage * 0.4, `2D: zoomed to the room (room ${box2d.size.toFixed(0)}px on ${box2d.stage.toFixed(0)}px)`);
+    await shot('focus-2d');
+    await click('#room-list .room-item-btn[data-id="meeting-large"]');
+    await page.waitForFunction(() => location.hash === '#/plan');
+    await page.waitForFunction(() => !document.getElementById('plan2d-stage').dataset.focus);
+    // the red dot opens the room details (photos included), not the photos directly
+    await click('#plan2d-stage .room-marker[data-id="reception"] .dot-red');
+    await page.waitForFunction(() => location.hash === '#/room/reception/details');
+    await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'details');
+    await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; });
+    assert.ok((await page.locator('#details-photos button').count()) >= 3, '2D red dot -> details with photos');
+    await click('#btn-close-details');
+    await page.waitForFunction(() => location.hash === '#/room/reception');
+    // a list-only space (the corridors) opens its details straight from the list
+    await click('#room-list .room-item-btn[data-id="corridors"]');
+    await page.waitForFunction(() => location.hash === '#/room/corridors/details');
+    await click('#btn-close-details');
+    await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'plan');
+    await page.goto(`${url}/#/plan`);
+    await page.waitForFunction(() => !document.getElementById('plan2d-stage').dataset.focus);
+
+    // 2. switch to the live 3D model: two scene tabs, sidebar list, dots legend
+    step = '2 plan 3D';
+    await click('#view-tabs [data-view="3d"]');
+    await modelReady();
+    await page.waitForFunction(() => document.getElementById('plan-stage-wrap').dataset.mode === '3d');
     await page.waitForTimeout(1200);
-    assert.equal(await page.locator('.scene-tab').count(), 2, 'two scene tabs');
+    assert.ok(await page.isHidden('#plan2d-stage'), '2D stage hidden in 3D mode');
+    assert.equal((await page.textContent('.site-nav a.is-active')).trim(), 'المخطط ثلاثي الأبعاد', 'header highlights the 3D plan');
+    assert.equal(await page.locator('#scene-tabs .scene-tab').count(), 2, 'two scene tabs');
     assert.equal((await page.textContent('.scene-tab[data-scene="current"]')).trim(), 'توزيعات المكاتب');
     assert.ok(await page.$('#plan-stage canvas'), 'WebGL canvas present');
     assert.ok((await page.locator('#room-list .room-item-btn').count()) >= 20, 'sidebar lists the rooms');
@@ -113,7 +161,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.ok(visibleBlue >= 20, `blue dots visible on screen at the default view (${visibleBlue})`);
     // dots sit inside the stage, never outside the model's screen box
     const stageBox = await page.locator('#plan-stage').boundingBox();
-    const outside = await page.$$eval('#overlay-dots .room-marker .dot-blue', (els) => els.filter((e) => getComputedStyle(e).display !== 'none').map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+    const outside = await page.$$eval('#overlay-dots .room-marker .dot-blue', (els) => els.filter((e) => e.getBoundingClientRect().width > 0).map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
     for (const [x, y] of outside) assert.ok(x >= stageBox.x && x <= stageBox.x + stageBox.width && y >= stageBox.y && y <= stageBox.y + stageBox.height, `dot inside the stage (${x.toFixed(0)},${y.toFixed(0)})`);
     if (!mobile) {
       const sb = await page.locator('#room-sidebar').boundingBox();
@@ -162,7 +210,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     await focusedOn('meeting-large');
     await settled();
     assert.ok(await page.isVisible('#room-card'), 'room card shown');
-    assert.equal(await page.textContent('#focus-title'), 'غرفة الاجتماعات الكبرى');
+    assert.equal((await page.textContent('#focus-title')).trim(), 'غرفة اجتماعات 08b', 'room named by the key plan');
     assert.match(await page.textContent('#focus-facts'), /16 مقعدًا/);
     assert.match(await page.textContent('#focus-facts'), /قاعة اجتماعات بفرشها الحالي/);
     assert.ok(await page.evaluate(() => !!document.activeElement.closest('#room-card')), 'keyboard focus moved to the card');
@@ -202,7 +250,7 @@ async function flow(name, contextOptions, { mobile, team }) {
       return img && img.complete && img.naturalWidth > 0;
     }, null, { timeout: 60000 });
     await page.waitForTimeout(500);
-    assert.equal(await page.textContent('#room-title'), 'غرفة الاجتماعات الكبرى');
+    assert.equal((await page.textContent('#room-title')).trim(), 'غرفة اجتماعات 08b');
     await shot('photos');
     await click('#gallery-next');
     await page.waitForTimeout(400);
@@ -217,14 +265,14 @@ async function flow(name, contextOptions, { mobile, team }) {
     await page.goto(`${url}/#/room/reception/photos`);
     await page.waitForFunction(() => location.hash === '#/room/reception/photos');
     await page.waitForFunction(() => { const i = document.getElementById('room-photo'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 60000 });
-    assert.equal(await page.textContent('#room-title'), 'الاستقبال');
+    assert.equal((await page.textContent('#room-title')).trim(), 'الاستقبال 12');
     // a room without photos never shows a photo view
-    await page.goto(`${url}/#/room/bleachers/photos`);
-    await page.waitForFunction(() => location.hash === '#/room/bleachers');
+    await page.goto(`${url}/#/room/store/photos`);
+    await page.waitForFunction(() => location.hash === '#/room/store');
 
     // 5b. details deep link for a room that has no real photos: no gallery crash, message + model snapshot
     step = '5b details without photos';
-    await page.goto(`${url}/#/room/bleachers/details`);
+    await page.goto(`${url}/#/room/store/details`);
     await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'details', null, { timeout: 60000 });
     assert.ok((await page.textContent('#details-photos')).includes('لا توجد صور حقيقية'), 'no-photos message');
     await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 60000 });
@@ -238,6 +286,13 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.ok((await page.textContent('#details-features')).includes('16 مقعدًا'), 'capacity shown');
     assert.ok(!(await page.textContent('#details-features')).includes('مقترح'), 'no proposed use');
     await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 60000 });
+    // the centre image is the furnished Cycles perspective of this room, not a plan snapshot
+    const detailsSrc = await page.getAttribute('#details-stage .details-render', 'src');
+    assert.ok(detailsSrc.endsWith('media/twin/rooms/meeting-large.webp'), `room render shown, got ${detailsSrc}`);
+    assert.ok((await page.textContent('#view-details .details-plan-caption')).includes('بفرشها'), 'render caption');
+    // thumbnails keep their 3:2 size inside the scrolling photos panel (rows must not share the panel height)
+    const thumbH = await page.evaluate(() => document.querySelector('#details-photos button').getBoundingClientRect().height);
+    assert.ok(thumbH >= 80, `photo thumbnails keep their size in the scrolling panel (${thumbH.toFixed(0)}px)`);
     await shot('details');
     if (mobile) {
       await click('#tab-features');
@@ -253,6 +308,22 @@ async function flow(name, contextOptions, { mobile, team }) {
     await click('#nav-home');
     await page.waitForFunction(() => location.hash === '#/' || location.hash === '');
     assert.ok(await page.isVisible('#welcome-title'), 'home via the header');
+    // nothing renders or spins behind the welcome screen: look for a quiet window longer than any software-GL frame
+    const behindWelcome = await page.evaluate(async () => {
+      const twin = document.getElementById('plan-stage').__twin;
+      let last = performance.now();
+      const off = twin.onFrame(() => { last = performance.now(); });
+      const t0 = performance.now();
+      let quiet = 0;
+      while (performance.now() - t0 < 60000) {
+        await new Promise((r) => setTimeout(r, 500));
+        quiet = performance.now() - last;
+        if (quiet > 8000) break;
+      }
+      off();
+      return Math.round(quiet);
+    });
+    assert.ok(behindWelcome > 8000, `no turntable behind the welcome screen (longest quiet window ${behindWelcome} ms)`);
     await page.goBack();
     await page.waitForFunction(() => location.hash === '#/room/meeting-large');
     await focusedOn('meeting-large');
@@ -326,6 +397,28 @@ async function flow(name, contextOptions, { mobile, team }) {
     });
     assert.ok(frames.ms > 0, `routes keep animating without camera input (${frames.ms < 0 ? -frames.ms : 3} frames in 20 s)`);
     assert.ok(frames.idleFrames <= 1, `render loop idles when nothing animates (${frames.idleFrames} frames)`);
+    // every route chip off (the group itself stays visible): the loop must idle too, and wake when a chip comes back
+    const chips = await page.evaluate(async (gap) => {
+      const twin = document.getElementById('plan-stage').__twin;
+      const buttons = [...document.querySelectorAll('#route-legend .route-chip')];
+      for (const b of buttons) b.click(); // all three off
+      await new Promise((r) => setTimeout(r, gap)); // the frame that hides the last route drains here
+      let idle = 0;
+      let off = twin.onFrame(() => { idle += 1; });
+      await new Promise((r) => setTimeout(r, gap));
+      off();
+      buttons[0].click(); // one route back on
+      let resumed = 0;
+      off = twin.onFrame(() => { resumed += 1; });
+      await new Promise((r) => setTimeout(r, Math.max(gap * 3, 6000)));
+      off();
+      for (const b of buttons.slice(1)) b.click(); // restore the legend state
+      return { count: buttons.length, idle, resumed, pressed: buttons.map((b) => b.getAttribute('aria-pressed')) };
+    }, Math.max(800, (frames.ms / 3) * 2));
+    assert.equal(chips.count, 3, 'three route chips');
+    assert.ok(chips.idle <= 1, `render loop idles with every route chip off (${chips.idle} frames)`);
+    assert.ok(chips.resumed >= 2, `route animation resumes when a chip comes back (${chips.resumed} frames)`);
+    assert.deepEqual(chips.pressed, ['true', 'true', 'true'], 'chips restored');
     // an animated flight must not multiply render callbacks (controls' change event + end-of-frame scheduling)
     const perTick = await page.evaluate(async () => {
       const twin = document.getElementById('plan-stage').__twin;
@@ -365,13 +458,16 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.ok(resumed >= 2, `route animation resumes when the plan view returns (${resumed} frames)`);
 
     // 6e. details requested while the flight to the room is still in progress: the snapshot is taken at the end of the flight
+    // (the CFO office has no Cycles render yet, so its details page shows the live snapshot)
     step = '6e details mid-flight';
     await page.goto(`${url}/#/plan`); // layout scene: no animated routes, so two snapshots of a still camera are identical
     await page.waitForFunction(() => location.hash === '#/plan' && document.getElementById('route-legend').hidden);
     await page.waitForTimeout(300);
-    await page.goto(`${url}/#/room/ceo`);
+    const cfoHasRender = await page.evaluate(async () => { const d = await (await fetch('data/office.json')).json(); const r = d.rooms.find((x) => x.id === 'cfo'); return !!(r.render || r.focus); });
+    assert.ok(!cfoHasRender, 'step 6e needs a room whose details page shows the live snapshot (no render/focus image)');
+    await page.goto(`${url}/#/room/cfo`);
     await page.waitForTimeout(200);
-    await page.goto(`${url}/#/room/ceo/details`);
+    await page.goto(`${url}/#/room/cfo/details`);
     await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 60000 });
     await page.waitForTimeout(1500); // longer than any flight
     const snapDiff = await page.evaluate(async () => {
@@ -398,6 +494,13 @@ async function flow(name, contextOptions, { mobile, team }) {
     }
     await page.goto(`${url}/#/plan?scene=visitor-path`);
     await page.waitForFunction(() => location.hash === '#/plan?scene=paths');
+    // the view can be chosen in a deep link and is remembered afterwards
+    await page.goto(`${url}/#/plan?view=2d`);
+    await page.waitForFunction(() => document.getElementById('plan-stage-wrap').dataset.mode === '2d');
+    await page.goto(`${url}/#/room/ceo?view=3d`);
+    await page.waitForFunction(() => document.getElementById('plan-stage-wrap').dataset.mode === '3d');
+    await focusedOn('ceo');
+    assert.equal(await page.evaluate(() => localStorage.getItem('view')), '3d', 'the chosen view is remembered');
 
     assert.deepEqual(errors, [], 'no console/page errors');
     console.log(`✓ ${name}: ${n} screenshots, all steps passed`);

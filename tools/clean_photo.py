@@ -87,44 +87,60 @@ def fill_screen(image, polygon):
     return Image.composite(panel, image, mask)
 
 
-def clean(image, shapes, model_path=None, context=2.0, min_crop=512, feather=12):
+def _shape_bbox(kind, s):
+    if kind == "rect":
+        x, y, rw, rh = s
+        return x, y, x + rw, y + rh
+    xs = [p[0] for p in s]
+    ys = [p[1] for p in s]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _group_shapes(shapes, gap):
+    """Cluster shapes whose bounding boxes come within `gap` px of each other, so
+    regions far apart are inpainted in separate crops (a crop spanning the whole
+    photo would not fit in memory)."""
+    boxes = [_shape_bbox(k, s) for k, s in shapes]
+    groups = []
+    used = [False] * len(shapes)
+    for i in range(len(shapes)):
+        if used[i]:
+            continue
+        group = [i]
+        used[i] = True
+        changed = True
+        while changed:
+            changed = False
+            gx0 = min(boxes[j][0] for j in group) - gap
+            gy0 = min(boxes[j][1] for j in group) - gap
+            gx1 = max(boxes[j][2] for j in group) + gap
+            gy1 = max(boxes[j][3] for j in group) + gap
+            for j in range(len(shapes)):
+                if used[j]:
+                    continue
+                bx0, by0, bx1, by1 = boxes[j]
+                if bx0 <= gx1 and bx1 >= gx0 and by0 <= gy1 and by1 >= gy0:
+                    group.append(j)
+                    used[j] = True
+                    changed = True
+        groups.append([shapes[j] for j in group])
+    return groups
+
+
+def clean(image, shapes, model_path=None, context=2.0, min_crop=512, feather=12, max_crop=2600, max_infer=1100):
     """image: PIL RGB. shapes: list of
     ("rect", (x,y,w,h)) / ("poly", [(x,y),...]) → inpainted (LaMa / OpenCV)
     ("fill", [(x,y),...])                        → painted as a switched-off screen
+    Regions far apart are inpainted one crop at a time (bounded by max_crop px).
     """
     for kind, s in shapes:
         if kind == "fill":
             image = fill_screen(image, s)
     shapes = [sh for sh in shapes if sh[0] != "fill"]
     w, h = image.size
-    mask = Image.new("L", (w, h), 0)
-    d = ImageDraw.Draw(mask)
-    for kind, s in shapes:
-        if kind == "rect":
-            x, y, rw, rh = s
-            d.rectangle([x, y, x + rw, y + rh], fill=255)
-        else:
-            d.polygon(s, fill=255)
-    mask_np = np.array(mask)
-    if mask_np.max() == 0:
-        return image, mask
-
-    x0, y0, x1, y1 = region_bbox(mask_np)
-    bw, bh = x1 - x0, y1 - y0
-    cw = max(int(bw * context), min_crop)
-    ch = max(int(bh * context), min_crop)
-    cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
-    cx0 = max(0, min(w - cw, cx - cw // 2))
-    cy0 = max(0, min(h - ch, cy - ch // 2))
-    cx1, cy1 = min(w, cx0 + cw), min(h, cy0 + ch)
-
-    img_np = np.array(image)
-    crop = img_np[cy0:cy1, cx0:cx1]
-    crop_mask = mask_np[cy0:cy1, cx0:cx1]
-    # dilate the mask a little so logo edges / halos are covered too
-    import cv2
-    kernel = np.ones((feather, feather), np.uint8)
-    crop_mask = cv2.dilate(crop_mask, kernel, iterations=1)
+    full_mask = Image.new("L", (w, h), 0)
+    if not shapes:
+        return image, full_mask
 
     model = None
     if model_path and os.path.exists(model_path):
@@ -132,12 +148,51 @@ def clean(image, shapes, model_path=None, context=2.0, min_crop=512, feather=12)
             model = load_model(model_path)
         except Exception as exc:  # pragma: no cover
             print(f"LaMa unavailable ({exc}); falling back to OpenCV", file=sys.stderr)
-    filled = lama_inpaint(model, crop, crop_mask) if model else cv_inpaint(crop, crop_mask)
 
-    out = img_np.copy()
-    sel = crop_mask > 0
-    out[cy0:cy1, cx0:cx1][sel] = filled[sel]
-    return Image.fromarray(out), mask
+    import cv2
+    out = np.array(image)
+    fd = ImageDraw.Draw(full_mask)
+    for group in _group_shapes(shapes, gap=int(min_crop * 0.6)):
+        mask = Image.new("L", (w, h), 0)
+        d = ImageDraw.Draw(mask)
+        for kind, s in group:
+            if kind == "rect":
+                x, y, rw, rh = s
+                d.rectangle([x, y, x + rw, y + rh], fill=255)
+                fd.rectangle([x, y, x + rw, y + rh], fill=255)
+            else:
+                d.polygon(s, fill=255)
+                fd.polygon(s, fill=255)
+        mask_np = np.array(mask)
+        x0, y0, x1, y1 = region_bbox(mask_np)
+        bw, bh = x1 - x0, y1 - y0
+        cw = min(max_crop, max(int(bw * context), min_crop), w)
+        ch = min(max_crop, max(int(bh * context), min_crop), h)
+        cw = max(cw, min(w, bw + 2 * feather + 8))
+        ch = max(ch, min(h, bh + 2 * feather + 8))
+        cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
+        cx0 = max(0, min(w - cw, cx - cw // 2))
+        cy0 = max(0, min(h - ch, cy - ch // 2))
+        cx1, cy1 = min(w, cx0 + cw), min(h, cy0 + ch)
+        crop = out[cy0:cy1, cx0:cx1]
+        crop_mask = mask_np[cy0:cy1, cx0:cx1]
+        # dilate the mask a little so logo edges / halos are covered too
+        kernel = np.ones((feather, feather), np.uint8)
+        crop_mask = cv2.dilate(crop_mask, kernel, iterations=1)
+        # LaMa memory grows with the crop area: infer large crops at <= max_infer px and scale the fill back
+        ch_, cw_ = crop.shape[:2]
+        long_side = max(ch_, cw_)
+        if model and long_side > max_infer:
+            k = max_infer / long_side
+            small = cv2.resize(crop, (max(8, int(cw_ * k)), max(8, int(ch_ * k))), interpolation=cv2.INTER_AREA)
+            small_mask = cv2.resize(crop_mask, (small.shape[1], small.shape[0]), interpolation=cv2.INTER_NEAREST)
+            filled_small = lama_inpaint(model, small, small_mask)
+            filled = cv2.resize(filled_small, (cw_, ch_), interpolation=cv2.INTER_CUBIC)
+        else:
+            filled = lama_inpaint(model, crop, crop_mask) if model else cv_inpaint(crop, crop_mask)
+        sel = crop_mask > 0
+        out[cy0:cy1, cx0:cx1][sel] = filled[sel]
+    return Image.fromarray(out), full_mask
 
 
 def parse_shapes(args):

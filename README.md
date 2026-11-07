@@ -1,10 +1,11 @@
 # جولة المكتب
 
-موقع تفاعلي لتسويق مكتب للإيجار: يستكشف فريق الجهة المستهدفة المكتب على **نموذج ثلاثي الأبعاد حي**
-في المتصفح (three.js، مبني في Blender من مخطط الفرش المعتمد ومُصدَّر glTF): تدوير 360° وتحريك وتكبير،
-إضاءة نهارية أو مسائية، نقطتان وامضتان في كل غرفة (زرقاء ← المنظور القريب للغرفة بين جيرانها،
-حمراء ← الصور الحقيقية)، قائمة غرف ثابتة على اليمين، ومسارات حركة لثلاث فئات (الموظفون، الإدارة
-التنفيذية، الضيوف).
+موقع تفاعلي لتسويق مكتب للإيجار: يستكشف فريق الجهة المستهدفة المكتب على **مخطط المكتب** (منظور علوي
+ثنائي الأبعاد، الافتراضي) أو على **النموذج ثلاثي الأبعاد الحي** (three.js، مبني في Blender من مخطط الفرش
+المعتمد ومُصدَّر glTF): تدوير 360° حول محور ثابت وتكبير، إضاءة نهارية أو مسائية، نقطتان وامضتان في كل
+غرفة (زرقاء ← عرض الغرفة، حمراء ← تفاصيل الغرفة وصورها)، قائمة غرف ثابتة على اليمين، ومسارات حركة لثلاث
+فئات (الموظفون، الإدارة التنفيذية، الضيوف). أسماء الغرف ورموزها وتوزيع الصور عليها تتبع «دليل المساحات»
+المرجعي من صاحب المشروع (`tools/key_index.json`، المخطط KP-08).
 
 - المواصفة: `docs/superpowers/specs/2026-11-06-office-digital-twin-design.md`
 - خطة التنفيذ: `docs/superpowers/plans/2026-11-06-office-digital-twin-v1.md`، تعديلات الجولة الثانية:
@@ -30,18 +31,22 @@ python3 -m http.server 8080
 index.html                 صفحة واحدة؛ التطبيق يبدّل المشاهد داخلها
 assets/js/app.js           نقطة الدخول: التوجيه، الهيدر، الترحيب، القائمة الجانبية وبطاقة الغرفة، المشاهد
 assets/js/router.js        #/ ، #/plan[?scene=paths] ، #/room/:id (المنظور القريب) ، #/room/:id/photos ، #/room/:id/details
-assets/js/twin3d.js        العارض الحي (three.js): تحميل glTF، التدوير/التحريك/التكبير، نهار/مساء، التركيز على غرفة، المسارات، الإسقاط للشاشة
+assets/js/plan2d.js        مخطط المكتب ثنائي الأبعاد: الصورة + طبقة SVG (الغرف، التعتيم، المسارات)، سحب وتكبير — الواجهة نفسها التي يقدمها العارض الحي
+assets/js/twin3d.js        العارض الحي (three.js): تحميل glTF، التدوير حول محور ثابت/التكبير، نهار/مساء، مُنظِّم جودة تكيفي، التركيز على غرفة، المسارات، الإسقاط للشاشة
 assets/js/overlay.js       النقاط الوامضة والمسميات (داخل المخطط أو خارجه بأسهم) فوق العارض
 assets/js/room.js          صور الغرفة الحقيقية (معرض)
 assets/js/details.js       لوحة التفاصيل (3 أعمدة / تبويبان)، وفي وسطها رندر الغرفة أو لقطة من النموذج الحي
 assets/js/geometry.js      دوال هندسية نقية (مختبرة)
 assets/vendor/three-bundle.js  three.js 0.187 + GLTFLoader + OrbitControls + RoomEnvironment (حزمة واحدة، بلا CDN)
 data/office.json           سجل المكتب — مصدر الحقيقة الوحيد
+media/plan/office-2d.webp  مخطط المكتب (النسخة الأولى، 2× المخطط المرجعي 1309×1201)
 media/twin/web/            النموذج للمتصفح: office.glb + scene.json (الإضاءات ومراسي الغرف) + خامات مخبوزة
+media/twin/rooms/          لقطات Cycles قريبة لكل غرفة (تُعرض في صفحة التفاصيل)
 media/twin/                رندرات Cycles الثابتة (اللقطة الثانية لغرفة الاجتماعات، للتفاصيل)
 media/rooms, media/hero    الصور الحقيقية المنشورة (WebP) — الأصول خارج المستودع
 tools/twin/                layout.py (الجدران/الأبواب/الفرش)، build_twin.py (Blender/Cycles)، export_web.py (glTF)، finish.py
-tools/photos_proposal.json توزيع الصور الحقيقية على الغرف (مقترح يحتاج اعتماد العميل) مع أسباب الاستبعاد
+tools/key_index.json       دليل المساحات من صاحب المشروع: رمز كل فراغ ← أرقام صوره (المرجع المعتمد لتوزيع الصور)
+tools/photos_proposal.json التوزيع المقترح السابق (قبل الدليل) مع أسباب استبعاد الصور
 tools/                     اشتقاق الصور، إزالة الشعارات، تجميع نشرة Pages
 tests/unit, tests/e2e      الاختبارات
 docs/qa/<تاريخ>/           لقطات الاختبار الشامل لكل تسليم
@@ -57,9 +62,13 @@ docs/qa/<تاريخ>/           لقطات الاختبار الشامل لكل 
 - كل غرفة: `id`، `name`، `short`، `kind`، `status` (`ready` مكتملة / `soon` قريبًا / `info` معلومة فقط)،
   `polygon` بإحداثيات المخطط المرجعي، `label`، `summary`، `capacity`، `fixtures`، `use.current`، `photos[]`،
   و`focus` {image, rect} للغرف الجاهزة. لا حقل مساحة بقرار صاحب المشروع.
-- كل غرفة أيضًا: `hasModel` (نقطة زرقاء) و`hasPhotos` (نقطة حمراء) و`photosConfidence` (ثقة توزيع الصور المقترح).
+- كل غرفة أيضًا: `key` (رمزها في دليل المساحات)، `hasModel` (نقطة زرقاء؛ `false` لفراغ يظهر في القائمة فقط مثل الممرات)،
+  `hasPhotos` (نقطة حمراء)، و`render` (لقطة Cycles للتفاصيل إن وُجدت).
+- `office.plan2d`: صورة مخطط المكتب ثنائي الأبعاد، و`office.defaultView` (`2d`).
+- `office.brand`: هوية سطر العقارية في الترحيب والهيدر (الاسم، الشعار اللفظي، `logo` = مسار ملف الشعار عند توفره وإلا `null`، الألوان)، و`office.welcome.location` (الموقع العام: واجهة روشن للأعمال)، و`office.footer` (فوتر مختصر من satr-ksa.com: الهاتفان، الموقع، الحسابات، الروابط النظامية، الحقوق).
 - `office.model`: مسارات النموذج الحي (glb + scene.json).
 - `scenes`: `current` («توزيعات المكاتب») و`paths` (ثلاثة مسارات بألوانها ونقاط توقفها؛ اختبار وحدة يضمن أنها لا تعبر الغرف).
+- التوجيه: `#/plan[?scene=paths][&view=2d|3d]` و`#/room/<id>[?view=…]` و`#/room/<id>/photos` و`#/room/<id>/details`؛ طريقة العرض تُحفظ للزائر.
 
 ## النموذج ثلاثي الأبعاد (Blender → المتصفح)
 
@@ -70,6 +79,7 @@ uv venv --python 3.11 .blender && uv pip install --python .blender/bin/python bp
 .blender/bin/python tools/twin/export_web.py --out media/twin/web       # office.glb + scene.json + خامات مخبوزة (≈3 دقائق)
 .blender/bin/python tools/twin/build_twin.py                            # رندرات Cycles الثابتة (≈30 دقيقة على معالجين)
 .blender/bin/python tools/twin/build_twin.py --preview                  # معاينة سريعة بثلث الدقة
+.blender/bin/python tools/twin/build_twin.py --room lounge,ceo --daylight --res 1600x1000 --samples 48 --out .twin-render   # لقطات قريبة للغرف (أضف --camera-report لمعرفة اتجاه الكاميرا ونسبة الأرضية المرئية دون رندر)
 python3 tools/twin/finish.py --src .twin-render --out media/twin        # WebP + توهج خفيف للإضاءات
 ```
 
