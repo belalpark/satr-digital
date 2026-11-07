@@ -75,8 +75,9 @@ WALLS = [
     ('glass', (162, 587), (303, 587), []),
     ('glass', (162, 655), (303, 655), []),
     ('glass', (162, 772), (303, 772), []),
+    ('glass', (162, 888), (303, 888), []),                       # 02d (key plan): the bay north of 03f is its own office
     # south band
-    ('glass', (303, 888), (594, 888), [(57, 87)]),               # 03f is one open area: the former west office 3 joins it
+    ('glass', (303, 888), (594, 888), [(57, 87)]),
     ('glass', (594, 888), (766, 888), [(6, 36)]),
     ('glass', (594, 888), (594, 1043), []),
     ('solid', (766, 888), (766, 1043), []),
@@ -250,8 +251,13 @@ FURNITURE = [
     {'t': 'chair_exec', 'x': 218, 'y': 738, 'rot': 180},
     {'t': 'cabinet', 'x': 292, 'y': 742, 'rot': 270, 'len': 1.1},
     {'t': 'plant', 'x': 176, 'y': 670, 's': 0.8},
-    # key plan 03f: the bay north of the HR benches is part of the open office — a facing pair of desks
-    bench(232, 830, 1, 'x'),
+    # 02d (key plan: supervisor office, photos 0357/0366-0367): desk along the window, chair faces north,
+    # round guest table with one chair, tall unit by the door, plant
+    {'t': 'desk_exec', 'x': 206, 'y': 836, 'rot': 180, 'len': 1.7},
+    {'t': 'chair_exec', 'x': 206, 'y': 862, 'rot': 180},
+    {'t': 'table_round', 'x': 266, 'y': 846, 'r': 0.4},
+    {'t': 'chair_guest', 'x': 266, 'y': 824, 'rot': 0},
+    {'t': 'cabinet', 'x': 294, 'y': 846, 'rot': 270, 'len': 1.2},
     {'t': 'plant', 'x': 178, 'y': 786, 's': 0.8},
     # HR / PMO / operations (CAD marks planter boxes at the facing bench ends; photos 0180-0189, 0220-0228)
     bench(267, 962, 4, 'x'),
