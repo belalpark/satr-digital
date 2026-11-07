@@ -71,9 +71,19 @@ export async function init() {
   document.getElementById('welcome-subtitle').textContent = W.subtitle;
   document.getElementById('welcome-atmosphere').textContent = W.atmosphere;
   document.getElementById('btn-start').textContent = W.cta;
+  // the location is the hero line: «الرياض» as a small kicker, the business front as the big gold title
   const locEl = document.getElementById('welcome-location');
-  locEl.textContent = W.location || '';
+  locEl.textContent = '';
   locEl.hidden = !W.location;
+  if (W.location) {
+    const [main, ...rest] = W.location.split('·').map((t) => t.trim());
+    if (rest.length) locEl.append(el('span', 'loc-city', rest.join(' · ')));
+    locEl.append(el('strong', 'loc-main', main));
+  }
+  const feats = document.getElementById('welcome-features');
+  feats.textContent = '';
+  feats.hidden = !(W.features && W.features.length);
+  for (const f of W.features || []) feats.append(el('span', '', f));
   renderBrand(data.office.brand || {});
   renderFooter(document.getElementById('app-footer'), data.office.footer);
   const hero = document.getElementById('welcome-photo');

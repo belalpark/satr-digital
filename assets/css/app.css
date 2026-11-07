@@ -103,11 +103,11 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 /* ===== الترحيب — بهوية سطر العقارية: صورة المكتب تذوب في لوح كحلي يحمل الهوية ===== */
 .view-welcome { background: var(--brand-navy); color: #fff; justify-content: space-between; }
-.welcome-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; transform: scale(1.04); animation: welcome-zoom 18s var(--ease) forwards; }
+.welcome-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; transform: scale(1.08); animation: welcome-zoom 24s var(--ease) forwards; filter: saturate(1.05); }
 @keyframes welcome-zoom { to { transform: scale(1); } }
 .welcome-shade {
   position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(5, 27, 48, 0.35) 0%, rgba(5, 27, 48, 0) 30%, rgba(5, 27, 48, 0.55) 100%);
+  background: linear-gradient(180deg, rgba(5, 27, 48, 0.35) 0%, rgba(5, 27, 48, 0) 30%, rgba(5, 27, 48, 0.55) 100%), radial-gradient(120% 90% at 50% 50%, rgba(5, 27, 48, 0) 55%, rgba(5, 27, 48, 0.45) 100%);
 }
 /* اللوح الكحلي على جهة البداية (اليمين في العربية) بحافة مائلة كغلاف عروض سطر */
 .welcome-panel {
@@ -123,21 +123,56 @@ ul { margin: 0; padding: 0; list-style: none; }
   animation: rise 900ms var(--ease) both;
 }
 @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-.welcome-brand { display: flex; align-items: center; gap: 14px; padding-bottom: 16px; margin-bottom: 6px; border-bottom: 1px solid rgba(216, 180, 102, 0.35); }
+.welcome-brand { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; margin-bottom: 4px; border-bottom: 1px solid rgba(216, 180, 102, 0.35); }
 .welcome-brand-mark { display: none; flex: 0 0 auto; height: 56px; }
 .welcome-brand-mark.has-logo { display: block; }
 .welcome-brand-mark img { height: 100%; width: auto; }
 .welcome-brand-text { display: grid; gap: 2px; }
-.welcome-brand-text strong { font-size: 22px; font-weight: 700; letter-spacing: 0.01em; color: #fff; }
+.welcome-brand-text strong { font-size: 20px; font-weight: 700; letter-spacing: 0.01em; color: #fff; }
 .welcome-brand-text small { font-size: 11px; letter-spacing: 0.32em; color: var(--brand-gold); font-weight: 600; }
-.welcome-location { display: inline-flex; align-items: center; gap: 8px; width: fit-content; padding: 5px 14px; border-radius: 999px; border: 1px solid rgba(216, 180, 102, 0.5); color: var(--brand-gold); font-size: 13.5px; font-weight: 600; letter-spacing: 0.01em; }
-.welcome-location::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--brand-gold); box-shadow: 0 0 10px rgba(216, 180, 102, 0.8); }
-.welcome-title { font-size: clamp(36px, 5.4vw, 62px); font-weight: 700; letter-spacing: -0.01em; color: #fff; }
-.welcome-title span { color: var(--brand-gold); }
-.welcome-subtitle { font-size: clamp(18px, 1.75vw, 23px); color: rgba(255, 255, 255, 0.94); max-width: 44ch; line-height: 1.55; }
-.welcome-atmosphere { font-size: clamp(15px, 1.3vw, 17px); color: var(--brand-sand); opacity: 0.9; }
-.welcome-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+/* «مرحبًا بكم» سطر تمهيدي صغير بخط ذهبي، والموقع هو العنوان البطل */
+.welcome-title { display: flex; align-items: center; gap: 12px; font-size: clamp(15px, 1.3vw, 18px); font-weight: 600; letter-spacing: 0.08em; color: var(--brand-gold); margin-top: 6px; }
+.welcome-title::before { content: ""; width: 34px; height: 2px; background: linear-gradient(90deg, var(--brand-gold), rgba(216, 180, 102, 0)); border-radius: 2px; }
+[dir="rtl"] .welcome-title::before { background: linear-gradient(270deg, var(--brand-gold), rgba(216, 180, 102, 0)); }
+.welcome-title span { color: #fff; }
+.welcome-location { display: grid; gap: 6px; width: fit-content; padding: 0; border: 0; color: #fff; }
+.welcome-location .loc-city { display: inline-flex; align-items: center; gap: 8px; font-size: clamp(14px, 1.35vw, 17px); font-weight: 600; letter-spacing: 0.14em; color: var(--brand-sand); opacity: 0.92; }
+.welcome-location .loc-city::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--brand-gold); box-shadow: 0 0 0 4px rgba(216, 180, 102, 0.18), 0 0 14px rgba(216, 180, 102, 0.9); animation: loc-pulse 2.6s ease-in-out infinite; }
+@keyframes loc-pulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(216, 180, 102, 0.18), 0 0 14px rgba(216, 180, 102, 0.9); } 50% { box-shadow: 0 0 0 9px rgba(216, 180, 102, 0.06), 0 0 22px rgba(216, 180, 102, 1); } }
+.welcome-location .loc-main {
+  font-size: clamp(42px, 6.2vw, 84px); font-weight: 700; line-height: 1.12; letter-spacing: -0.015em;
+  background: linear-gradient(100deg, #fff6dc 0%, var(--brand-gold) 35%, #f3dca2 55%, var(--brand-gold-2) 100%);
+  background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: none; animation: gold-sheen 9s ease-in-out infinite;
+}
+@keyframes gold-sheen { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+.welcome-subtitle { font-size: clamp(15px, 1.35vw, 18px); color: rgba(255, 255, 255, 0.86); max-width: 46ch; line-height: 1.65; }
+.welcome-atmosphere { font-size: clamp(13.5px, 1.1vw, 15px); color: var(--brand-sand); opacity: 0.8; }
+.welcome-features { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.welcome-features span { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(216, 180, 102, 0.32); background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(6px); color: #fff; font-size: 13px; font-weight: 600; }
+.welcome-features span::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--brand-gold); }
+.welcome-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 14px; }
+.welcome-actions .btn-primary { position: relative; padding: 15px 34px; font-size: 18px; box-shadow: 0 10px 30px rgba(216, 180, 102, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12) inset; animation: cta-glow 3.2s ease-in-out infinite; }
+.welcome-actions .btn-primary::after { content: "←"; margin-inline-start: 10px; font-weight: 700; transition: transform 200ms var(--ease); }
+[dir="ltr"] .welcome-actions .btn-primary::after { content: "→"; }
+.welcome-actions .btn-primary:hover::after { transform: translateX(-4px); }
+[dir="ltr"] .welcome-actions .btn-primary:hover::after { transform: translateX(4px); }
+@keyframes cta-glow { 0%, 100% { box-shadow: 0 10px 30px rgba(216, 180, 102, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.12) inset; } 50% { box-shadow: 0 12px 40px rgba(216, 180, 102, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.18) inset; } }
+.welcome-actions .btn-ghost { padding: 13px 20px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.28); color: #fff; font-weight: 600; font-size: 15px; text-decoration: none; background: rgba(255, 255, 255, 0.04); transition: background-color 160ms, border-color 160ms; }
+.welcome-actions .btn-ghost:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(216, 180, 102, 0.6); }
 .welcome-slogan { margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.12); font-size: 14px; color: var(--brand-gold); letter-spacing: 0.02em; }
+/* ظهور متدرّج لعناصر الترحيب */
+.welcome-content > * { animation: rise 900ms var(--ease) both; }
+.welcome-content > :nth-child(2) { animation-delay: 90ms; }
+.welcome-content > :nth-child(3) { animation-delay: 180ms; }
+.welcome-content > :nth-child(4) { animation-delay: 270ms; }
+.welcome-content > :nth-child(5) { animation-delay: 360ms; }
+.welcome-content > :nth-child(6) { animation-delay: 450ms; }
+.welcome-content > :nth-child(7) { animation-delay: 540ms; }
+.welcome-content > :nth-child(8) { animation-delay: 630ms; }
+/* إطار ذهبي رفيع يؤطّر اللوح كغلاف عرض */
+.welcome-frame { position: absolute; z-index: 1; inset: calc(var(--header-h) + 14px) 14px 14px 14px; pointer-events: none; border: 1px solid rgba(216, 180, 102, 0.22); border-radius: 18px; mask: linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%); -webkit-mask: linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%); }
+[dir="rtl"] .welcome-frame { mask: linear-gradient(270deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%); -webkit-mask: linear-gradient(270deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%); }
 
 /* ===== الهيدر الثابت ===== */
 .site-header {
@@ -490,7 +525,13 @@ ul { margin: 0; padding: 0; list-style: none; }
   .welcome-content { flex: 0 0 auto; min-height: calc(100vh - var(--header-h) - clamp(16px, 4vh, 40px)); min-height: calc(100dvh - var(--header-h) - clamp(16px, 4vh, 40px)); justify-content: flex-end; gap: 10px; margin-bottom: 0; padding-bottom: 14px; }
   .welcome-brand { padding-bottom: 10px; }
   .welcome-brand-text strong { font-size: 18px; }
-  .welcome-actions .btn-lg { padding: 12px 26px; font-size: 16px; }
+  .welcome-location .loc-main { font-size: clamp(34px, 10vw, 46px); }
+  .welcome-location .loc-city { font-size: 13px; }
+  .welcome-subtitle { font-size: 15px; }
+  .welcome-features span { font-size: 12px; padding: 5px 10px; }
+  .welcome-frame { display: none; }
+  .welcome-actions .btn-lg { padding: 13px 26px; font-size: 16px; }
+  .welcome-actions .btn-ghost { padding: 11px 16px; font-size: 14px; }
   .welcome-slogan { margin-top: 8px; padding-top: 10px; font-size: 13px; }
   .app-footer { grid-template-columns: 1fr; gap: 10px; padding: 14px 16px 12px; font-size: 12.5px; background: var(--brand-navy); backdrop-filter: none; }
   .footer-name-en, .footer-tagline, .footer-about, .footer-heading { display: none; }
@@ -507,5 +548,6 @@ ul { margin: 0; padding: 0; list-style: none; }
   .plan-world.is-animating { transition-duration: 1ms; }
   .dot::after { animation: none; }
   .welcome-photo { animation: none; }
+  .welcome-location .loc-main, .welcome-location .loc-city::before, .welcome-actions .btn-primary { animation: none; }
   .view, .view.is-active { transition-duration: 1ms; }
 }
