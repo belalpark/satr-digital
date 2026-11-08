@@ -305,26 +305,26 @@ ul { margin: 0; padding: 0; list-style: none; }
 .dot.mini { width: 9px; height: 9px; border-width: 1.5px; box-shadow: none; }
 .dot.mini::after { display: none; }
 @keyframes ping { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(1.9); opacity: 0; } }
-.room-tag { font-size: calc(10.5px * var(--s, 1)); font-weight: 600; color: #fff; white-space: nowrap; padding: 2px 7px; border-radius: 6px; background: rgba(10, 12, 15, 0.62); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px); pointer-events: none; }
+.room-tag { font-size: calc(10.5px * var(--s, 1)); font-weight: 600; color: #fff; white-space: nowrap; padding: 2px 7px; border-radius: 6px; background: rgba(10, 12, 15, 0.74); border: 1px solid rgba(255, 255, 255, 0.1); pointer-events: none; }
 .room-tag.is-minor { font-size: calc(9.5px * var(--s, 1)); opacity: 0.85; }
 .room-tag.is-outside { position: absolute; left: 0; top: 0; transform: translate(-100%, -50%); pointer-events: auto; cursor: pointer; font-size: 12px; opacity: 1; }
 .room-tag.is-outside.is-left { transform: translate(0, -50%); }
 .room-tag.is-outside:focus-visible { outline: 2px solid var(--gold); }
 .plan-stage.labels-outside .room-tag:not(.is-outside) { display: none; }
 .dots-legend { position: absolute; top: 14px; inset-inline-start: 14px; z-index: 3; display: flex; flex-direction: column; gap: 4px; margin-top: 36px; font-size: 12px; color: var(--night-ink); }
-.dots-legend span { display: inline-flex; align-items: center; gap: 8px; padding: 3px 10px; border-radius: 999px; background: rgba(18, 20, 24, 0.72); border: 1px solid var(--night-line); backdrop-filter: blur(8px); }
+.dots-legend span { display: inline-flex; align-items: center; gap: 8px; padding: 3px 10px; border-radius: 999px; background: rgba(18, 20, 24, 0.86); border: 1px solid var(--night-line); }
 .dots-legend .dot { width: 10px; height: 10px; border-width: 1.5px; box-shadow: none; }
 .dots-legend .dot::after { display: none; }
 
 .plan-badge {
   position: absolute; top: 14px; inset-inline-start: 14px; z-index: 3;
   padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700;
-  background: rgba(18, 20, 24, 0.72); color: var(--night-ink); border: 1px solid var(--night-line); backdrop-filter: blur(8px);
+  background: rgba(18, 20, 24, 0.86); color: var(--night-ink); border: 1px solid var(--night-line);
 }
 .plan-badge.is-path { color: var(--gold); border-color: rgba(226, 178, 100, 0.4); }
 .help-mobile { display: none; }
 .zoom-controls { position: absolute; bottom: 18px; inset-inline-end: 14px; z-index: 3; display: flex; flex-direction: column; gap: 6px; }
-.zoom-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--night-line); background: rgba(18, 20, 24, 0.78); color: var(--night-ink); font-size: 20px; cursor: pointer; backdrop-filter: blur(8px); }
+.zoom-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--night-line); background: rgba(18, 20, 24, 0.88); color: var(--night-ink); font-size: 20px; cursor: pointer; }
 .zoom-btn:hover { background: rgba(40, 44, 52, 0.9); }
 .plan-help { position: absolute; bottom: 18px; inset-inline-start: 14px; z-index: 3; font-size: 13px; color: var(--night-muted); padding: 6px 12px; background: rgba(18, 20, 24, 0.6); border: 1px solid var(--night-line); border-radius: 999px; max-width: calc(100% - 90px); }
 .plan-stage.is-orbiting ~ .plan-help { opacity: 0.4; }
@@ -444,7 +444,11 @@ ul { margin: 0; padding: 0; list-style: none; }
 /* ===== المخطط ثنائي الأبعاد ===== */
 .plan-stage-2d { background: #e7e1d9; touch-action: none; cursor: grab; }
 .plan-stage-2d.is-panning { cursor: grabbing; }
-.plan2d-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+.plan2d-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.plan2d-world.is-moving { will-change: transform; }
+.plan2d-tiles { position: absolute; inset: 0; pointer-events: none; }
+.plan2d-tile { position: absolute; display: block; max-width: none; opacity: 0; transition: opacity 240ms ease; user-select: none; -webkit-user-drag: none; }
+.plan2d-tile.is-loaded { opacity: 1; }
 .plan2d-image { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; }
 .plan2d-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .room2d { fill: rgba(95, 211, 255, 0); stroke: rgba(95, 211, 255, 0); stroke-width: 3; pointer-events: fill; transition: fill 160ms, stroke 160ms; vector-effect: non-scaling-stroke; }

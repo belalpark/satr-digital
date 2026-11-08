@@ -127,9 +127,19 @@
     },
     "plan2d": {
       "image": "media/plan/office-2d.webp",
-      "width": 2618,
-      "height": 2402,
-      "source": "مخطط المكتب — النسخة الأولى (منظور علوي مرسوم من مخطط الفرش) قبل التحويل إلى النموذج ثلاثي الأبعاد"
+      "width": 2094,
+      "height": 1922,
+      "source": "مخطط المكتب — النسخة الأولى (منظور علوي مرسوم من مخطط الفرش) قبل التحويل إلى النموذج ثلاثي الأبعاد",
+      "tiles": {
+        "path": "media/plan/tiles/{x}_{y}.webp",
+        "width": 5236,
+        "height": 4804,
+        "size": 1024,
+        "overlap": 2,
+        "cols": 6,
+        "rows": 5,
+        "source": "تكبير 4× بالذكاء الاصطناعي (Real-ESRGAN x4plus) لصورة المخطط الأول بدقتها الأصلية 1309×1201"
+      }
     },
     "defaultView": "2d",
     "footer": {
@@ -302,7 +312,8 @@
         "image": "media/twin/rooms/ceo.webp",
         "width": 1600,
         "height": 1000
-      }
+      },
+      "cover": "media/rooms/ceo/cover.webp"
     },
     {
       "id": "cfo",
@@ -376,7 +387,8 @@
       "photosConfidence": "key",
       "hasModel": true,
       "hasPhotos": true,
-      "key": "02a"
+      "key": "02a",
+      "cover": "media/rooms/cfo/cover.webp"
     },
     {
       "id": "office-r2",
@@ -450,7 +462,8 @@
       "hasModel": true,
       "hasPhotos": true,
       "key": "02b",
-      "photosConfidence": "key"
+      "photosConfidence": "key",
+      "cover": "media/rooms/office-r2/cover.webp"
     },
     {
       "id": "office-l1",
@@ -518,7 +531,8 @@
       "photosConfidence": "key",
       "hasModel": true,
       "hasPhotos": true,
-      "key": "02c"
+      "key": "02c",
+      "cover": "media/rooms/office-l1/cover.webp"
     },
     {
       "id": "office-l2",
@@ -568,7 +582,8 @@
       "photosConfidence": "key",
       "hasModel": true,
       "hasPhotos": true,
-      "key": "02d"
+      "key": "02d",
+      "cover": "media/rooms/office-l2/cover.webp"
     },
     {
       "id": "coo",
@@ -647,7 +662,8 @@
         "image": "media/twin/rooms/coo.webp",
         "width": 1600,
         "height": 1000
-      }
+      },
+      "cover": "media/rooms/coo/cover.webp"
     },
     {
       "id": "open-a",
@@ -726,7 +742,8 @@
         "image": "media/twin/rooms/open-a.webp",
         "width": 1600,
         "height": 1000
-      }
+      },
+      "cover": "media/rooms/open-a/cover.webp"
     },
     {
       "id": "field-qc",
@@ -811,7 +828,8 @@
         "image": "media/twin/rooms/field-qc.webp",
         "width": 1600,
         "height": 1000
-      }
+      },
+      "cover": "media/rooms/field-qc/cover.webp"
     },
     {
       "id": "finance",
@@ -879,7 +897,8 @@
       "photosConfidence": "key",
       "hasModel": true,
       "hasPhotos": true,
-      "key": "03c"
+      "key": "03c",
+      "cover": "media/rooms/finance/cover.webp"
     },
     {
       "id": "inner-1",
@@ -947,7 +966,8 @@
       "photosConfidence": "key",
       "hasModel": true,
       "hasPhotos": true,
-      "key": "03d"
+      "key": "03d",
+      "cover": "media/rooms/inner-1/cover.webp"
     },
     {
       "id": "research",
@@ -1026,7 +1046,8 @@
         "image": "media/twin/rooms/research.webp",
         "width": 1600,
         "height": 1000
-      }
+      },
+      "cover": "media/rooms/research/cover.webp"
     },
     {
       "id": "hr-pmo-ops",
@@ -1111,7 +1132,8 @@
         "image": "media/twin/rooms/hr-pmo-ops.webp",
         "width": 1600,
         "height": 1000
-      }
+      },
+      "cover": "media/rooms/hr-pmo-ops/cover.webp"
     },
     {
       "id": "inner-3",
@@ -1179,7 +1201,8 @@
       "hasModel": true,
       "hasPhotos": true,
       "key": "04a",
-      "photosConfidence": "key"
+      "photosConfidence": "key",
+      "cover": "media/rooms/inner-3/cover.webp"
     },
     {
       "id": "inner-2",
@@ -1241,7 +1264,8 @@
       "photosConfidence": "key",
       "hasModel": true,
       "hasPhotos": true,
-      "key": "04b"
+      "key": "04b",
+      "cover": "media/rooms/inner-2/cover.webp"
     },
     {
       "id": "inner-4",
@@ -1297,7 +1321,8 @@
       "photosConfidence": "key",
       "hasModel": true,
       "hasPhotos": true,
-      "key": "05a"
+      "key": "05a",
+      "cover": "media/rooms/inner-4/cover.webp"
     },
     {
       "id": "women-area",
@@ -1352,7 +1377,8 @@
         "image": "media/twin/rooms/women-area.webp",
         "width": 1600,
         "height": 1000
-      }
+      },
+      "cover": "media/rooms/women-area/cover.webp"
     },
     {
       "id": "wc-women",
@@ -1396,7 +1422,8 @@
       "photosConfidence": "key",
       "hasModel": true,
       "hasPhotos": true,
-      "key": "07"
+      "key": "07",
+      "cover": "media/rooms/wc-women/cover.webp"
     },
     {
       "id": "wc-men",
@@ -1452,7 +1479,8 @@
       "photosConfidence": "key",
       "hasModel": true,
       "hasPhotos": true,
-      "key": "07"
+      "key": "07",
+      "cover": "media/rooms/wc-men/cover.webp"
     },
     {
       "id": "meeting-medium",
@@ -1525,7 +1553,8 @@
         "image": "media/twin/rooms/meeting-medium.webp",
         "width": 1600,
         "height": 1000
-      }
+      },
+      "cover": "media/rooms/meeting-medium/cover.webp"
     },
     {
       "id": "meeting-large",
@@ -1649,7 +1678,8 @@
         "image": "media/twin/rooms/meeting-large.webp",
         "width": 1600,
         "height": 1000
-      }
+      },
+      "cover": "media/rooms/meeting-large/cover.webp"
     },
     {
       "id": "store",
@@ -1729,7 +1759,8 @@
       "hasModel": true,
       "hasPhotos": true,
       "key": "10",
-      "photosConfidence": "key"
+      "photosConfidence": "key",
+      "cover": "media/rooms/data-center/cover.webp"
     },
     {
       "id": "core",
@@ -1874,7 +1905,8 @@
         "image": "media/twin/rooms/reception.webp",
         "width": 1600,
         "height": 1000
-      }
+      },
+      "cover": "media/rooms/reception/cover.webp"
     },
     {
       "id": "lounge",
@@ -1967,7 +1999,8 @@
         "image": "media/twin/rooms/lounge.webp",
         "width": 1600,
         "height": 1000
-      }
+      },
+      "cover": "media/rooms/lounge/cover.webp"
     },
     {
       "id": "bleachers",
@@ -2042,7 +2075,8 @@
         "image": "media/twin/rooms/bleachers.webp",
         "width": 1600,
         "height": 1000
-      }
+      },
+      "cover": "media/rooms/bleachers/cover.webp"
     },
     {
       "id": "corridors",
@@ -2089,7 +2123,8 @@
         }
       ],
       "hasPhotos": true,
-      "photosConfidence": "key"
+      "photosConfidence": "key",
+      "cover": "media/rooms/corridors/cover.webp"
     }
   ],
   "scenes": {

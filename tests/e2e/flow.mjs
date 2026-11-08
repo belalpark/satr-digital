@@ -90,6 +90,11 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.ok(!footerText.includes('@'), 'no e-mail in the footer');
     const ctaStyle = await page.$eval('#btn-start', (b) => { const r = b.getBoundingClientRect(); return { inView: r.top >= 0 && r.bottom <= innerHeight, w: r.width }; });
     assert.ok(ctaStyle.inView && ctaStyle.w > 90, `call to action visible on the first screen (${JSON.stringify(ctaStyle)})`);
+    // a light first visit: no 3D library, no gallery photos, no plan tiles until they are wanted
+    const loaded = await page.evaluate(() => performance.getEntriesByType('resource').map((e) => new URL(e.name).pathname));
+    assert.ok(!loaded.some((p) => p.includes('three-bundle') || p.includes('twin3d')), 'welcome: the 3D viewer is not downloaded');
+    assert.ok(!loaded.some((p) => /\/media\/rooms\//.test(p)), `welcome: no room photos downloaded (${loaded.filter((p) => p.includes('/media/rooms/')).length})`);
+    assert.ok(!loaded.some((p) => p.includes('/media/plan/tiles/')), 'welcome: no plan tiles downloaded');
     await shot('welcome');
     // 2. the 2D plan opens by default: view tabs, dots, sidebar, routes, focus, red dot -> details
     step = '2a plan 2D';
@@ -127,6 +132,16 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.ok(await page.$eval('#plan2d-stage .plan2d-veil', (v) => getComputedStyle(v).display !== 'none'), '2D: neighbours dimmed');
     const box2d = await page.evaluate(() => { const st = document.getElementById('plan2d-stage'); const b = st.__twin.roomScreenBox('meeting-large'); return { size: Math.max(b.w, b.h), stage: Math.min(st.clientWidth, st.clientHeight) }; });
     assert.ok(box2d.size > box2d.stage * 0.4, `2D: zoomed to the room (room ${box2d.size.toFixed(0)}px on ${box2d.stage.toFixed(0)}px)`);
+    // zoomed in: the high-resolution tiles for the part in view arrive, and the settled plan is no
+    // longer a frozen compositor layer (it is redrawn sharp at this zoom)
+    // (when the screen shows more pixels than the light base image has; a 1x screen at a mild zoom doesn't)
+    await page.waitForTimeout(400);
+    const tinfo = await page.evaluate(() => document.getElementById('plan2d-stage').__twin.tileInfo());
+    if (tinfo.need > tinfo.base * 1.05) await page.waitForFunction(() => document.getElementById('plan2d-stage').__twin.tileInfo().loaded > 0, null, { timeout: 15000 });
+    const tiles2d = await page.evaluate(() => ({ ...document.getElementById('plan2d-stage').__twin.tileInfo(), moving: document.querySelector('.plan2d-world').classList.contains('is-moving'), wc: getComputedStyle(document.querySelector('.plan2d-world')).willChange }));
+    if (tiles2d.need > tiles2d.base * 1.05) assert.ok(tiles2d.loaded >= 1 && tiles2d.requested <= 12, `2D: only the tiles in view are fetched (${JSON.stringify(tiles2d)})`);
+    else assert.equal(tiles2d.requested, 0, `2D: the base image suffices at this zoom (${JSON.stringify(tiles2d)})`);
+    assert.ok(!tiles2d.moving && tiles2d.wc === 'auto', `2D: settled plan is redrawn at the current zoom (${JSON.stringify(tiles2d)})`);
     await shot('focus-2d');
     await click('#room-list .room-item-btn[data-id="meeting-large"]');
     await page.waitForFunction(() => location.hash === '#/plan');
@@ -261,6 +276,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.equal((await page.textContent('.site-nav a.is-active')).trim(), 'الصور', 'header highlights الصور');
     await page.waitForFunction(() => { const i = document.querySelector('#gallery-grid .gallery-card[data-id="bleachers"] img'); return i && i.complete && i.naturalWidth > 0; });
     assert.match(await page.textContent('#gallery-grid .gallery-card[data-id="bleachers"] .gallery-count'), /4 صور/);
+    assert.match(await page.$eval('#gallery-grid .gallery-card[data-id="bleachers"] img', (i) => i.getAttribute('src')), /\/cover\.webp$/, 'gallery: card-sized cover, not the full photo');
     await shot('gallery');
     await page.locator('#gallery-grid .gallery-card[data-id="bleachers"]').click();
     await page.waitForFunction(() => location.hash === '#/room/bleachers/photos' && document.getElementById('app').dataset.currentView === 'photos');

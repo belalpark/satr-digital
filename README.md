@@ -39,7 +39,9 @@ assets/js/details.js       لوحة التفاصيل (3 أعمدة / تبويب�
 assets/js/geometry.js      دوال هندسية نقية (مختبرة)
 assets/vendor/three-bundle.js  three.js 0.187 + GLTFLoader + OrbitControls + RoomEnvironment (حزمة واحدة، بلا CDN)
 data/office.json           سجل المكتب — مصدر الحقيقة الوحيد
-media/plan/office-2d.webp  مخطط المكتب (النسخة الأولى، 2× المخطط المرجعي 1309×1201)
+media/plan/office-2d.webp  مخطط المكتب — الصورة الأساسية الخفيفة (1.6× المخطط المرجعي 1309×1201)
+media/plan/tiles/          مربعات الدقة العالية (4×، تكبير Real-ESRGAN للمخطط الأول) تُجلب فقط للجزء الظاهر عند التكبير
+media/rooms/<id>/cover.webp  غلاف بطاقة المعرض (960 بكسل) — tools/make_covers.py
 media/twin/web/            النموذج للمتصفح: office.glb + scene.json (الإضاءات ومراسي الغرف) + خامات مخبوزة
 media/twin/rooms/          لقطات Cycles قريبة لكل غرفة (تُعرض في صفحة التفاصيل)
 media/twin/                رندرات Cycles الثابتة (اللقطة الثانية لغرفة الاجتماعات، للتفاصيل)
@@ -48,6 +50,8 @@ tools/twin/                layout.py (الجدران/الأبواب/الفرش)�
 tools/key_index.json       دليل المساحات من صاحب المشروع: رمز كل فراغ ← أرقام صوره (المرجع المعتمد لتوزيع الصور)
 tools/photos_proposal.json التوزيع المقترح السابق (قبل الدليل) مع أسباب استبعاد الصور
 tools/                     اشتقاق الصور، إزالة الشعارات، تجميع نشرة Pages
+tools/plan_tiles.py        الصورة الأساسية + المربعات من صورة المخطط عالية الدقة
+tools/variant.mjs          حزمتا الاستضافة (سطر / بلا وسيط)؛ السكربتات والأنماط في assets/r-<بصمة>/ للتخزين المؤقت سنة
 tests/unit, tests/e2e      الاختبارات
 docs/qa/<تاريخ>/           لقطات الاختبار الشامل لكل تسليم
 ```

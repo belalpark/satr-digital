@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -242,4 +242,27 @@ test('every room declares its dot capabilities consistently', () => {
     if (r.hasPhotos) assert.ok(r.photos.length > 0, `${r.id} photos`);
   }
   assert.ok(data.rooms.filter((r) => r.hasPhotos).length >= 20, 'most rooms have real photos now');
+});
+
+test('2D plan: a light base image plus a full set of high-resolution tiles on the same plan grid', () => {
+  const p = data.office.plan2d;
+  const base = resolve(root, p.image);
+  assert.ok(existsSync(base));
+  assert.ok(statSync(base).size < 300 * 1024, 'the base image every visitor loads stays light');
+  assert.ok(Math.abs(p.width / ref.width - p.height / ref.height) < 0.01, 'base image on the plan grid');
+  const t = p.tiles;
+  assert.ok(t && t.width >= ref.width * 4 - 1, 'tiles carry 4x the plan grid');
+  assert.ok(Math.abs(t.width / ref.width - t.height / ref.height) < 0.01, 'tiles on the plan grid');
+  assert.equal(t.cols, Math.ceil(t.width / t.size));
+  assert.equal(t.rows, Math.ceil(t.height / t.size));
+  for (let y = 0; y < t.rows; y++) for (let x = 0; x < t.cols; x++) assert.ok(existsSync(resolve(root, t.path.replace('{x}', x).replace('{y}', y))), `tile ${x}_${y}`);
+});
+
+test('gallery covers: every room in the gallery has a card-sized cover from its first photo', () => {
+  for (const r of data.rooms.filter((x) => x.hasPhotos && x.photos && x.photos.length)) {
+    assert.ok(r.cover, `${r.id} has a cover`);
+    const f = resolve(root, r.cover);
+    assert.ok(existsSync(f), `${r.cover} exists`);
+    assert.ok(statSync(f).size < statSync(resolve(root, r.photos[0].src)).size, `${r.id}: the cover is lighter than the photo`);
+  }
 });

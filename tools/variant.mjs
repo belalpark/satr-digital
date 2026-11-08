@@ -5,7 +5,8 @@
 //              shipped files carry no company name, logo, contact number or link at all.
 //
 //   node tools/variant.mjs --variant neutral --out dist-hosting/neutral   → <out>/public_html + public_html.zip
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync, readdirSync, statSync, renameSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,12 +25,15 @@ export function neutralData(data) {
   return d;
 }
 
+// Scripts and styles live in a folder named after their content (assets/r-<hash>/), so they can be
+// cached for a year: a new release has a new folder name and the 5-minute index.html points to it.
 const HTACCESS = `Options -Indexes
 AddDefaultCharset utf-8
 AddType model/gltf-binary .glb
 AddType image/webp .webp
 AddType application/json .json
 AddType text/javascript .mjs .js
+AddType font/woff2 .woff2
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json model/gltf-binary image/svg+xml
 </IfModule>
@@ -39,9 +43,10 @@ AddType text/javascript .mjs .js
   ExpiresByType image/png "access plus 30 days"
   ExpiresByType image/jpeg "access plus 30 days"
   ExpiresByType model/gltf-binary "access plus 7 days"
-  ExpiresByType text/css "access plus 1 day"
-  ExpiresByType text/javascript "access plus 1 day"
-  ExpiresByType application/javascript "access plus 1 day"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType text/javascript "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
   ExpiresByType application/json "access plus 5 minutes"
   ExpiresByType text/html "access plus 5 minutes"
 </IfModule>
@@ -50,6 +55,33 @@ AddType text/javascript .mjs .js
   Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 `;
+
+function filesUnder(dir) {
+  const out = [];
+  for (const name of readdirSync(dir)) {
+    const p = resolve(dir, name);
+    if (statSync(p).isDirectory()) out.push(...filesUnder(p));
+    else out.push(p);
+  }
+  return out;
+}
+
+/** Move js / css / vendor into assets/r-<content hash>/ and point index.html at it. Returns the folder name. */
+export function releaseAssets(site) {
+  const assets = resolve(site, 'assets');
+  const parts = ['js', 'css', 'vendor'].filter((p) => existsSync(resolve(assets, p)));
+  const h = createHash('sha256');
+  for (const p of parts) for (const f of filesUnder(resolve(assets, p)).sort()) { h.update(f.slice(assets.length)); h.update(readFileSync(f)); }
+  const tag = `r-${h.digest('hex').slice(0, 10)}`;
+  mkdirSync(resolve(assets, tag));
+  for (const p of parts) renameSync(resolve(assets, p), resolve(assets, tag, p));
+  // the stylesheet is one folder deeper now: its fonts stay in assets/fonts (cached once, across releases)
+  const css = resolve(assets, tag, 'css', 'app.css');
+  if (existsSync(css)) writeFileSync(css, readFileSync(css, 'utf8').replaceAll('url("../fonts/', 'url("../../fonts/'));
+  const index = resolve(site, 'index.html');
+  writeFileSync(index, readFileSync(index, 'utf8').replace(/(["'])assets\/(js|css|vendor)\//g, `$1assets/${tag}/$2/`));
+  return tag;
+}
 
 export function build(variant, out, root = resolve(dirname(fileURLToPath(import.meta.url)), '..')) {
   if (!['satr', 'neutral'].includes(variant)) throw new Error(`unknown variant ${variant}`);
@@ -63,6 +95,7 @@ export function build(variant, out, root = resolve(dirname(fileURLToPath(import.
   writeFileSync(resolve(site, 'index.html'), variant === 'neutral' ? neutralHtml(html) : html);
   writeFileSync(resolve(site, 'data/office.json'), JSON.stringify(variant === 'neutral' ? neutralData(data) : data, null, 2) + '\n');
   writeFileSync(resolve(site, '.htaccess'), HTACCESS);
+  releaseAssets(site);
   if (variant === 'satr') {
     let sha = 'dev';
     let branch = '';

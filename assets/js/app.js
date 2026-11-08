@@ -1,7 +1,6 @@
 // Entry point: loads the office record, the live 3D model, and wires the hash
 // router to the views (welcome → 3D plan → room focus → photos / details).
 import { parseHash, navigate, buildHash, teamNameFromSearch } from './router.js';
-import { createTwin3D } from './twin3d.js';
 import { createPlan2D } from './plan2d.js';
 import { createOverlay } from './overlay.js';
 import { createRoom } from './room.js';
@@ -122,7 +121,7 @@ export async function init() {
   const plan2dStage = document.getElementById('plan2d-stage');
   const viewTabs = [...document.querySelectorAll('#view-tabs [data-view]')];
   let mode = readPref('view', (data.office.defaultView === '3d' ? '3d' : '2d'));
-  const plan2d = createPlan2D(plan2dStage, data, {});
+  const plan2d = createPlan2D(plan2dStage, data, { priority: parseHash(location.hash).view === 'welcome' ? 'low' : 'high' });
   plan2dStage.__twin = plan2d; // test hook
   let overlay2d = null;
 
@@ -174,10 +173,22 @@ export async function init() {
     onPhotos: (id) => navigate({ view: 'details', roomId: id }), // the red dot opens the room details (photos included)
   };
 
+  // the 3D viewer (three.js, ~200 KB compressed) is fetched only when the 3D view is wanted: a hover or
+  // touch on a 3D link/tab starts the download early, the 2D plan and the other pages never pay for it
+  let twinModule = null;
+  function warm3d() {
+    if (!twinModule) twinModule = import('./twin3d.js').catch((err) => { twinModule = null; throw err; });
+    return twinModule;
+  }
+  for (const a of document.querySelectorAll('[data-nav="plan3d"], .scene-tab[data-view="3d"]')) {
+    for (const ev of ['pointerenter', 'touchstart', 'focus']) a.addEventListener(ev, () => { warm3d().catch(() => {}); }, { once: true, passive: true });
+  }
+
   function loadTwin() {
     if (twinPromise) return twinPromise;
     twinPromise = (async () => {
     try {
+      const { createTwin3D } = await warm3d();
       twin = await createTwin3D(planStage, data, { base: data.office.model.base, lighting: readPref('lighting', 'day'), idleSpin: true, active: currentView === 'plan' && mode === '3d' });
       twin.setActive(currentView === 'plan' && mode === '3d'); // the view may have changed while the model was loading
       overlay = createOverlay(planStage, twin, data, dotHandlers);
@@ -523,12 +534,14 @@ export async function init() {
   const galleryGrid = document.getElementById('gallery-grid');
   const totalPhotos = galleryRooms.reduce((n, r) => n + r.photos.length, 0);
   document.getElementById('gallery-sub').textContent = `${galleryRooms.length} مساحة · ${photosLabel(totalPhotos)} حقيقية — اختر مساحة لعرض صورها`;
-  galleryGrid.replaceChildren(...galleryRooms.map((r) => {
+  // built on the first visit only: two dozen cover photos are not fetched for visitors who never open it
+  let galleryBuilt = false;
+  const buildGallery = () => { if (galleryBuilt) return; galleryBuilt = true; galleryGrid.replaceChildren(...galleryRooms.map((r) => {
     const a = el('a', 'gallery-card');
     a.href = buildHash({ view: 'photos', roomId: r.id });
     a.dataset.id = r.id;
     const img = document.createElement('img');
-    img.src = r.photos[0].src;
+    img.src = r.cover || r.photos[0].src;
     img.alt = r.photos[0].caption || r.name;
     img.loading = 'lazy';
     img.decoding = 'async';
@@ -536,7 +549,7 @@ export async function init() {
     meta.append(el('strong', 'gallery-name', r.name), el('span', 'gallery-count', photosLabel(r.photos.length)));
     a.append(img, meta);
     return a;
-  }));
+  })); };
   let photosFromGallery = false;
   const backBtn = document.getElementById('btn-back-plan');
   const backLabel = (fromGallery) => { backBtn.lastChild.textContent = fromGallery ? ' العودة للمعرض ' : ' العودة للمنظور '; };
@@ -629,6 +642,7 @@ export async function init() {
     }
 
     if (route.view === 'gallery') {
+      buildGallery();
       showView('gallery');
       setNav('gallery');
       document.title = `معرض الصور — ${data.office.title}`;

@@ -58,10 +58,17 @@ export function createOverlay(stage, twin, data, opts = {}) {
     items.set(room.id, { room, wrap, label, outLabel, leader, red });
   }
 
+  // runs every animation frame while the plan moves: only touch the DOM where a value actually
+  // changed (each needless style write costs a style recalc of the label, and on a phone that adds up)
+  let lastBox = '';
+  const setDisplay = (node, v) => { if (node.style.display !== v) node.style.display = v; };
+  const setHidden = (node, v) => { if (node.hidden !== v) node.hidden = v; };
+  const clearLeader = (it) => { if (it.leaderOn) { it.leader.setAttribute('d', ''); it.leaderOn = false; } };
   function layout() {
     const w = stage.clientWidth;
     const h = stage.clientHeight;
-    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    const box = `0 0 ${w} ${h}`;
+    if (box !== lastBox) { svg.setAttribute('viewBox', box); lastBox = box; }
     const placed = [];
     const zoomNow = (twin.planPixelSize ? twin.planPixelSize() : 0) / Math.max(1, Math.max(w, h));
     const closeNow = zoomNow > 1.6;
@@ -70,23 +77,24 @@ export function createOverlay(stage, twin, data, opts = {}) {
     focusId = twin.getFocus ? twin.getFocus() : focusId;
     for (const it of items.values()) {
       const a = twin.anchorFor(it.room.id);
-      if (!a || !a.visible || hidden) { it.wrap.style.display = 'none'; it.outLabel.hidden = true; it.leader.setAttribute('d', ''); continue; }
+      if (!a || !a.visible || hidden) { setDisplay(it.wrap, 'none'); setHidden(it.outLabel, true); clearLeader(it); continue; }
       const on = a.x > -40 && a.x < w + 40 && a.y > -40 && a.y < h + 40;
-      it.wrap.style.display = on ? '' : 'none';
-      it.wrap.style.transform = `translate(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px)`;
+      setDisplay(it.wrap, on ? '' : 'none');
+      if (on) it.wrap.style.transform = `translate(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px)`;
       const dim = focusId && it.room.id !== focusId;
       it.wrap.classList.toggle('is-dim', !!dim);
       it.wrap.classList.toggle('is-focus', it.room.id === focusId);
       // depth-based scale so far dots look smaller; clamp to keep them tappable
       const s = Math.min(1, Math.max(0.72, 0.55 + 0.45 * Math.min(1.5, zoomNow / 1.6)));
-      it.wrap.style.setProperty('--s', s.toFixed(3));
+      const sv = s.toFixed(3);
+      if (it.s !== sv) { it.wrap.style.setProperty('--s', sv); it.s = sv; }
       // labels: major rooms always; minor rooms only when the camera is close (large on-screen plan)
       const close = closeNow;
-      it.label.hidden = outside || (it.label.classList.contains('is-minor') && !close && it.room.id !== focusId);
+      setHidden(it.label, outside || (it.label.classList.contains('is-minor') && !close && it.room.id !== focusId));
       placed.push({ it, a, on });
     }
     // outside labels: sort by screen y, lay out in two columns (right for right half, left for left half)
-    for (const { it } of placed) { it.outLabel.hidden = true; it.leader.setAttribute('d', ''); }
+    for (const { it } of placed) { setHidden(it.outLabel, true); clearLeader(it); }
     if (!outside || hidden) return;
     const cols = { left: [], right: [] };
     for (const p of placed) {
@@ -108,6 +116,7 @@ export function createOverlay(stage, twin, data, opts = {}) {
         const lx = side === 'left' ? x + p.it.outWidth + 6 : x - p.it.outWidth - 6;
         const mx = (lx + p.a.x) / 2;
         p.it.leader.setAttribute('d', `M${lx} ${y}C${mx} ${y},${mx} ${p.a.y},${p.a.x} ${p.a.y}`);
+        p.it.leaderOn = true;
         y += rowH;
       }
     }

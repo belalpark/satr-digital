@@ -10,6 +10,15 @@
   <link rel="preload" href="assets/fonts/IBMPlexSansArabic-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/IBMPlexSansArabic-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/app.css">
+  <!-- the page's modules in one round trip instead of a chain (app.js → plan2d.js → geometry.js …) -->
+  <link rel="modulepreload" href="assets/js/app.js">
+  <link rel="modulepreload" href="assets/js/router.js">
+  <link rel="modulepreload" href="assets/js/plan2d.js">
+  <link rel="modulepreload" href="assets/js/geometry.js">
+  <link rel="modulepreload" href="assets/js/overlay.js">
+  <link rel="modulepreload" href="assets/js/room.js">
+  <link rel="modulepreload" href="assets/js/details.js">
+  <link rel="modulepreload" href="assets/js/format.js">
 </head>
 <body>
   <div id="app" class="app" data-current-view="welcome">
@@ -38,7 +47,7 @@
 
     <!-- 1. الترحيب -->
     <section id="view-welcome" class="view view-welcome" data-view="welcome" aria-labelledby="welcome-location">
-      <img id="welcome-photo" class="welcome-photo" alt="" decoding="async">
+      <img id="welcome-photo" class="welcome-photo" alt="" src="media/hero/perspective.webp" fetchpriority="high">
       <div class="welcome-shade" aria-hidden="true"></div>
       <div class="welcome-panel" aria-hidden="true"></div>
       <div class="welcome-frame" aria-hidden="true"></div>

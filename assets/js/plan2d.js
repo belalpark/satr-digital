@@ -28,12 +28,17 @@ export function createPlan2D(container, data, opts = {}) {
   world.className = 'plan2d-world';
   const img = document.createElement('img');
   img.className = 'plan2d-image';
-  img.src = P.image;
   img.alt = '';
   img.decoding = 'async';
   img.draggable = false;
+  if (opts.priority) img.fetchPriority = opts.priority; // 'low' behind the welcome photo, 'high' on a plan deep link
+  img.src = P.image;
+  // high-resolution tiles over the base image, fetched only for the part in view once the zoom
+  // asks for more pixels than the base image has (the first view stays light)
+  const tileLayer = document.createElement('div');
+  tileLayer.className = 'plan2d-tiles';
   const svg = svgEl('svg', { class: 'plan2d-svg', viewBox: `0 0 ${planW} ${planH}`, preserveAspectRatio: 'none' });
-  world.append(img, svg);
+  world.append(img, tileLayer, svg);
   container.prepend(world);
 
   // dimming veil (everything but the focused room), drawn with an even-odd hole
@@ -86,9 +91,76 @@ export function createPlan2D(container, data, opts = {}) {
   let focusId = null;
   const listeners = new Set();
   let raf = 0;
+  // While the view moves the world is its own compositor layer (cheap, smooth); once it settles the
+  // hint is dropped so the browser redraws the plan at the current zoom — a layer kept under
+  // `will-change: transform` stays rasterised at its first scale and looks soft when zoomed in.
+  let settleTimer = 0;
+  function moving() {
+    if (!world.classList.contains('is-moving')) world.classList.add('is-moving');
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => { world.classList.remove('is-moving'); updateTiles(); }, 220);
+  }
   function apply() {
     world.style.transform = `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${scale.toFixed(4)})`;
+    moving();
     if (!raf) raf = requestAnimationFrame(() => { raf = 0; for (const fn of listeners) fn(); });
+  }
+
+  // ---------- high-resolution tiles ----------
+  const T = P.tiles || null;
+  const tileEls = new Map(); // "x_y" -> { img, used }
+  let tileClock = 0;
+  const MAX_TILES = 20; // bounded decoded-image memory (phones): least recently needed tiles are dropped
+  const pixelNeed = () => fit * scale * Math.min(3, window.devicePixelRatio || 1); // image px per plan unit the screen shows now
+  const basePixels = () => (img.naturalWidth || P.width) / planW;
+  function tilesWanted() {
+    if (!T || viewW < 2) return null;
+    if (pixelNeed() <= basePixels() * 1.05) return null; // the base image is already sharp at this zoom
+    // the plan rectangle in view (plan units), with a margin so a small pan doesn't uncover blur
+    const x0 = -tx / (fit * scale);
+    const y0 = -ty / (fit * scale);
+    const w = viewW / (fit * scale);
+    const h = viewH / (fit * scale);
+    const m = 0.15;
+    const k = T.width / planW; // tile-image px per plan unit
+    const c0 = Math.max(0, Math.floor(((x0 - w * m) * k) / T.size));
+    const c1 = Math.min(T.cols - 1, Math.floor(((x0 + w * (1 + m)) * k) / T.size));
+    const r0 = Math.max(0, Math.floor(((y0 - h * m) * k) / T.size));
+    const r1 = Math.min(T.rows - 1, Math.floor(((y0 + h * (1 + m)) * k) / T.size));
+    const out = [];
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) out.push([c, r]);
+    return out;
+  }
+  function updateTiles() {
+    const want = tilesWanted();
+    if (!want) return;
+    tileClock++;
+    for (const [c, r] of want) {
+      const key = `${c}_${r}`;
+      let t = tileEls.get(key);
+      if (!t) {
+        const im = document.createElement('img');
+        im.className = 'plan2d-tile';
+        im.alt = '';
+        im.decoding = 'async';
+        im.draggable = false;
+        const px = c * T.size;
+        const py = r * T.size;
+        const pw = Math.min(T.size + T.overlap, T.width - px);
+        const ph = Math.min(T.size + T.overlap, T.height - py);
+        Object.assign(im.style, { left: `${(px / T.width) * 100}%`, top: `${(py / T.height) * 100}%`, width: `${(pw / T.width) * 100}%`, height: `${(ph / T.height) * 100}%` });
+        im.addEventListener('load', () => im.classList.add('is-loaded'), { once: true });
+        im.src = T.path.replace('{x}', c).replace('{y}', r);
+        tileLayer.append(im);
+        t = { img: im, used: 0 };
+        tileEls.set(key, t);
+      }
+      t.used = tileClock;
+    }
+    if (tileEls.size > MAX_TILES) {
+      const old = [...tileEls.entries()].filter(([, t]) => t.used !== tileClock).sort((a, b) => a[1].used - b[1].used);
+      for (const [key, t] of old.slice(0, tileEls.size - MAX_TILES)) { t.img.remove(); tileEls.delete(key); }
+    }
   }
   function clampPan() {
     // keep the plan from leaving the stage: at least a third of it stays visible
@@ -328,6 +400,18 @@ export function createPlan2D(container, data, opts = {}) {
     g.fillStyle = '#efe9e1';
     g.fillRect(0, 0, c.width, c.height);
     g.drawImage(img, box.x * kx, box.y * ky, box.w * kx, box.h * ky, 0, 0, c.width, c.height);
+    if (T) {
+      // tiles already fetched for this framing are sharper than the base image: paint them over it
+      const s = c.width / box.w; // canvas px per plan unit
+      const u = planW / T.width; // plan units per tile-image px
+      for (const [key, t] of tileEls) {
+        if (!t.img.complete || !t.img.naturalWidth) continue;
+        const [tc, tr] = key.split('_').map(Number);
+        const x = tc * T.size * u;
+        const y = tr * T.size * u;
+        g.drawImage(t.img, (x - box.x) * s, (y - box.y) * s, t.img.naturalWidth * u * s, t.img.naturalHeight * u * s);
+      }
+    }
     if (r) {
       const sx = c.width / box.w;
       const sy = c.height / box.h;
@@ -379,6 +463,7 @@ export function createPlan2D(container, data, opts = {}) {
     zoom: (factor) => { cancelTween(); userMoved = true; zoomAt(factor, viewW / 2, viewH / 2); },
     stopIdle() {},
     snapshot,
+    tileInfo: () => ({ need: pixelNeed(), base: basePixels(), requested: tileEls.size, loaded: tileLayer.querySelectorAll('.is-loaded').length }), // test hook
     dispose: () => { world.remove(); },
   };
 }
