@@ -47,6 +47,23 @@ async function flow(name, contextOptions, { mobile, team }) {
   };
   const hash = () => new URL(page.url()).hash;
   const click = (sel) => page.evaluate((s) => document.querySelector(s).click(), sel); // toolbar buttons move while the model renders
+  // watch a page change frame by frame: two pages must never be on screen together (owner, 2026-11-08)
+  const watchViews = () => page.evaluate(() => {
+    window.__viewFrames = [];
+    const t0 = performance.now();
+    const tick = (now) => {
+      const vis = [...document.querySelectorAll('.view')].filter((v) => { const cs = getComputedStyle(v); return cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0.02; }).map((v) => v.dataset.view);
+      window.__viewFrames.push(vis);
+      if (now - t0 < 900) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  const assertOnePage = async (what) => {
+    await page.waitForTimeout(950);
+    const frames = await page.evaluate(() => window.__viewFrames);
+    const both = frames.filter((f) => f.length > 1);
+    assert.ok(frames.length > 3 && both.length === 0, `${what}: one page on screen per frame (${both.length} of ${frames.length} frames showed ${JSON.stringify(both[0] || [])})`);
+  };
   const modelReady = () => page.waitForSelector('#plan-stage.is-ready', { timeout: 120000 });
   const focusedOn = (id) => page.waitForFunction((rid) => document.getElementById('plan-stage').dataset.focus === rid, id, { timeout: 60000 });
   // the camera flight has ended and one more frame was drawn (software GL can take seconds per frame)
@@ -70,8 +87,8 @@ async function flow(name, contextOptions, { mobile, team }) {
     } else {
       assert.equal((await page.textContent('#welcome-title')).trim(), 'فرصة استحواذ');
     }
-    assert.match(await page.textContent('#welcome-subtitle'), /توأمة رقمية/);
-    assert.match(await page.textContent('#welcome-atmosphere'), /أجواء جميلة وهادئة/);
+    assert.equal((await page.textContent('#welcome-subtitle')).trim(), 'مساحة تليق بأعمالك');
+    assert.match(await page.textContent('#welcome-atmosphere'), /مقر إداري مفروش ومجهّز يجمع فريقك في مكان واحد/);
     const body = await page.textContent('body');
     for (const banned of ['احجز معاينة', 'التوأم الرقمي للمكتب', 'محطة عمل', 'مكتبًا إداريًا', 'الوضع الحالي']) {
       assert.ok(!body.includes(banned), `welcome must not contain «${banned}»`);
@@ -89,6 +106,9 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.equal(await page.$$eval('#app-footer a[href^="tel:"]', (as) => as.length), 2, 'two tel links');
     assert.ok(!footerText.includes('@'), 'no e-mail in the footer');
     const ctaStyle = await page.$eval('#btn-start', (b) => { const r = b.getBoundingClientRect(); return { inView: r.top >= 0 && r.bottom <= innerHeight, w: r.width }; });
+    const fit = await page.evaluate(() => { const v = document.getElementById('view-welcome'); const f = document.getElementById('app-footer'); return { scrollH: v.scrollHeight, h: v.clientHeight, overflow: getComputedStyle(v).overflowY, footerBottom: f ? f.getBoundingClientRect().bottom : 0 }; });
+    assert.ok(fit.scrollH <= fit.h + 1 || fit.overflow === 'auto', `welcome: nothing is cut off — it fits or it scrolls (${JSON.stringify(fit)})`);
+    if (!mobile) assert.ok(fit.footerBottom <= fit.h + 1, `welcome: the footer is on the first screen on a desktop (${JSON.stringify(fit)})`);
     assert.ok(ctaStyle.inView && ctaStyle.w > 90, `call to action visible on the first screen (${JSON.stringify(ctaStyle)})`);
     // a light first visit: no 3D library, no gallery photos, no plan tiles until they are wanted
     const loaded = await page.evaluate(() => performance.getEntriesByType('resource').map((e) => new URL(e.name).pathname));
@@ -98,10 +118,11 @@ async function flow(name, contextOptions, { mobile, team }) {
     await shot('welcome');
     // 2. the 2D plan opens by default: view tabs, dots, sidebar, routes, focus, red dot -> details
     step = '2a plan 2D';
+    await watchViews();
     await click('#btn-start');
     await page.waitForFunction(() => location.hash === '#/plan');
     await page.waitForFunction(() => document.querySelector('.plan2d-image') && document.querySelector('.plan2d-image').naturalWidth > 0);
-    await page.waitForTimeout(600);
+    await assertOnePage('welcome → plan');
     assert.equal(await page.$eval('#plan-stage-wrap', (w) => w.dataset.mode), '2d', '2D is the default view');
     assert.ok(await page.isHidden('#plan-stage'), '3D stage hidden in 2D mode');
     assert.equal(await page.getAttribute('#view-tabs [data-view="2d"]', 'aria-selected'), 'true', '2D tab selected');
@@ -278,8 +299,10 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.match(await page.textContent('#gallery-grid .gallery-card[data-id="bleachers"] .gallery-count'), /4 صور/);
     assert.match(await page.$eval('#gallery-grid .gallery-card[data-id="bleachers"] img', (i) => i.getAttribute('src')), /\/cover\.webp$/, 'gallery: card-sized cover, not the full photo');
     await shot('gallery');
+    await watchViews();
     await page.locator('#gallery-grid .gallery-card[data-id="bleachers"]').click();
     await page.waitForFunction(() => location.hash === '#/room/bleachers/photos' && document.getElementById('app').dataset.currentView === 'photos');
+    await assertOnePage('gallery → photos');
     assert.match(await page.textContent('#btn-back-plan'), /العودة للمعرض/);
     await click('#btn-back-plan');
     await page.waitForFunction(() => location.hash === '#/gallery');
@@ -747,6 +770,8 @@ async function flow(name, contextOptions, { mobile, team }) {
   } catch (err) {
     failures += 1;
     console.error(`✗ ${name} at step "${step}": ${err.message.split('\n')[0]}`);
+    const state = await page.evaluate(() => ({ hash: location.hash, view: document.getElementById('app').dataset.currentView })).catch(() => null);
+    console.error(`  state: ${JSON.stringify(state)}; page errors: ${JSON.stringify(errors)}`);
     await page.screenshot({ path: resolve(outDir, `${name}-FAILED.png`), timeout: 60000 }).catch(() => {});
   } finally {
     await ctx.close();

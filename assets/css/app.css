@@ -63,15 +63,15 @@ ul { margin: 0; padding: 0; list-style: none; }
 .app { position: relative; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; }
 
 /* ===== المشاهد (views) ===== */
+/* One page on screen at a time: every page has an opaque background and replaces the previous one in
+   the same frame; only the new page's own content eases in (app.js, a short opacity animation). No
+   cross-fade, so two pages never show through each other. */
 .view {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
-  opacity: 0; visibility: hidden; pointer-events: none;
-  transition: opacity 360ms var(--ease), visibility 0s linear 360ms;
+  visibility: hidden; pointer-events: none;
 }
-.view.is-active { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 360ms var(--ease), visibility 0s; }
-.view.is-under { opacity: 1; visibility: visible; pointer-events: none; }
-.view.is-leaving-fast { transition: opacity 180ms var(--ease), visibility 0s linear 180ms; }
+.view.is-active { visibility: visible; pointer-events: auto; }
 .view-room { z-index: 3; }
 .view-details { z-index: 4; }
 .view-gallery { z-index: 2; }
@@ -105,6 +105,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 /* ===== الترحيب: صورة المكتب تذوب في لوح كحلي يحمل الفرصة والهوية ===== */
 .view-welcome { background: var(--brand-navy); color: #fff; justify-content: space-between; }
+/* the slow zoom is clipped by its own box: a scaled image would otherwise make the page scrollable */
+.welcome-media { position: absolute; inset: 0; overflow: hidden; }
 .welcome-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; transform: scale(1.08); animation: welcome-zoom 24s var(--ease) forwards; filter: saturate(1.05); }
 @keyframes welcome-zoom { to { transform: scale(1); } }
 .welcome-shade {
@@ -116,7 +118,9 @@ ul { margin: 0; padding: 0; list-style: none; }
   position: absolute; inset-block: 0; inset-inline-start: 0; width: min(62%, 860px);
   background: linear-gradient(90deg, rgba(5, 27, 48, 0) 0%, rgba(5, 27, 48, 0.86) 26%, rgba(5, 27, 48, 0.97) 100%);
 }
-[dir="rtl"] .welcome-panel { background: linear-gradient(270deg, rgba(5, 27, 48, 0) 0%, rgba(5, 27, 48, 0.86) 26%, rgba(5, 27, 48, 0.97) 100%); }
+/* gradients ignore the writing direction: in RTL the panel sits on the right, so its solid side is the
+   right edge and it fades out toward the photo on the left (no hard vertical edge) */
+[dir="rtl"] .welcome-panel { background: linear-gradient(90deg, rgba(5, 27, 48, 0) 0%, rgba(5, 27, 48, 0.86) 26%, rgba(5, 27, 48, 0.97) 100%); }
 .welcome-content {
   position: relative; z-index: 1; flex: 1 1 auto;
   width: min(640px, 100% - 2 * clamp(20px, 6vw, 96px));
@@ -148,8 +152,9 @@ ul { margin: 0; padding: 0; list-style: none; }
   text-shadow: none; animation: gold-sheen 9s ease-in-out infinite;
 }
 @keyframes gold-sheen { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-.welcome-subtitle { font-size: clamp(15px, 1.35vw, 18px); color: rgba(255, 255, 255, 0.86); max-width: 46ch; line-height: 1.65; }
-.welcome-atmosphere { font-size: clamp(13.5px, 1.1vw, 15px); color: var(--brand-sand); opacity: 0.8; }
+/* «مساحة تليق بأعمالك» بالذهبي، وتحته الوعد في جملة واحدة بالأبيض */
+.welcome-subtitle { font-size: clamp(24px, 2.6vw, 36px); font-weight: 700; color: var(--brand-gold); line-height: 1.25; margin-top: 4px; }
+.welcome-atmosphere { font-size: clamp(15px, 1.4vw, 19px); color: rgba(255, 255, 255, 0.9); line-height: 1.6; max-width: 46ch; }
 .welcome-location .loc-lead { font-size: clamp(22px, 2.3vw, 32px); font-weight: 600; color: #fff; line-height: 1.25; margin-top: 4px; }
 /* الأرقام الرئيسية للفرصة: رقم ذهبي كبير + وحدة + وصف */
 .welcome-facts { display: flex; flex-wrap: wrap; gap: 0; margin: 6px 0 2px; width: fit-content; border: 1px solid rgba(216, 180, 102, 0.3); border-radius: 18px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)); backdrop-filter: blur(8px); overflow: hidden; }
@@ -182,6 +187,52 @@ ul { margin: 0; padding: 0; list-style: none; }
 /* إطار ذهبي رفيع يؤطّر اللوح كغلاف عرض */
 .welcome-frame { position: absolute; z-index: 1; inset: calc(var(--header-h) + 14px) 14px 14px 14px; pointer-events: none; border: 1px solid rgba(216, 180, 102, 0.22); border-radius: 18px; mask: linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%); -webkit-mask: linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%); }
 [dir="rtl"] .welcome-frame { mask: linear-gradient(270deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%); -webkit-mask: linear-gradient(270deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%); }
+
+/* الترحيب على الكمبيوتر: المحتوى والأزرار والفوتر في شاشة واحدة؛ الأحجام تتبع ارتفاع الشاشة أيضًا،
+   وإن لم يتسع الارتفاع (نافذة قصيرة) تُمرَّر الصفحة بدل أن يُقص أسفلها */
+@media (min-width: 721px) {
+  .view-welcome { overflow-y: auto; overflow-x: hidden; justify-content: flex-start; overscroll-behavior: contain; }
+  .welcome-content { flex: 1 0 auto; margin-top: calc(var(--header-h) + clamp(10px, 3.2vh, 40px)); margin-bottom: clamp(10px, 2.6vh, 32px); gap: clamp(5px, 1.35vh, 14px); }
+  .welcome-brand { padding-bottom: clamp(6px, 1.3vh, 14px); margin-bottom: 0; }
+  .welcome-brand-text strong { font-size: clamp(17px, 2.3vh, 20px); }
+  .welcome-title { margin-top: 0; font-size: clamp(14px, min(1.3vw, 2vh), 18px); }
+  .welcome-location { gap: clamp(2px, 0.6vh, 6px); }
+  .welcome-location .loc-lead { font-size: clamp(20px, min(2.3vw, 3.6vh), 32px); margin-top: 0; }
+  .welcome-location .loc-main { font-size: clamp(36px, min(6.2vw, 8.6vh), 84px); line-height: 1.1; }
+  .welcome-facts { margin: clamp(2px, 0.6vh, 6px) 0 0; }
+  .welcome-facts .fact { padding: clamp(7px, 1.4vh, 14px) clamp(18px, 1.8vw, 26px); }
+  .welcome-facts .fact-num { font-size: clamp(28px, min(3.6vw, 5.4vh), 48px); }
+  .welcome-subtitle { font-size: clamp(21px, min(2.6vw, 3.9vh), 36px); margin-top: clamp(0px, 0.6vh, 4px); }
+  .welcome-atmosphere { font-size: clamp(14.5px, min(1.4vw, 2.2vh), 19px); line-height: 1.5; }
+  .welcome-actions { margin-top: clamp(2px, 1.2vh, 14px); }
+  .welcome-actions .btn-primary { padding: clamp(11px, 1.7vh, 15px) 34px; font-size: clamp(16px, 2.2vh, 18px); }
+  .welcome-actions .btn-ghost { padding: clamp(9px, 1.5vh, 13px) 20px; }
+  .welcome-slogan { margin-top: clamp(2px, 1.2vh, 18px); padding-top: clamp(6px, 1.2vh, 14px); }
+  /* the gold frame stops above the footer band */
+  .welcome-frame { bottom: calc(var(--welcome-footer-h, 0px) + 14px); }
+  /* the footer as one compact band at the bottom of the same screen */
+  .view-welcome .app-footer {
+    flex: 0 0 auto; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px clamp(20px, 3vw, 48px);
+    padding: clamp(8px, 1.3vh, 14px) clamp(20px, 6vw, 96px) clamp(6px, 1vh, 10px); background: rgba(5, 27, 48, 0.97); backdrop-filter: none;
+  }
+  .view-welcome .footer-tagline, .view-welcome .footer-about, .view-welcome .footer-heading { display: none; } /* the tagline is the slogan right above */
+  .view-welcome .footer-block { gap: 2px; }
+  .view-welcome .footer-contacts { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px 20px; }
+  .view-welcome .footer-more { justify-items: end; }
+  .view-welcome .footer-copy { padding-top: clamp(4px, 0.7vh, 8px); font-size: 11.5px; text-align: center; }
+}
+@media (min-width: 721px) and (max-height: 760px) {
+  .view-welcome .footer-website { display: none; }
+  /* short laptop screens: the wordmark on one line, the copyright beside the links */
+  .welcome-brand-text { display: flex; align-items: baseline; gap: 14px; }
+  .view-welcome .app-footer { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+  .view-welcome .footer-copy { grid-column: auto; border-top: 0; padding-top: 0; }
+  .welcome-facts .fact-note { font-size: 11px; }
+}
+@media (min-width: 721px) and (max-height: 680px) {
+  .welcome-facts .fact-note { display: none; }
+  .welcome-location .loc-main { font-size: clamp(34px, min(6.2vw, 8vh), 84px); }
+}
 
 /* ===== الهيدر الثابت ===== */
 .site-header {
@@ -385,7 +436,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 /* ===== صور الغرفة ===== */
 .view-room { background: var(--dark); color: #fff; }
 .room-stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; touch-action: pan-y; }
-.room-backdrop { position: absolute; inset: -40px; background-size: cover; background-position: center; filter: blur(28px) brightness(0.55); transform: scale(1.1); }
+.room-backdrop { position: absolute; left: 0; top: 0; width: 25%; height: 25%; background-size: cover; background-position: center; transform-origin: 0 0; transform: scale(4.4) translate(-4.55%, -4.55%); filter: blur(7px) brightness(0.55); } /* a small copy blurred then scaled up: the look of a 30px blur over the whole stage at a fraction of the paint cost */
 .room-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; opacity: 0; transition: opacity 320ms var(--ease); }
 .room-photo.is-loaded { opacity: 1; }
 .gallery-arrow {
@@ -426,7 +477,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .details-render { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
 /* a Cycles render is landscape: show it whole, with its own blurred copy filling the stage behind */
 .details-plan .plan-stage.is-render .details-render { object-fit: contain; }
-.details-render-bg { position: absolute; inset: -12%; width: 124%; height: 124%; object-fit: cover; filter: blur(26px) saturate(1.15) brightness(0.8); opacity: 0.9; }
+.details-render-bg { position: absolute; left: 0; top: 0; width: 31%; height: 31%; object-fit: cover; transform-origin: 0 0; transform: scale(4) translate(-9.68%, -9.68%); filter: blur(6.5px) saturate(1.15) brightness(0.8); opacity: 0.9; } /* same trick: blur a small copy, scale it to 124% */
 .details-plan-caption { text-align: center; font-size: 13px; color: var(--muted); padding-top: 8px; }
 .details-features { grid-area: features; overflow: auto; display: grid; gap: 12px; align-content: start; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-sm); }
@@ -506,6 +557,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 /* ===== عناصر عامة ===== */
 .build-sha { position: fixed; bottom: 6px; left: 50%; transform: translateX(-50%); z-index: 60; font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: rgba(255, 255, 255, 0.55); background: rgba(0, 0, 0, 0.35); padding: 2px 8px; border-radius: 6px; pointer-events: none; }
+[data-current-view="welcome"] .build-sha { display: none; } /* the welcome footer sits there */
 [data-current-view="details"] .build-sha { color: rgba(27, 26, 23, 0.45); background: rgba(255, 255, 255, 0.5); }
 
 /* ===== الجوال ===== */
@@ -599,7 +651,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   .welcome-brand-text strong { font-size: 18px; }
   .welcome-location .loc-main { font-size: clamp(34px, 10vw, 46px); }
   .welcome-location .loc-city { font-size: 13px; }
-  .welcome-subtitle { font-size: 15px; }
+  .welcome-subtitle { font-size: 22px; }
+  .welcome-atmosphere { font-size: 15px; }
   .welcome-location .loc-lead { font-size: 20px; }
   .welcome-facts .fact { padding: 10px 16px; min-width: 0; }
   .welcome-facts .fact-num { font-size: 30px; }

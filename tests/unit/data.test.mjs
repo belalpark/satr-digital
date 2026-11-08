@@ -115,8 +115,9 @@ test('welcome copy: the acquisition opportunity first, the two agreed figures, t
   assert.match(w.location, /^واجهة روشن للأعمال · الرياض$/);
   assert.deepEqual(w.facts.map((f) => [f.value, f.label]), [['890', 'مساحة المكتب'], ['72', 'مكتبًا']], 'exactly the owner\'s figures');
   assert.ok(!('highlights' in w), 'no other totals on the welcome');
-  assert.match(w.subtitle, /توأمة رقمية/);
-  assert.match(w.atmosphere, /أجواء جميلة وهادئة/);
+  // owner's wording (2026-11-08): a gold line, then the one-sentence promise
+  assert.equal(w.subtitle, 'مساحة تليق بأعمالك');
+  assert.match(w.atmosphere, /^مقر إداري مفروش ومجهّز يجمع فريقك في مكان واحد$/);
   assert.equal(w.cta, 'ابدأ الجولة');
 });
 

@@ -8,7 +8,8 @@ import { createDetails } from './details.js';
 import { seatsLabel, photosLabel } from './format.js';
 
 const SCENE_ORDER = ['current', 'paths'];
-const VIEW_FADE_MS = 380;
+const VIEW_IN_MS = 220; // the new page's content eases in; the previous page is already gone
+const reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 async function fetchJson(url, { optional = false } = {}) {
   try {
@@ -105,6 +106,14 @@ export async function init() {
   }
   renderBrand(data.office.brand || {});
   renderFooter(document.getElementById('app-footer'), data.office.footer);
+  {
+    // the welcome's gold frame ends above the footer band (its height changes with the window)
+    const foot = document.getElementById('app-footer');
+    const welcomeView = document.getElementById('view-welcome');
+    const setFootH = () => welcomeView.style.setProperty('--welcome-footer-h', `${foot && !foot.hidden ? foot.offsetHeight : 0}px`);
+    if (foot && typeof ResizeObserver !== 'undefined') new ResizeObserver(setFootH).observe(foot);
+    setFootH();
+  }
   const hero = document.getElementById('welcome-photo');
   hero.src = data.office.heroImage;
   hero.addEventListener('error', () => { if (data.office.heroFallback && hero.src.indexOf(data.office.heroFallback) < 0) hero.src = data.office.heroFallback; }, { once: true });
@@ -577,14 +586,14 @@ export async function init() {
     currentView = name;
     app.dataset.currentView = name;
     if (twin) twin.setActive(name === 'plan' && mode === '3d'); // no rendering or turntable behind the photos/details/welcome views
-    const order = { welcome: 0, plan: 1, gallery: 1, photos: 2, details: 3 };
-    const goingUp = !prev || order[name] > order[prev];
-    for (const [key, v] of Object.entries(views)) {
-      v.classList.toggle('is-active', key === name);
-      v.classList.toggle('is-under', goingUp && key === prev);
-      v.classList.toggle('is-leaving-fast', !goingUp && key === prev);
+    // the new page (opaque) replaces the old one in this frame; its content fades in on the compositor
+    for (const [key, v] of Object.entries(views)) v.classList.toggle('is-active', key === name);
+    if (prev && !reducedMotion && typeof Element.prototype.animate === 'function') {
+      for (const child of views[name].children) {
+        if (child.hidden) continue;
+        child.animate([{ opacity: 0 }, { opacity: 1 }], { duration: VIEW_IN_MS, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)' });
+      }
     }
-    if (prev) setTimeout(() => views[prev].classList.remove('is-under', 'is-leaving-fast'), VIEW_FADE_MS);
   }
 
   function openableRoom(id, { needPhotos = false } = {}) {
@@ -610,6 +619,9 @@ export async function init() {
     if (ov) ov.setFocus(null);
     if (eng.getFocus()) await eng.unfocus({ animate: true });
   }
+
+  // work for a page that is not on screen waits until the new page's entrance is over (no hitch mid-way)
+  const afterEntrance = (fn) => setTimeout(fn, VIEW_IN_MS + 40);
 
   let lastRoute = null;
   let routeSeq = 0;
@@ -682,7 +694,7 @@ export async function init() {
       pendingPhoto = null;
       showView('photos');
       showRoomCard(r);
-      ensureFocus(r, false, current);
+      afterEntrance(() => ensureFocus(r, false, current)); // the plan is hidden behind: catch it up once the photos are in
       document.title = `صور ${r.name} — ${data.office.title}`;
       return;
     }
@@ -697,7 +709,7 @@ export async function init() {
         ensureUnfocus(current).then(() => { if (current() && details.currentRoom() === r.id) details.refreshImage(); });
       } else if (r.focus && r.focus.image) {
         details.show(r.id); // the pre-rendered view exists: no need to wait for the model
-        ensureFocus(r, false, current);
+        afterEntrance(() => ensureFocus(r, false, current));
       } else {
         details.show(r.id, { deferImage: true });
         ensureFocus(r, false, current).then(() => { if (current() && details.currentRoom() === r.id) details.refreshImage(); });
