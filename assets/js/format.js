@@ -7,3 +7,11 @@ export function seatsLabel(n) {
   if (n >= 3 && n <= 10) return `${n} مقاعد`;
   return `${n} مقعدًا`;
 }
+
+/** «صورة واحدة» / «صورتان» / «5 صور» / «12 صورة» — Arabic number agreement for photo counts. */
+export function photosLabel(n) {
+  if (n === 1) return 'صورة واحدة';
+  if (n === 2) return 'صورتان';
+  if (n >= 3 && n <= 10) return `${n} صور`;
+  return `${n} صورة`;
+}

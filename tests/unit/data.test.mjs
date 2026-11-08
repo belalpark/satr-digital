@@ -26,10 +26,14 @@ test('every polygon has >= 3 points inside the reference plan', () => {
   }
 });
 
-test('no area fields anywhere in the record', () => {
-  const text = JSON.stringify(data);
-  assert.ok(!/"area[^"]*"\s*:/.test(text), 'area-like key found');
-  assert.ok(!/م²|متر مربع/.test(text), 'area text found');
+test('the office area appears only as the agreed welcome figure (owner, 2026-11-08)', () => {
+  const { facts, ...rest } = data.office.welcome;
+  const others = JSON.stringify({ ...data, office: { ...data.office, welcome: rest } });
+  assert.ok(!/"area[^"]*"\s*:/.test(others), 'area-like key found');
+  assert.ok(!/م²|متر مربع/.test(others), 'area text outside the welcome figures');
+  const area = facts.find((f) => f.unit === 'م²');
+  assert.equal(area.value, '890');
+  assert.equal(area.label, 'مساحة المكتب');
 });
 
 test('every room with photos has existing media and captions', () => {
@@ -104,10 +108,13 @@ test('focus frames (where present) lie inside the image', () => {
   }
 });
 
-test('welcome copy: no totals, the agreed lines only', () => {
+test('welcome copy: the acquisition opportunity first, the two agreed figures, then the tour', () => {
   const w = data.office.welcome;
-  assert.equal(w.title, 'مرحبًا بكم');
-  assert.ok(!('highlights' in w), 'totals removed from the welcome');
+  assert.equal(w.eyebrow, 'فرصة استحواذ');
+  assert.equal(w.headlineLead, 'مكتب مجهّز في');
+  assert.match(w.location, /^واجهة روشن للأعمال · الرياض$/);
+  assert.deepEqual(w.facts.map((f) => [f.value, f.label]), [['890', 'مساحة المكتب'], ['72', 'مكتبًا']], 'exactly the owner\'s figures');
+  assert.ok(!('highlights' in w), 'no other totals on the welcome');
   assert.match(w.subtitle, /توأمة رقمية/);
   assert.match(w.atmosphere, /أجواء جميلة وهادئة/);
   assert.equal(w.cta, 'ابدأ الجولة');

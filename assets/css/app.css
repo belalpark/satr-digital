@@ -13,7 +13,7 @@
   --ink-2: #4a463f;
   --muted: #7a7368;
   --line: #e3ddd3;
-  /* هوية سطر العقارية: كحلي عميق، ذهبي، برونزي، رملي (من مواد سطر المنشورة) */
+  /* هوية الواجهة: كحلي عميق، ذهبي، برونزي، رملي */
   --brand-navy: #051b30;
   --brand-navy-2: #0b2a47;
   --brand-navy-3: #123a5e;
@@ -21,7 +21,7 @@
   --brand-gold-2: #c9a24f;
   --brand-bronze: #966c3c;
   --brand-sand: #f4ece4;
-  --accent: #966c3c;          /* أزرار الدعوة والتمييز — برونزي سطر */
+  --accent: #966c3c;          /* أزرار الدعوة والتمييز — برونزي */
   --accent-strong: #7d5830;
   --accent-soft: #f3e9d9;
   --gold: #d8b466;
@@ -40,6 +40,7 @@
   --header-h: 56px;
   --scenebar-h: 54px;
   --sidebar-w: 300px;
+  --drawer-w: 340px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
 }
@@ -73,6 +74,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .view.is-leaving-fast { transition: opacity 180ms var(--ease), visibility 0s linear 180ms; }
 .view-room { z-index: 3; }
 .view-details { z-index: 4; }
+.view-gallery { z-index: 2; }
 
 /* ===== الأزرار ===== */
 .btn {
@@ -101,7 +103,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 .chip-light { background: rgba(255, 255, 255, 0.12); color: #fff; backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.22); }
 
-/* ===== الترحيب — بهوية سطر العقارية: صورة المكتب تذوب في لوح كحلي يحمل الهوية ===== */
+/* ===== الترحيب: صورة المكتب تذوب في لوح كحلي يحمل الفرصة والهوية ===== */
 .view-welcome { background: var(--brand-navy); color: #fff; justify-content: space-between; }
 .welcome-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; transform: scale(1.08); animation: welcome-zoom 24s var(--ease) forwards; filter: saturate(1.05); }
 @keyframes welcome-zoom { to { transform: scale(1); } }
@@ -109,7 +111,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(5, 27, 48, 0.35) 0%, rgba(5, 27, 48, 0) 30%, rgba(5, 27, 48, 0.55) 100%), radial-gradient(120% 90% at 50% 50%, rgba(5, 27, 48, 0) 55%, rgba(5, 27, 48, 0.45) 100%);
 }
-/* اللوح الكحلي على جهة البداية (اليمين في العربية) بحافة مائلة كغلاف عروض سطر */
+/* اللوح الكحلي على جهة البداية (اليمين في العربية) بحافة مائلة كغلاف عرض */
 .welcome-panel {
   position: absolute; inset-block: 0; inset-inline-start: 0; width: min(62%, 860px);
   background: linear-gradient(90deg, rgba(5, 27, 48, 0) 0%, rgba(5, 27, 48, 0.86) 26%, rgba(5, 27, 48, 0.97) 100%);
@@ -130,7 +132,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .welcome-brand-text { display: grid; gap: 2px; }
 .welcome-brand-text strong { font-size: 20px; font-weight: 700; letter-spacing: 0.01em; color: #fff; }
 .welcome-brand-text small { font-size: 11px; letter-spacing: 0.32em; color: var(--brand-gold); font-weight: 600; }
-/* «مرحبًا بكم» سطر تمهيدي صغير بخط ذهبي، والموقع هو العنوان البطل */
+/* «فرصة استحواذ» عنوان تمهيدي صغير بخط ذهبي، والموقع هو العنوان البطل */
 .welcome-title { display: flex; align-items: center; gap: 12px; font-size: clamp(15px, 1.3vw, 18px); font-weight: 600; letter-spacing: 0.08em; color: var(--brand-gold); margin-top: 6px; }
 .welcome-title::before { content: ""; width: 34px; height: 2px; background: linear-gradient(90deg, var(--brand-gold), rgba(216, 180, 102, 0)); border-radius: 2px; }
 [dir="rtl"] .welcome-title::before { background: linear-gradient(270deg, var(--brand-gold), rgba(216, 180, 102, 0)); }
@@ -148,9 +150,16 @@ ul { margin: 0; padding: 0; list-style: none; }
 @keyframes gold-sheen { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
 .welcome-subtitle { font-size: clamp(15px, 1.35vw, 18px); color: rgba(255, 255, 255, 0.86); max-width: 46ch; line-height: 1.65; }
 .welcome-atmosphere { font-size: clamp(13.5px, 1.1vw, 15px); color: var(--brand-sand); opacity: 0.8; }
-.welcome-features { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
-.welcome-features span { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(216, 180, 102, 0.32); background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(6px); color: #fff; font-size: 13px; font-weight: 600; }
-.welcome-features span::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--brand-gold); }
+.welcome-location .loc-lead { font-size: clamp(22px, 2.3vw, 32px); font-weight: 600; color: #fff; line-height: 1.25; margin-top: 4px; }
+/* الأرقام الرئيسية للفرصة: رقم ذهبي كبير + وحدة + وصف */
+.welcome-facts { display: flex; flex-wrap: wrap; gap: 0; margin: 6px 0 2px; width: fit-content; border: 1px solid rgba(216, 180, 102, 0.3); border-radius: 18px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)); backdrop-filter: blur(8px); overflow: hidden; }
+.welcome-facts .fact { display: grid; align-content: center; gap: 2px; padding: 14px 26px; min-width: 150px; }
+.welcome-facts .fact + .fact { border-inline-start: 1px solid rgba(216, 180, 102, 0.25); }
+.welcome-facts .fact-value { display: flex; align-items: baseline; gap: 6px; margin: 0; }
+.welcome-facts .fact-num { font-size: clamp(34px, 3.6vw, 48px); font-weight: 700; line-height: 1; color: var(--brand-gold); font-variant-numeric: lining-nums; letter-spacing: -0.01em; }
+.welcome-facts .fact-unit { font-size: clamp(16px, 1.4vw, 20px); font-weight: 700; color: var(--brand-gold); }
+.welcome-facts .fact-label { font-size: 14.5px; font-weight: 600; color: #fff; }
+.welcome-facts .fact-note { font-size: 12px; color: var(--brand-sand); opacity: 0.75; }
 .welcome-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 14px; }
 .welcome-actions .btn-primary { position: relative; padding: 15px 34px; font-size: 18px; box-shadow: 0 10px 30px rgba(216, 180, 102, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12) inset; animation: cta-glow 3.2s ease-in-out infinite; }
 .welcome-actions .btn-primary::after { content: "←"; margin-inline-start: 10px; font-weight: 700; transition: transform 200ms var(--ease); }
@@ -238,6 +247,34 @@ ul { margin: 0; padding: 0; list-style: none; }
 .tool-icon { font-size: 15px; line-height: 1; }
 
 .plan-layout { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); }
+.plan-layout.has-drawer { grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--drawer-w); }
+/* لوحة تفاصيل الغرفة على اليسار */
+.room-drawer { order: 3; min-height: 0; display: flex; flex-direction: column; color: var(--night-ink); background: linear-gradient(180deg, rgba(22, 25, 31, 0.98), rgba(12, 14, 18, 0.98)); border-inline-start: 1px solid var(--night-line); animation: drawer-in 360ms var(--ease) both; }
+.room-drawer[hidden] { display: none; }
+@keyframes drawer-in { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px 10px; border-bottom: 1px solid var(--night-line); }
+.drawer-title { font-size: 17px; font-weight: 700; }
+.drawer-close { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--night-line); background: rgba(255, 255, 255, 0.06); color: inherit; font-size: 20px; line-height: 1; cursor: pointer; }
+.drawer-close:hover { background: rgba(255, 255, 255, 0.14); }
+.drawer-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; scrollbar-width: thin; }
+.drawer-scroll > * { flex: 0 0 auto; }
+.drawer-hero { margin: 0; border-radius: 12px; overflow: hidden; background: #0d1015; border: 1px solid var(--night-line); }
+.drawer-hero[hidden] { display: none; }
+.drawer-hero img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
+.drawer-hero figcaption { padding: 7px 10px; font-size: 12px; color: var(--night-muted); }
+.drawer-summary { font-size: 13.5px; line-height: 1.7; color: var(--night-ink); opacity: 0.9; }
+.drawer-facts { display: grid; gap: 6px; }
+.drawer-facts li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.06); font-size: 13px; }
+.drawer-facts .k { color: var(--night-muted); }
+.drawer-facts .v { font-weight: 600; text-align: end; }
+.drawer-sub { font-size: 13.5px; font-weight: 700; color: var(--brand-gold); margin-bottom: 8px; }
+.drawer-fixtures ul { display: grid; gap: 4px; padding-inline-start: 18px; font-size: 13px; list-style: disc; }
+.drawer-photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.drawer-photo { padding: 0; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 8px; overflow: hidden; aspect-ratio: 3 / 2; background: #111; cursor: pointer; transition: transform 160ms var(--ease), border-color 160ms; }
+.drawer-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.drawer-photo:hover, .drawer-photo:focus-visible { transform: translateY(-2px); border-color: var(--brand-gold); }
+.drawer-actions { padding: 12px 16px 16px; border-top: 1px solid var(--night-line); }
+.drawer-actions .btn { width: 100%; }
 .plan-stage-wrap { order: 2; }
 .room-sidebar { order: 1; }
 .plan-stage-wrap { position: relative; min-height: 0; }
@@ -305,7 +342,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .room-item-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .room-sidebar.is-focus .room-list { flex: 0 1 34%; }
 /* back / title / summary / facts (the only part that scrolls) / actions: the buttons always stay in view */
-.room-card { flex: 1 1 auto; min-height: 0; overflow: hidden; display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto; gap: 10px; align-content: start; padding: 14px 16px 18px; border-top: 1px solid var(--night-line); background: linear-gradient(180deg, rgba(30, 33, 39, 0.9), rgba(16, 18, 22, 0.9)); animation: rise 420ms var(--ease) both; }
+.room-card { flex: 1 1 auto; min-height: 0; overflow: hidden; display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto auto; gap: 10px; align-content: start; padding: 14px 16px 18px; border-top: 1px solid var(--night-line); background: linear-gradient(180deg, rgba(30, 33, 39, 0.9), rgba(16, 18, 22, 0.9)); animation: rise 420ms var(--ease) both; }
 .room-card .btn-sm { justify-self: start; }
 .focus-title { font-size: 20px; font-weight: 700; outline: none; }
 .focus-summary { font-size: 13.5px; color: rgba(255, 255, 255, 0.8); }
@@ -313,6 +350,28 @@ ul { margin: 0; padding: 0; list-style: none; }
 .focus-facts li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.06); font-size: 13px; }
 .focus-facts .k { color: var(--night-muted); }
 .focus-facts .v { font-weight: 600; text-align: end; }
+/* أول صور الغرفة مباشرة في البطاقة */
+.focus-thumbs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.focus-thumb { position: relative; padding: 0; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 9px; overflow: hidden; aspect-ratio: 3 / 2; background: #111; cursor: pointer; transition: transform 160ms var(--ease), border-color 160ms; }
+.focus-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.focus-thumb:hover, .focus-thumb:focus-visible { transform: translateY(-2px); border-color: var(--brand-gold); }
+.focus-thumb-more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(5, 27, 48, 0.62); color: #fff; font-weight: 700; font-size: 15px; }
+/* ===== معرض الصور ===== */
+.view-gallery { background: radial-gradient(120% 80% at 50% 0%, var(--brand-navy-2, #0b2a47) 0%, var(--brand-navy) 60%); color: #fff; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.gallery-inner { width: min(1240px, 100% - 2 * clamp(16px, 4vw, 48px)); margin: 0 auto; padding: clamp(18px, 4vh, 40px) 0 48px; }
+.gallery-head { display: grid; gap: 6px; margin-bottom: 22px; }
+.gallery-kicker { color: var(--brand-gold); font-weight: 600; font-size: 14px; letter-spacing: 0.06em; }
+.gallery-title { font-size: clamp(28px, 3vw, 40px); font-weight: 700; }
+.gallery-sub { color: var(--brand-sand); opacity: 0.85; font-size: 15px; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.gallery-card { position: relative; display: block; aspect-ratio: 3 / 2; border-radius: 16px; overflow: hidden; background: #0d1520; border: 1px solid rgba(216, 180, 102, 0.18); color: #fff; text-decoration: none; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28); transition: transform 220ms var(--ease), border-color 220ms, box-shadow 220ms; }
+.gallery-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 600ms var(--ease); }
+.gallery-card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5, 27, 48, 0) 45%, rgba(5, 27, 48, 0.92) 100%); }
+.gallery-card:hover, .gallery-card:focus-visible { transform: translateY(-3px); border-color: rgba(216, 180, 102, 0.7); box-shadow: 0 16px 36px rgba(0, 0, 0, 0.36); }
+.gallery-card:hover img { transform: scale(1.05); }
+.gallery-meta { position: absolute; z-index: 1; inset-inline: 14px; bottom: 12px; display: flex; align-items: end; justify-content: space-between; gap: 10px; }
+.gallery-name { font-size: 16px; font-weight: 700; }
+.gallery-count { flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: rgba(216, 180, 102, 0.9); color: var(--brand-navy); font-size: 12.5px; font-weight: 700; }
 .focus-actions { display: grid; gap: 8px; margin-top: 4px; }
 
 .plan-tip {
@@ -415,7 +474,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .team-chip + .header-owner { margin-inline-start: 12px; }
 .btn-mode { grid-column: 1 / -1; }
 
-/* ===== الفوتر (مختصر من فوتر satr-ksa.com) ===== */
+/* ===== الفوتر المختصر (بيانات office.footer) ===== */
 .app-footer {
   position: relative; z-index: 1;
   display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 14px 32px; align-items: start;
@@ -447,6 +506,9 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 /* ===== الجوال ===== */
 @media (max-width: 1023px) {
+  /* tablets and phones: the room card carries the details; no third column */
+  .room-drawer { display: none !important; }
+  .plan-layout.has-drawer { grid-template-columns: var(--sidebar-w) minmax(0, 1fr); }
   .details-layout { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; grid-template-areas: "plan" "tabs" "panel"; gap: 12px; padding: 12px; }
   .details-plan { height: 44vh; min-height: 260px; }
   .details-plan .plan-stage { min-height: 0; }
@@ -476,6 +538,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   .help-desktop { display: none; }
   .help-mobile { display: inline; }
   .plan-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .plan-layout.has-drawer { grid-template-columns: minmax(0, 1fr); }
   .plan-stage-wrap { order: 1; }
   .room-sidebar { order: 2; width: 100%; max-width: 100vw; border-inline-end: 0; border-top: 1px solid var(--night-line); max-height: none; }
   .room-sidebar:not(.is-focus) .room-list { width: 100%; flex: 0 0 auto; height: 52px; }
@@ -486,7 +549,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   .room-sidebar:not(.is-focus) .room-item-btn { padding: 6px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); font-size: 12.5px; white-space: nowrap; }
   .room-sidebar.is-focus .room-list { display: none; }
   .room-sidebar.is-focus { position: relative; }
-  .room-card { max-height: 38dvh; padding: 10px 12px 12px; gap: 6px; border-top: 0; animation: none; grid-template-rows: auto auto auto 1fr auto; }
+  .room-card { max-height: 38dvh; padding: 10px 12px 12px; gap: 6px; border-top: 0; animation: none; grid-template-rows: auto auto minmax(0, 1fr) auto auto; }
   .room-card .btn-sm { position: absolute; inset-inline-end: 12px; margin-top: 2px; }
   .focus-title { font-size: 16px; padding-inline-end: 120px; }
   .focus-summary { display: none; }
@@ -510,7 +573,12 @@ ul { margin: 0; padding: 0; list-style: none; }
   .plan-badge { display: none; }
   .plan-help { display: none; }
   .zoom-controls { bottom: 12px; }
-  .site-nav a { padding: 5px 7px; font-size: 12px; }
+  .site-nav { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; margin-inline-start: 2px; }
+  .site-nav::-webkit-scrollbar { display: none; }
+  .site-nav a { padding: 5px 8px; font-size: 12px; white-space: nowrap; flex: 0 0 auto; }
+  /* the card on a phone: name, the photo strip, the actions (the facts live on the details page) */
+  .room-card .focus-facts { display: none; }
+  .gallery-meta { flex-direction: column; align-items: flex-start; gap: 4px; inset-inline: 10px; bottom: 9px; }
   .brand-text { display: none; }
   .header-owner { display: none; }
   .view-tabs .scene-tab { font-size: 11.5px; padding-inline: 6px; }
@@ -528,7 +596,14 @@ ul { margin: 0; padding: 0; list-style: none; }
   .welcome-location .loc-main { font-size: clamp(34px, 10vw, 46px); }
   .welcome-location .loc-city { font-size: 13px; }
   .welcome-subtitle { font-size: 15px; }
-  .welcome-features span { font-size: 12px; padding: 5px 10px; }
+  .welcome-location .loc-lead { font-size: 20px; }
+  .welcome-facts .fact { padding: 10px 16px; min-width: 0; }
+  .welcome-facts .fact-num { font-size: 30px; }
+  .welcome-facts .fact-label { font-size: 13px; }
+  .focus-thumbs { gap: 4px; }
+  .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .gallery-name { font-size: 13.5px; }
+  .gallery-count { font-size: 11px; padding: 2px 8px; }
   .welcome-frame { display: none; }
   .welcome-actions .btn-lg { padding: 13px 26px; font-size: 16px; }
   .welcome-actions .btn-ghost { padding: 11px 16px; font-size: 14px; }

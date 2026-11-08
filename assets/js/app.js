@@ -1,12 +1,12 @@
 // Entry point: loads the office record, the live 3D model, and wires the hash
 // router to the views (welcome → 3D plan → room focus → photos / details).
-import { parseHash, navigate, teamNameFromSearch } from './router.js';
+import { parseHash, navigate, buildHash, teamNameFromSearch } from './router.js';
 import { createTwin3D } from './twin3d.js';
 import { createPlan2D } from './plan2d.js';
 import { createOverlay } from './overlay.js';
 import { createRoom } from './room.js';
 import { createDetails } from './details.js';
-import { seatsLabel } from './format.js';
+import { seatsLabel, photosLabel } from './format.js';
 
 const SCENE_ORDER = ['current', 'paths'];
 const VIEW_FADE_MS = 380;
@@ -39,7 +39,8 @@ function writePref(key, value) {
 export async function init() {
   const app = document.getElementById('app');
   const data = await fetchJson('data/office.json');
-  const buildInfo = await fetchJson('build-info.json', { optional: true });
+  // the version badge (and its build-info.json) exists only in the client-branded build
+  const buildInfo = document.getElementById('build-sha') ? await fetchJson('build-info.json', { optional: true }) : null;
   const W = data.office.welcome;
   const roomsById = new Map(data.rooms.map((r) => [r.id, r]));
 
@@ -48,13 +49,20 @@ export async function init() {
     plan: document.getElementById('view-plan'),
     photos: document.getElementById('view-room'),
     details: document.getElementById('view-details'),
+    gallery: document.getElementById('view-gallery'),
   };
 
   // ---------- build sha ----------
-  const sha = buildInfo && buildInfo.sha ? buildInfo.sha.slice(0, 7) : 'dev';
-  document.getElementById('build-sha').textContent = buildInfo && buildInfo.branch ? `${buildInfo.branch} @ ${sha}` : sha;
+  // the badge is absent from the neutral (unbranded) build
+  const shaEl = document.getElementById('build-sha');
+  if (shaEl) {
+    const sha = buildInfo && buildInfo.sha ? buildInfo.sha.slice(0, 7) : 'dev';
+    shaEl.textContent = buildInfo && buildInfo.branch ? `${buildInfo.branch} @ ${sha}` : sha;
+  }
 
   // ---------- welcome ----------
+  // the opportunity first: a small eyebrow («فرصة استحواذ», or the team greeting with ?team=), the
+  // headline «مكتب مجهّز في» + the business front in large gold, the key figures, then the tour
   const team = teamNameFromSearch(location.search, '');
   const title = document.getElementById('welcome-title');
   if (team) {
@@ -66,24 +74,36 @@ export async function init() {
     chip.textContent = team;
     chip.hidden = false;
   } else {
-    title.textContent = W.title;
+    title.textContent = W.eyebrow || W.title;
   }
   document.getElementById('welcome-subtitle').textContent = W.subtitle;
   document.getElementById('welcome-atmosphere').textContent = W.atmosphere;
   document.getElementById('btn-start').textContent = W.cta;
-  // the location is the hero line: «الرياض» as a small kicker, the business front as the big gold title
+  const galleryBtn = document.getElementById('btn-gallery');
+  if (galleryBtn && W.galleryCta) galleryBtn.textContent = W.galleryCta;
   const locEl = document.getElementById('welcome-location');
   locEl.textContent = '';
-  locEl.hidden = !W.location;
   if (W.location) {
     const [main, ...rest] = W.location.split('·').map((t) => t.trim());
     if (rest.length) locEl.append(el('span', 'loc-city', rest.join(' · ')));
+    if (W.headlineLead) locEl.append(el('span', 'loc-lead', W.headlineLead));
     locEl.append(el('strong', 'loc-main', main));
+  } else {
+    locEl.textContent = data.office.title;
   }
-  const feats = document.getElementById('welcome-features');
-  feats.textContent = '';
-  feats.hidden = !(W.features && W.features.length);
-  for (const f of W.features || []) feats.append(el('span', '', f));
+  const factsEl = document.getElementById('welcome-facts');
+  factsEl.replaceChildren();
+  factsEl.hidden = !(W.facts && W.facts.length);
+  for (const f of W.facts || []) {
+    const item = el('div', 'fact');
+    const dd = el('dd', 'fact-value');
+    dd.append(el('span', 'fact-num', f.value));
+    if (f.unit) dd.append(el('span', 'fact-unit', f.unit));
+    const dt = el('dt', 'fact-label', f.label);
+    item.append(dd, dt);
+    if (f.note) item.append(el('span', 'fact-note', f.note));
+    factsEl.append(item);
+  }
   renderBrand(data.office.brand || {});
   renderFooter(document.getElementById('app-footer'), data.office.footer);
   const hero = document.getElementById('welcome-photo');
@@ -341,6 +361,7 @@ export async function init() {
     facts: document.getElementById('focus-facts'),
     photos: document.getElementById('btn-photos'),
     details: document.getElementById('btn-focus-details'),
+    thumbs: document.getElementById('focus-thumbs'),
   };
   const KIND_NAMES = { office: 'مكاتب إدارية', open: 'مكاتب مفتوحة', meeting: 'قاعات الاجتماعات', social: 'جلسات واستقبال', service: 'مرافق', circulation: 'الحركة' };
   const KIND_MODEL = { office: 'مكتب إداري بفرشه الحالي', open: 'محطات عمل بفرشها الحالي', meeting: 'قاعة اجتماعات بفرشها الحالي', social: 'جلسة بفرشها الحالي', service: 'مرفق خدمي', circulation: 'منطقة حركة' };
@@ -383,15 +404,108 @@ export async function init() {
     if (room.capacity) facts.push(['السعة', seatsLabel(room.capacity.seats)]);
     facts.push(['النموذج', KIND_MODEL[room.kind] || 'الفرش الحالي في النموذج ثلاثي الأبعاد']);
     if (room.use && room.use.current) facts.push(['الاستخدام', room.use.current]);
-    if (room.hasPhotos) facts.push(['الصور', `${room.photos.length} صور حقيقية`]);
+    if (room.hasPhotos) facts.push(['الصور', photosLabel(room.photos.length)]);
     cardEls.facts.replaceChildren(...facts.map(([k, v]) => { const li = el('li'); li.append(el('span', 'k', k), el('span', 'v', v)); return li; }));
+    // the photos are one tap away: the first few as a strip right in the card
+    const shots = room.hasPhotos ? room.photos.slice(0, 4) : [];
+    cardEls.thumbs.hidden = !shots.length;
+    cardEls.thumbs.replaceChildren(...shots.map((ph, i) => {
+      const b = el('button', 'focus-thumb');
+      b.type = 'button';
+      b.setAttribute('aria-label', `${ph.caption || room.name} — صورة ${i + 1}`);
+      const img = document.createElement('img');
+      img.src = ph.thumb;
+      img.alt = '';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      b.append(img);
+      const extra = room.photos.length - shots.length;
+      if (i === shots.length - 1 && extra > 0) { const more = el('span', 'focus-thumb-more', `+${extra}`); more.dir = 'ltr'; b.append(more); }
+      b.addEventListener('click', () => { pendingPhoto = i; navigate({ view: 'photos', roomId: room.id }); });
+      return b;
+    }));
     cardEls.photos.hidden = !room.hasPhotos;
     cardEls.photos.textContent = room.hasPhotos ? `الصور الحقيقية (${room.photos.length})` : '';
     cardEls.details.hidden = !(room.fixtures || room.capacity || room.hasPhotos);
     if (listItems.get(room.id)) listItems.get(room.id).scrollIntoView({ block: 'nearest' });
   }
+
+  // ---------- left drawer: the room's details beside the plan (desktop; a single click opens it) ----------
+  const planLayout = document.querySelector('.plan-layout');
+  const drawer = document.getElementById('room-drawer');
+  const dEls = {
+    title: document.getElementById('drawer-title'),
+    hero: document.getElementById('drawer-hero'),
+    image: document.getElementById('drawer-image'),
+    caption: document.getElementById('drawer-caption'),
+    summary: document.getElementById('drawer-summary'),
+    facts: document.getElementById('drawer-facts'),
+    fixtures: document.getElementById('drawer-fixtures'),
+    photosBlock: document.getElementById('drawer-photos-block'),
+    photosTitle: document.getElementById('drawer-photos-title'),
+    photos: document.getElementById('drawer-photos'),
+  };
+  let drawerRoomId = null;
+  let drawerDismissed = null; // the room whose drawer the visitor closed (re-opens on another room)
+  function showDrawer(room) {
+    const open = !!room && drawerDismissed !== room.id;
+    drawer.hidden = !open;
+    planLayout.classList.toggle('has-drawer', open);
+    if (!room) drawerDismissed = null;
+    if (!open || drawerRoomId === room.id) { if (!open) drawerRoomId = null; return; }
+    drawerRoomId = room.id;
+    dEls.title.textContent = room.name;
+    const render = room.render && room.render.image;
+    const cover = render || (room.focus && room.focus.image) || (room.hasPhotos && room.photos[0] && room.photos[0].src);
+    dEls.hero.hidden = !cover;
+    if (cover) {
+      dEls.image.src = cover;
+      dEls.image.alt = render ? `${room.name} في النموذج ثلاثي الأبعاد` : (room.photos[0].caption || room.name);
+      dEls.caption.textContent = render ? 'لقطة من النموذج ثلاثي الأبعاد للغرفة بفرشها' : (room.photos[0].caption || '');
+    }
+    dEls.summary.textContent = room.summary || '';
+    dEls.summary.hidden = !room.summary;
+    const facts = [];
+    if (room.capacity) facts.push(['السعة', seatsLabel(room.capacity.seats)]);
+    facts.push(['النموذج', KIND_MODEL[room.kind] || 'الفرش الحالي في النموذج ثلاثي الأبعاد']);
+    if (room.use && room.use.current) facts.push(['الاستخدام', room.use.current]);
+    if (room.hasPhotos) facts.push(['الصور', photosLabel(room.photos.length)]);
+    dEls.facts.replaceChildren(...facts.map(([k, v]) => { const li = el('li'); li.append(el('span', 'k', k), el('span', 'v', v)); return li; }));
+    const items = room.fixtures && room.fixtures.items ? room.fixtures.items : [];
+    dEls.fixtures.hidden = !items.length;
+    dEls.fixtures.replaceChildren();
+    if (items.length) {
+      dEls.fixtures.append(el('h4', 'drawer-sub', 'التجهيزات'));
+      const ul = el('ul');
+      for (const it of items) ul.append(el('li', '', it));
+      dEls.fixtures.append(ul);
+    }
+    const photos = room.hasPhotos ? room.photos : [];
+    dEls.photosBlock.hidden = !photos.length;
+    dEls.photosTitle.textContent = `الصور الحقيقية (${photos.length})`;
+    dEls.photos.replaceChildren(...photos.map((ph, i) => {
+      const b = el('button', 'drawer-photo');
+      b.type = 'button';
+      b.setAttribute('aria-label', `${ph.caption || room.name} — صورة ${i + 1}`);
+      const img = document.createElement('img');
+      img.src = ph.thumb;
+      img.alt = '';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      b.append(img);
+      b.addEventListener('click', () => { pendingPhoto = i; navigate({ view: 'photos', roomId: room.id }); });
+      return b;
+    }));
+    drawer.querySelector('.drawer-scroll').scrollTop = 0;
+  }
+  document.getElementById('btn-drawer-close').addEventListener('click', () => {
+    drawerDismissed = drawerRoomId;
+    showDrawer(roomsById.get(drawerRoomId));
+  });
+  document.getElementById('btn-drawer-details').addEventListener('click', () => drawerRoomId && navigate({ view: 'details', roomId: drawerRoomId }));
   document.getElementById('btn-focus-back').addEventListener('click', () => navigate({ view: 'plan', scene: currentScene }));
-  cardEls.photos.addEventListener('click', () => focusRoomId && navigate({ view: 'photos', roomId: focusRoomId }));
+  // the main button always opens the photos from the first one (a thumbnail opens at its own picture)
+  cardEls.photos.addEventListener('click', () => { if (!focusRoomId) return; pendingPhoto = 0; navigate({ view: 'photos', roomId: focusRoomId }); });
   cardEls.details.addEventListener('click', () => focusRoomId && navigate({ view: 'details', roomId: focusRoomId }));
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && lastRoute && lastRoute.view === 'room') navigate({ view: 'plan', scene: currentScene });
@@ -404,7 +518,30 @@ export async function init() {
     onOpenPhoto: (roomId, index) => { pendingPhoto = index; navigate({ view: 'photos', roomId }); },
     snapshot: () => { const eng = engine(); return eng ? eng.snapshot() : ''; },
   });
-  document.getElementById('btn-back-plan').addEventListener('click', () => {
+  // ---------- gallery: a card per room with photos (cover, name, count) ----------
+  const galleryRooms = data.rooms.filter((r) => r.status === 'ready' && r.hasPhotos && r.photos && r.photos.length);
+  const galleryGrid = document.getElementById('gallery-grid');
+  const totalPhotos = galleryRooms.reduce((n, r) => n + r.photos.length, 0);
+  document.getElementById('gallery-sub').textContent = `${galleryRooms.length} مساحة · ${photosLabel(totalPhotos)} حقيقية — اختر مساحة لعرض صورها`;
+  galleryGrid.replaceChildren(...galleryRooms.map((r) => {
+    const a = el('a', 'gallery-card');
+    a.href = buildHash({ view: 'photos', roomId: r.id });
+    a.dataset.id = r.id;
+    const img = document.createElement('img');
+    img.src = r.photos[0].src;
+    img.alt = r.photos[0].caption || r.name;
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    const meta = el('span', 'gallery-meta');
+    meta.append(el('strong', 'gallery-name', r.name), el('span', 'gallery-count', photosLabel(r.photos.length)));
+    a.append(img, meta);
+    return a;
+  }));
+  let photosFromGallery = false;
+  const backBtn = document.getElementById('btn-back-plan');
+  const backLabel = (fromGallery) => { backBtn.lastChild.textContent = fromGallery ? ' العودة للمعرض ' : ' العودة للمنظور '; };
+  backBtn.addEventListener('click', () => {
+    if (photosFromGallery) { navigate({ view: 'gallery' }); return; }
     const r = room.currentRoom();
     navigate(r && r.hasModel !== false ? { view: 'room', roomId: r.id } : { view: 'plan', scene: currentScene });
   });
@@ -427,7 +564,7 @@ export async function init() {
     currentView = name;
     app.dataset.currentView = name;
     if (twin) twin.setActive(name === 'plan' && mode === '3d'); // no rendering or turntable behind the photos/details/welcome views
-    const order = { welcome: 0, plan: 1, photos: 2, details: 3 };
+    const order = { welcome: 0, plan: 1, gallery: 1, photos: 2, details: 3 };
     const goingUp = !prev || order[name] > order[prev];
     for (const [key, v] of Object.entries(views)) {
       v.classList.toggle('is-active', key === name);
@@ -491,6 +628,13 @@ export async function init() {
       return;
     }
 
+    if (route.view === 'gallery') {
+      showView('gallery');
+      setNav('gallery');
+      document.title = `معرض الصور — ${data.office.title}`;
+      return;
+    }
+
     if (route.view === 'plan') {
       const asked = route.scene || 'current';
       const sceneId = asked === 'visitor-path' ? 'paths' : SCENE_ORDER.includes(asked) ? asked : 'current';
@@ -499,6 +643,7 @@ export async function init() {
       setNav(sceneId === 'paths' ? 'paths' : 'plan');
       if (sceneId !== currentScene || !from) applyScene(sceneId);
       showRoomCard(null);
+      showDrawer(null);
       document.title = `${data.office.title} — المخطط ثلاثي الأبعاد`;
       ensureUnfocus(current);
       return;
@@ -508,6 +653,7 @@ export async function init() {
       showView('plan');
       setNav('plan');
       showRoomCard(r);
+      showDrawer(r);
       cardEls.title.focus({ preventScroll: true });
       document.title = `${r.name} — ${data.office.title}`;
       ensureFocus(r, !!from && (from.view === 'plan' || from.view === 'room'), current);
@@ -515,6 +661,9 @@ export async function init() {
     }
 
     if (route.view === 'photos') {
+      // came from the gallery (or a gallery link): «back» returns there; from the plan it returns to the room
+      if (from) photosFromGallery = from.view === 'gallery' || (photosFromGallery && from.view === 'photos' && from.roomId === r.id);
+      backLabel(photosFromGallery);
       if (room.currentRoom() !== r || pendingPhoto !== null) room.show(r.id, { photoIndex: pendingPhoto ?? 0 });
       pendingPhoto = null;
       showView('photos');
@@ -554,7 +703,7 @@ export async function init() {
   if (mode === '3d') setTimeout(loadTwin, 600);
 }
 
-// Satr's identity on the welcome page and in the header: wordmark text always, the logo file
+// The client's identity on the welcome page and in the header: wordmark text always, the logo file
 // (brand.logo) when the client supplies it — nothing is requested from the server otherwise
 function renderBrand(brand) {
   const name = document.getElementById('welcome-brand-name');
@@ -565,7 +714,7 @@ function renderBrand(brand) {
   if (slogan) { slogan.textContent = brand.slogan || ''; slogan.hidden = !brand.slogan; }
   const owner = document.getElementById('header-owner');
   if (owner && brand.website) owner.href = brand.website;
-  if (owner) owner.querySelector('.owner-name').textContent = brand.legalName || brand.name || 'شركة سطر العقارية';
+  if (owner && (brand.legalName || brand.name)) owner.querySelector('.owner-name').textContent = brand.legalName || brand.name;
   if (brand.logo) {
     for (const [mark, cls] of [[document.querySelector('.welcome-brand-mark'), 'welcome-brand-logo'], [document.querySelector('.owner-mark'), 'owner-logo']]) {
       if (!mark) continue;
@@ -629,7 +778,7 @@ function renderFooter(root, footer) {
   root.append(contact);
   // 3. social accounts + legal links
   if ((footer.social && footer.social.length) || (footer.links && footer.links.length)) {
-    const more = block('footer-more', 'حسابات سطر');
+    const more = block('footer-more', footer.socialHeading || 'حساباتنا');
     if (footer.social && footer.social.length) {
       const nav = document.createElement('nav');
       nav.className = 'footer-social';

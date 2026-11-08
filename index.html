@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>جولة المكتب</title>
-  <meta name="description" content="استكشفوا تجربة المكتب وشاهدوا المكاتب الإدارية بتوأمة رقمية إبداعية.">
+  <title>مكتب مجهّز للاستحواذ — واجهة روشن للأعمال</title>
+  <meta name="description" content="فرصة استحواذ: مكتب مجهّز في واجهة روشن للأعمال بالرياض — جولة بمخطط ثنائي وثلاثي الأبعاد وصور حقيقية لكل غرفة.">
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#051b30">
   <link rel="preload" href="assets/fonts/IBMPlexSansArabic-Regular.woff2" as="font" type="font/woff2" crossorigin>
@@ -25,21 +25,25 @@
         <a href="#/plan?view=2d" data-nav="plan2d">مخطط المكتب</a>
         <a href="#/plan?view=3d" data-nav="plan3d">المخطط ثلاثي الأبعاد</a>
         <a href="#/plan?scene=paths" data-nav="paths">المسارات</a>
+        <a href="#/gallery" data-nav="gallery">الصور</a>
       </nav>
       <span class="team-chip" id="plan-team-chip" hidden></span>
+      <!-- brand:start -->
       <a class="header-owner" id="header-owner" href="https://www.satr-ksa.com" target="_blank" rel="noopener" aria-label="شركة سطر العقارية — الموقع الرسمي">
         <span class="owner-mark" aria-hidden="true"></span>
         <span class="owner-name">شركة سطر العقارية</span>
       </a>
+      <!-- brand:end -->
     </header>
 
     <!-- 1. الترحيب -->
-    <section id="view-welcome" class="view view-welcome" data-view="welcome" aria-labelledby="welcome-title">
+    <section id="view-welcome" class="view view-welcome" data-view="welcome" aria-labelledby="welcome-location">
       <img id="welcome-photo" class="welcome-photo" alt="" decoding="async">
       <div class="welcome-shade" aria-hidden="true"></div>
       <div class="welcome-panel" aria-hidden="true"></div>
       <div class="welcome-frame" aria-hidden="true"></div>
       <div class="welcome-content">
+        <!-- brand:start -->
         <div class="welcome-brand" id="welcome-brand">
           <span class="welcome-brand-mark" aria-hidden="true"></span>
           <span class="welcome-brand-text">
@@ -47,18 +51,23 @@
             <small id="welcome-brand-en">SATR REAL ESTATE</small>
           </span>
         </div>
-        <h1 id="welcome-title" class="welcome-title">مرحبًا بكم</h1>
-        <p id="welcome-location" class="welcome-location"></p>
+        <!-- brand:end -->
+        <p id="welcome-title" class="welcome-title">فرصة استحواذ</p>
+        <h1 id="welcome-location" class="welcome-location"></h1>
+        <dl id="welcome-facts" class="welcome-facts" hidden></dl>
         <p id="welcome-subtitle" class="welcome-subtitle"></p>
-        <div id="welcome-features" class="welcome-features" hidden></div>
         <p id="welcome-atmosphere" class="welcome-atmosphere"></p>
         <div class="welcome-actions">
           <a id="btn-start" class="btn btn-primary btn-lg" href="#/plan">ابدأ الجولة</a>
-          <a id="btn-start-3d" class="btn-ghost" href="#/plan?view=3d">المخطط ثلاثي الأبعاد</a>
+          <a id="btn-gallery" class="btn-ghost" href="#/gallery">معرض الصور</a>
         </div>
+        <!-- brand:start -->
         <p id="welcome-slogan" class="welcome-slogan"></p>
+        <!-- brand:end -->
       </div>
+      <!-- brand:start -->
       <footer id="app-footer" class="app-footer"></footer>
+      <!-- brand:end -->
     </section>
 
     <!-- 2. النموذج ثلاثي الأبعاد الحي -->
@@ -126,6 +135,7 @@
             <h3 id="focus-title" class="focus-title" tabindex="-1"></h3>
             <p id="focus-summary" class="focus-summary"></p>
             <ul class="focus-facts" id="focus-facts"></ul>
+            <div class="focus-thumbs" id="focus-thumbs" hidden></div>
             <div class="focus-actions">
               <button id="btn-photos" class="btn btn-primary" type="button">الصور الحقيقية</button>
               <button id="btn-focus-details" class="btn btn-ghost-light" type="button">تفاصيل الغرفة</button>
@@ -133,6 +143,42 @@
             </div>
           </div>
         </aside>
+
+        <!-- لوحة تفاصيل الغرفة على اليسار: تظهر مع اختيار الغرفة بضغطة واحدة -->
+        <aside class="room-drawer" id="room-drawer" aria-label="تفاصيل الغرفة" aria-labelledby="drawer-title" hidden>
+          <div class="drawer-head">
+            <h3 id="drawer-title" class="drawer-title"></h3>
+            <button id="btn-drawer-close" class="drawer-close" type="button" aria-label="إغلاق لوحة التفاصيل">×</button>
+          </div>
+          <div class="drawer-scroll">
+            <figure class="drawer-hero" id="drawer-hero">
+              <img id="drawer-image" alt="" decoding="async">
+              <figcaption id="drawer-caption"></figcaption>
+            </figure>
+            <p id="drawer-summary" class="drawer-summary"></p>
+            <ul id="drawer-facts" class="drawer-facts"></ul>
+            <div id="drawer-fixtures" class="drawer-fixtures" hidden></div>
+            <div class="drawer-photos-block" id="drawer-photos-block" hidden>
+              <h4 class="drawer-sub" id="drawer-photos-title">الصور الحقيقية</h4>
+              <div id="drawer-photos" class="drawer-photos"></div>
+            </div>
+          </div>
+          <div class="drawer-actions">
+            <button id="btn-drawer-details" class="btn btn-primary" type="button">شاشة التفاصيل الكاملة</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- معرض الصور: بطاقة لكل غرفة لها صور -->
+    <section id="view-gallery" class="view view-gallery" data-view="gallery" aria-labelledby="gallery-title">
+      <div class="gallery-inner">
+        <header class="gallery-head">
+          <p class="gallery-kicker">صور حقيقية من المكتب</p>
+          <h2 id="gallery-title" class="gallery-title">معرض الصور</h2>
+          <p class="gallery-sub" id="gallery-sub"></p>
+        </header>
+        <div class="gallery-grid" id="gallery-grid"></div>
       </div>
     </section>
 
@@ -194,7 +240,9 @@
     </section>
 
     <div class="plan-tip" id="plan-tip" hidden></div>
+    <!-- brand:start -->
     <div class="build-sha" id="build-sha" title="رقم النسخة المنشورة">dev</div>
+    <!-- brand:end -->
   </div>
   <script type="module" src="assets/js/app.js"></script>
 </body>

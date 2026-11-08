@@ -1,7 +1,7 @@
 {
   "version": 2,
   "office": {
-    "title": "جولة المكتب",
+    "title": "مكتب مجهّز للاستحواذ — واجهة روشن للأعمال",
     "heroImage": "media/hero/perspective.webp",
     "plan": {
       "image": "media/twin/plan.webp",
@@ -90,17 +90,29 @@
       ]
     },
     "welcome": {
+      "eyebrow": "فرصة استحواذ",
       "title": "مرحبًا بكم",
       "teamTitle": "مرحبًا بفريق",
+      "headlineLead": "مكتب مجهّز في",
+      "location": "واجهة روشن للأعمال · الرياض",
+      "facts": [
+        {
+          "value": "890",
+          "unit": "م²",
+          "label": "مساحة المكتب",
+          "_source": "من صاحب المشروع (2026-11-08)"
+        },
+        {
+          "value": "72",
+          "label": "مكتبًا",
+          "note": "مكاتب إدارية ومحطات عمل",
+          "_source": "من صاحب المشروع (2026-11-08)؛ ملاحظة: الجرد الموثق في office.inventory يجمع 71 (13 مكتبًا + 58 محطة عمل)"
+        }
+      ],
       "subtitle": "استكشفوا تجربة المكتب، وشاهدوا المكاتب الإدارية بتوأمة رقمية إبداعية.",
       "atmosphere": "أجواء جميلة وهادئة في مكاتب مفروشة ومجهّزة.",
       "cta": "ابدأ الجولة",
-      "location": "واجهة روشن للأعمال · الرياض",
-      "features": [
-        "مكاتب مفروشة ومجهّزة",
-        "جولة ثلاثية الأبعاد حيّة",
-        "صور حقيقية لكل غرفة"
-      ]
+      "galleryCta": "معرض الصور"
     },
     "heroFallback": "media/hero/welcome.webp",
     "model": {
@@ -2002,6 +2014,24 @@
           "thumb": "media/rooms/bleachers/thumbs/01.webp",
           "caption": "المدرّج الخشبي مع السقف الهندسي",
           "source": "IMG_0154"
+        },
+        {
+          "src": "media/rooms/bleachers/02.webp",
+          "thumb": "media/rooms/bleachers/thumbs/02.webp",
+          "caption": "المدرّج من جهة الجلسة",
+          "source": "IMG_0158"
+        },
+        {
+          "src": "media/rooms/bleachers/03.webp",
+          "thumb": "media/rooms/bleachers/thumbs/03.webp",
+          "caption": "المدرّج واللاونج تحت السقف الخشبي المعلّق",
+          "source": "IMG_0392"
+        },
+        {
+          "src": "media/rooms/bleachers/04.webp",
+          "thumb": "media/rooms/bleachers/thumbs/04.webp",
+          "caption": "ركن جلوس هادئ بجوار المدرّج",
+          "source": "IMG_0164"
         }
       ],
       "hasModel": true,

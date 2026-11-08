@@ -128,6 +128,15 @@ export function createPlan2D(container, data, opts = {}) {
       const target = boxTarget(bbox(focused.polygon), short ? 0.1 : 0.16);
       if (wasFlying) { animateTo(target, 350); return; }
       ({ scale, tx, ty } = target);
+    } else if (!focused && wasFlying) {
+      // a flight back to the whole plan was under way (the drawer closing widens the stage at that
+      // moment): finish it toward the whole-plan frame for the new size instead of freezing mid-way
+      const saved = { scale, tx, ty };
+      home();
+      const target = { scale, tx, ty };
+      ({ scale, tx, ty } = saved);
+      animateTo(target, 350);
+      return;
     } else if (keep && scale > 1) {
       tx = viewW / 2 - keep.cx * fit * scale;
       ty = viewH / 2 - keep.cy * fit * scale;

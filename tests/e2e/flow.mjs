@@ -68,7 +68,7 @@ async function flow(name, contextOptions, { mobile, team }) {
       assert.equal(await page.textContent('#welcome-team'), TEAM, 'team name from ?team=');
       assert.match(await page.textContent('#welcome-title'), /^مرحبًا بفريق/);
     } else {
-      assert.equal((await page.textContent('#welcome-title')).trim(), 'مرحبًا بكم');
+      assert.equal((await page.textContent('#welcome-title')).trim(), 'فرصة استحواذ');
     }
     assert.match(await page.textContent('#welcome-subtitle'), /توأمة رقمية/);
     assert.match(await page.textContent('#welcome-atmosphere'), /أجواء جميلة وهادئة/);
@@ -78,7 +78,11 @@ async function flow(name, contextOptions, { mobile, team }) {
     }
     // Satr identity on the welcome page: wordmark, general location, slogan; footer with both numbers
     assert.equal((await page.textContent('#welcome-brand-name')).trim(), 'سطر العقارية', 'Satr wordmark');
-    assert.match(await page.textContent('#welcome-location'), /واجهة روشن للأعمال/, 'general location on the welcome');
+    assert.match(await page.textContent('#welcome-location'), /مكتب مجهّز في\s*واجهة روشن للأعمال/, 'the opportunity headline');
+    const facts = await page.$$eval('#welcome-facts .fact', (els) => els.map((e) => e.textContent.replace(/\s+/g, ' ').trim()));
+    assert.equal(facts.length, 2, 'two figures');
+    assert.match(facts[0], /890\s*م²\s*مساحة المكتب/);
+    assert.match(facts[1], /72\s*مكتبًا/);
     assert.match(await page.textContent('#welcome-slogan'), /نفهم الأصل/, 'Satr slogan');
     const footerText = await page.textContent('#app-footer');
     for (const must of ['+966 55 585 5057', '+966 54 417 1356', 'واجهة روشن للأعمال', 'جميع الحقوق محفوظة']) assert.ok(footerText.includes(must), `footer has «${must}»`);
@@ -245,6 +249,49 @@ async function flow(name, contextOptions, { mobile, team }) {
     await page.waitForFunction(() => location.hash === '#/room/corridors/details');
     await click('#btn-close-details');
     await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'plan');
+    await page.goto(`${url}/#/plan`);
+    await page.waitForFunction(() => !document.getElementById('plan2d-stage').dataset.focus);
+
+    // 2c. the photos are easy to reach: header «الصور» -> gallery card -> the room's photos -> back to the gallery
+    step = '2c gallery';
+    await click('.site-nav a[data-nav="gallery"]');
+    await page.waitForFunction(() => location.hash === '#/gallery' && document.getElementById('app').dataset.currentView === 'gallery');
+    const cards = await page.locator('#gallery-grid .gallery-card').count();
+    assert.ok(cards >= 20, `a card per room with photos (${cards})`);
+    assert.equal((await page.textContent('.site-nav a.is-active')).trim(), 'الصور', 'header highlights الصور');
+    await page.waitForFunction(() => { const i = document.querySelector('#gallery-grid .gallery-card[data-id="bleachers"] img'); return i && i.complete && i.naturalWidth > 0; });
+    assert.match(await page.textContent('#gallery-grid .gallery-card[data-id="bleachers"] .gallery-count'), /4 صور/);
+    await shot('gallery');
+    await page.locator('#gallery-grid .gallery-card[data-id="bleachers"]').click();
+    await page.waitForFunction(() => location.hash === '#/room/bleachers/photos' && document.getElementById('app').dataset.currentView === 'photos');
+    assert.match(await page.textContent('#btn-back-plan'), /العودة للمعرض/);
+    await click('#btn-back-plan');
+    await page.waitForFunction(() => location.hash === '#/gallery');
+    // the room card shows the first photos as a strip; a thumbnail opens the photos at that picture
+    await page.goto(`${url}/#/room/meeting-large`);
+    await page.waitForFunction(() => !document.getElementById('focus-thumbs').hidden);
+    // a single click on a room also opens the left drawer with its details (desktop); phones keep the card only
+    if (!mobile) {
+      await page.waitForFunction(() => !document.getElementById('room-drawer').hidden);
+      assert.match(await page.textContent('#drawer-title'), /08b/, 'drawer names the room');
+      await page.waitForFunction(() => { const i = document.getElementById('drawer-image'); return i.complete && i.naturalWidth > 0; });
+      assert.ok(await page.$eval('#drawer-hero', (f) => f.getBoundingClientRect().height > 120), 'the drawer cover image is visible (not collapsed)');
+      assert.equal(await page.locator('#drawer-photos .drawer-photo').count(), 9, 'every photo of the room in the drawer');
+      await page.waitForTimeout(1000); // the stage narrowed: the focus re-frames for the new width
+      const framed = await page.evaluate(() => { const st = document.getElementById('plan2d-stage'); const b = st.__twin.roomScreenBox('meeting-large'); return { inside: b.x >= 0 && b.y >= 0 && b.x + b.w <= st.clientWidth + 1 && b.y + b.h <= st.clientHeight + 1, stageW: st.clientWidth }; });
+      assert.ok(framed.inside, `the room stays fully framed beside the drawer (${JSON.stringify(framed)})`);
+      await shot('drawer');
+      await click('#btn-drawer-close');
+      await page.waitForFunction(() => document.getElementById('room-drawer').hidden);
+      assert.ok(!(await page.isHidden('#room-card')), 'closing the drawer keeps the room selected');
+    } else {
+      assert.ok(await page.isHidden('#room-drawer'), 'no drawer on phones');
+    }
+    assert.equal(await page.locator('#focus-thumbs .focus-thumb').count(), 4, 'four thumbnails in the card');
+    await page.locator('#focus-thumbs .focus-thumb').nth(1).click();
+    await page.waitForFunction(() => location.hash === '#/room/meeting-large/photos');
+    await page.waitForFunction(() => (document.getElementById('room-photo').getAttribute('src') || '').includes('/02.webp'));
+    assert.match(await page.textContent('#btn-back-plan'), /العودة للمنظور/);
     await page.goto(`${url}/#/plan`);
     await page.waitForFunction(() => !document.getElementById('plan2d-stage').dataset.focus);
 

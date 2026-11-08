@@ -4,6 +4,7 @@
 //   #/room/<id>[?view=2d|3d]           the room focused in the plan (2D highlight or 3D close-up)
 //   #/room/<id>/photos[?view=2d|3d]    real photos of the room
 //   #/room/<id>/details[?view=2d|3d]   details panel
+//   #/gallery                          photo gallery: a card per room with photos
 
 const ROOM_ID = /^[a-z0-9-]+$/;
 
@@ -14,6 +15,7 @@ export function parseHash(hash) {
   if (parts.length === 0) return { view: 'welcome' };
   const q = new URLSearchParams(query);
   const mode = q.get('view') === '3d' ? '3d' : q.get('view') === '2d' ? '2d' : null; // optional 2D / 3D view in deep links
+  if (parts[0] === 'gallery') return { view: 'gallery' };
   if (parts[0] === 'plan') {
     const scene = q.get('scene');
     const r = scene ? { view: 'plan', scene } : { view: 'plan' };
@@ -35,6 +37,8 @@ export function buildHash(route) {
   switch (route.view) {
     case 'welcome':
       return '#/';
+    case 'gallery':
+      return '#/gallery';
     case 'plan': {
       const q = [];
       if (route.scene && route.scene !== 'current') q.push(`scene=${encodeURIComponent(route.scene)}`);
