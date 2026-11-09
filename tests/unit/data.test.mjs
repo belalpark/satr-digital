@@ -267,3 +267,20 @@ test('gallery covers: every room in the gallery has a card-sized cover from its 
     assert.ok(statSync(f).size < statSync(resolve(root, r.photos[0].src)).size, `${r.id}: the cover is lighter than the photo`);
   }
 });
+
+test('room names carry no plan codes; offices are «مكتب», employee areas «مكاتب موظفين» (owner, 2026-11-10)', () => {
+  for (const r of data.rooms) {
+    assert.doesNotMatch(r.name, /\b(0[1-9][a-f]?|1[0-4])\b|[0-9]/, `${r.id}: no code in «${r.name}»`);
+    if (r.kind === 'office') assert.equal(r.name, 'مكتب', r.id);
+    if (r.kind === 'open') assert.equal(r.name, 'مكاتب موظفين', r.id);
+  }
+  // everything a visitor reads follows: route stops, captions and the «use» line
+  const names = new Map(data.rooms.map((r) => [r.id, r.name]));
+  for (const rt of data.scenes.paths.routes) for (const st of rt.stops) assert.equal(st.label, names.get(st.roomId), `${rt.id} stop label is the room name`);
+  for (const r of data.rooms) {
+    assert.doesNotMatch((r.use && r.use.current) || '', /مكتب مشرف/, `${r.id} use`);
+    for (const ph of r.photos || []) assert.doesNotMatch(ph.caption, /مكتب مشرف|\b0[1-9][a-f]\b/, `${r.id} caption «${ph.caption}»`);
+  }
+  // the key-plan codes stay in the data (photos key, routes), they are just not shown
+  assert.ok(data.rooms.every((r) => r.key), 'every room keeps its key-plan code');
+});

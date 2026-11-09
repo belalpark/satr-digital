@@ -128,9 +128,15 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.equal(await page.getAttribute('#view-tabs [data-view="2d"]', 'aria-selected'), 'true', '2D tab selected');
     assert.equal((await page.textContent('.site-nav a.is-active')).trim(), 'مخطط المكتب', 'header highlights مخطط المكتب');
     assert.equal((await page.textContent('#header-owner')).trim(), 'شركة سطر العقارية', 'owner name at the end of the header');
-    assert.ok((await page.locator('#plan2d-stage .dot-blue').count()) >= 20, '2D: blue dot per room');
-    assert.ok((await page.locator('#plan2d-stage .dot-red').count()) >= 10, '2D: red dot where photos exist');
-    const vis2d = await page.$$eval('#plan2d-stage .dot-blue', (els) => els.filter((e) => { const r = e.getBoundingClientRect(); return r.width > 4 && r.left >= 0 && r.right <= innerWidth; }).length);
+    assert.ok((await page.locator('#plan2d-stage .dot-room').count()) >= 20, '2D: one dot per room');
+    assert.equal(await page.locator('#plan2d-stage .dot-blue, #plan2d-stage .dot-red').count(), 0, '2D: no second dot (owner, 2026-11-10)');
+    const dotStyle = await page.$eval('#plan2d-stage .dot-room', (d) => ({ bg: getComputedStyle(d).backgroundColor, anim: getComputedStyle(d).animationName }));
+    assert.match(dotStyle.bg, /rgba\(255, 255, 255, 0\.6\)/, `2D: the dot is white at 60% (${dotStyle.bg})`);
+    assert.equal(dotStyle.anim, 'dot-blink', '2D: the dot blinks');
+    const tags2d = await page.$$eval('#plan2d-stage .room-tag:not(.is-outside)', (els) => els.map((e) => e.textContent));
+    assert.ok(tags2d.includes('مكاتب موظفين') && tags2d.includes('غرفة اجتماعات'), '2D: labels are room names');
+    assert.ok(tags2d.every((t) => !/[0-9]/.test(t)), `2D: no plan codes on the labels (${tags2d.filter((t) => /[0-9]/.test(t))})`);
+    const vis2d = await page.$$eval('#plan2d-stage .dot-room', (els) => els.filter((e) => { const r = e.getBoundingClientRect(); return r.width > 4 && r.left >= 0 && r.right <= innerWidth; }).length);
     assert.ok(vis2d >= 20, `2D dots on screen (${vis2d})`);
     await shot('plan-2d');
     // routes on the 2D plan
@@ -149,7 +155,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     await page.waitForFunction(() => document.getElementById('plan2d-stage').dataset.focus === 'meeting-large');
     await page.waitForTimeout(900);
     assert.ok(await page.isVisible('#room-card'), '2D: room card shown');
-    assert.match(await page.textContent('#focus-title'), /08b/, '2D: the room name carries its key code');
+    assert.equal((await page.textContent('#focus-title')).trim(), 'غرفة اجتماعات', '2D: the room by its name, no code');
     assert.ok(await page.$eval('#plan2d-stage .plan2d-veil', (v) => getComputedStyle(v).display !== 'none'), '2D: neighbours dimmed');
     const box2d = await page.evaluate(() => { const st = document.getElementById('plan2d-stage'); const b = st.__twin.roomScreenBox('meeting-large'); return { size: Math.max(b.w, b.h), stage: Math.min(st.clientWidth, st.clientHeight) }; });
     assert.ok(box2d.size > box2d.stage * 0.4, `2D: zoomed to the room (room ${box2d.size.toFixed(0)}px on ${box2d.stage.toFixed(0)}px)`);
@@ -167,19 +173,18 @@ async function flow(name, contextOptions, { mobile, team }) {
     await click('#room-list .room-item-btn[data-id="meeting-large"]');
     await page.waitForFunction(() => location.hash === '#/plan');
     await page.waitForFunction(() => !document.getElementById('plan2d-stage').dataset.focus);
-    // the red dot opens the room details (photos included), not the photos directly — a real pointer
-    // click: the stage's pan handler must not capture the pointer away from the dot. Phones show the
-    // red dot only for the focused room (or when zoomed in), so focus the reception first there.
+    // the room's dot opens the room details (photos included) — a real pointer click: the stage's pan
+    // handler must not capture the pointer away from the dot. On a phone, zoom to the reception first.
     if (mobile) {
       await click('#room-list .room-item-btn[data-id="reception"]');
       await page.waitForFunction(() => document.getElementById('plan2d-stage').dataset.focus === 'reception');
       await page.waitForTimeout(900);
     }
-    await page.locator('#plan2d-stage .room-marker[data-id="reception"] .dot-red').click();
+    await page.locator('#plan2d-stage .room-marker[data-id="reception"] .dot-room').click();
     await page.waitForFunction(() => location.hash === '#/room/reception/details');
     await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'details');
     await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; });
-    assert.ok((await page.locator('#details-photos button').count()) >= 3, '2D red dot -> details with photos');
+    assert.ok((await page.locator('#details-photos button').count()) >= 3, '2D dot -> details with photos');
     await click('#btn-close-details');
     await page.waitForFunction(() => location.hash === '#/room/reception');
     // back to the whole plan (no focus, hash #/plan) before the gesture checks
@@ -312,7 +317,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     // a single click on a room also opens the left drawer with its details (desktop); phones keep the card only
     if (!mobile) {
       await page.waitForFunction(() => !document.getElementById('room-drawer').hidden);
-      assert.match(await page.textContent('#drawer-title'), /08b/, 'drawer names the room');
+      assert.equal((await page.textContent('#drawer-title')).trim(), 'غرفة اجتماعات', 'drawer names the room');
       await page.waitForFunction(() => { const i = document.getElementById('drawer-image'); return i.complete && i.naturalWidth > 0; });
       assert.ok(await page.$eval('#drawer-hero', (f) => f.getBoundingClientRect().height > 120), 'the drawer cover image is visible (not collapsed)');
       assert.equal(await page.locator('#drawer-photos .drawer-photo').count(), 9, 'every photo of the room in the drawer');
@@ -346,13 +351,13 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.equal((await page.textContent('.scene-tab[data-scene="current"]')).trim(), 'توزيعات المكاتب');
     assert.ok(await page.$('#plan-stage canvas'), 'WebGL canvas present');
     assert.ok((await page.locator('#room-list .room-item-btn').count()) >= 20, 'sidebar lists the rooms');
-    assert.ok((await page.locator('#overlay-dots .dot-blue').count()) >= 20, 'blue dot per room');
-    assert.ok((await page.locator('#overlay-dots .dot-red').count()) >= 10, 'red dot where photos exist');
-    const visibleBlue = await page.$$eval('#overlay-dots .dot-blue', (els) => els.filter((e) => { const r = e.getBoundingClientRect(); return r.width > 4 && getComputedStyle(e).display !== 'none' && r.left >= 0 && r.right <= innerWidth; }).length);
+    assert.ok((await page.locator('#overlay-dots .dot-room').count()) >= 20, 'one dot per room');
+    assert.equal(await page.locator('#overlay-dots .dot-blue, #overlay-dots .dot-red').count(), 0, 'no second dot');
+    const visibleBlue = await page.$$eval('#overlay-dots .dot-room', (els) => els.filter((e) => { const r = e.getBoundingClientRect(); return r.width > 4 && getComputedStyle(e).display !== 'none' && r.left >= 0 && r.right <= innerWidth; }).length);
     assert.ok(visibleBlue >= 20, `blue dots visible on screen at the default view (${visibleBlue})`);
     // dots sit inside the stage, never outside the model's screen box
     const stageBox = await page.locator('#plan-stage').boundingBox();
-    const outside = await page.$$eval('#overlay-dots .room-marker .dot-blue', (els) => els.filter((e) => e.getBoundingClientRect().width > 0).map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+    const outside = await page.$$eval('#overlay-dots .room-marker .dot-room', (els) => els.filter((e) => e.getBoundingClientRect().width > 0).map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
     for (const [x, y] of outside) assert.ok(x >= stageBox.x && x <= stageBox.x + stageBox.width && y >= stageBox.y && y <= stageBox.y + stageBox.height, `dot inside the stage (${x.toFixed(0)},${y.toFixed(0)})`);
     if (!mobile) {
       const sb = await page.locator('#room-sidebar').boundingBox();
@@ -394,14 +399,14 @@ async function flow(name, contextOptions, { mobile, team }) {
     await shot('labels-outside');
     await click('#btn-labels');
 
-    // 3. blue dot -> the room in its 3D context; the card appears in the sidebar
+    // 3. the room from the list -> the room in its 3D context; the card appears in the sidebar
     step = '3 focus';
-    await page.locator('#overlay-dots .room-marker[data-id="meeting-large"] .dot-blue').click({ timeout: 60000 });
+    await click('#room-list .room-item-btn[data-id="meeting-large"]');
     await page.waitForFunction(() => location.hash === '#/room/meeting-large', null, { timeout: 60000 });
     await focusedOn('meeting-large');
     await settled();
     assert.ok(await page.isVisible('#room-card'), 'room card shown');
-    assert.equal((await page.textContent('#focus-title')).trim(), 'غرفة اجتماعات 08b', 'room named by the key plan');
+    assert.equal((await page.textContent('#focus-title')).trim(), 'غرفة اجتماعات', 'room named without its plan code');
     assert.match(await page.textContent('#focus-facts'), /16 مقعدًا/);
     assert.match(await page.textContent('#focus-facts'), /قاعة اجتماعات بفرشها الحالي/);
     assert.ok(await page.evaluate(() => !!document.activeElement.closest('#room-card')), 'keyboard focus moved to the card');
@@ -441,7 +446,7 @@ async function flow(name, contextOptions, { mobile, team }) {
       return img && img.complete && img.naturalWidth > 0;
     }, null, { timeout: 60000 });
     await page.waitForTimeout(500);
-    assert.equal((await page.textContent('#room-title')).trim(), 'غرفة اجتماعات 08b');
+    assert.equal((await page.textContent('#room-title')).trim(), 'غرفة اجتماعات');
     await shot('photos');
     await click('#gallery-next');
     await page.waitForTimeout(400);
@@ -456,7 +461,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     await page.goto(`${url}/#/room/reception/photos`);
     await page.waitForFunction(() => location.hash === '#/room/reception/photos');
     await page.waitForFunction(() => { const i = document.getElementById('room-photo'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 60000 });
-    assert.equal((await page.textContent('#room-title')).trim(), 'الاستقبال 12');
+    assert.equal((await page.textContent('#room-title')).trim(), 'الاستقبال');
     // a room without photos never shows a photo view
     await page.goto(`${url}/#/room/store/photos`);
     await page.waitForFunction(() => location.hash === '#/room/store');

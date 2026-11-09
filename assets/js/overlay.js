@@ -1,7 +1,6 @@
-// Screen-space overlay on top of the live 3D model: a blinking blue dot (model
-// view) and red dot (real photos) per room, small labels beside the blue dot,
-// and an optional "labels outside" mode that places every name in a column
-// at the edge of the stage with a leader line to its dot.
+// Screen-space overlay on top of the plan / live 3D model: one blinking dot per room (semi-transparent
+// white; a click opens the room details), the room's name above it, and an optional "labels outside"
+// mode that places every name in a column at the edge of the stage with a leader line to its dot.
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 export function createOverlay(stage, twin, data, opts = {}) {
@@ -18,27 +17,21 @@ export function createOverlay(stage, twin, data, opts = {}) {
     wrap.className = 'room-marker';
     wrap.dataset.id = room.id;
 
-    const blue = document.createElement('button');
-    blue.type = 'button';
-    blue.className = 'dot dot-blue';
-    blue.setAttribute('aria-label', `${room.name} — المنظور القريب`);
-    blue.addEventListener('click', (e) => { e.stopPropagation(); opts.onModel && opts.onModel(room.id); });
-    wrap.append(blue);
-
-    let red = null;
-    if (room.hasPhotos) {
-      red = document.createElement('button');
-      red.type = 'button';
-      red.className = 'dot dot-red';
-      red.setAttribute('aria-label', `${room.name} — الصور الحقيقية`);
-      red.addEventListener('click', (e) => { e.stopPropagation(); opts.onPhotos && opts.onPhotos(room.id); });
-      wrap.append(red);
-    }
+    // one dot per room (owner, 2026-11-10): it opens the room details; a click on the room itself
+    // still opens its close-up view
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'dot dot-room';
+    dot.setAttribute('aria-label', `${room.name} — تفاصيل الغرفة`);
+    dot.addEventListener('click', (e) => { e.stopPropagation(); opts.onPhotos && opts.onPhotos(room.id); });
+    wrap.append(dot);
 
     const label = document.createElement('span');
     label.className = 'room-tag';
-    label.textContent = room.short || room.name;
-    if (room.kind === 'office' || room.kind === 'service') label.classList.add('is-minor');
+    label.textContent = room.name;
+    // names instead of codes (owner, 2026-11-10): offices show «مكتب» at the whole-plan view too; only the
+    // small service rooms in the core wait for a closer zoom, where their names fit
+    if (room.kind === 'service') label.classList.add('is-minor');
     wrap.append(label);
     dotsEl.append(wrap);
 
@@ -47,7 +40,7 @@ export function createOverlay(stage, twin, data, opts = {}) {
     svg.append(leader);
     const outLabel = document.createElement('span');
     outLabel.className = 'room-tag is-outside';
-    outLabel.textContent = room.short || room.name;
+    outLabel.textContent = room.name;
     outLabel.hidden = true;
     outLabel.tabIndex = 0;
     outLabel.setAttribute('role', 'button');
@@ -55,7 +48,7 @@ export function createOverlay(stage, twin, data, opts = {}) {
     outLabel.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); opts.onModel && opts.onModel(room.id); } });
     dotsEl.append(outLabel);
 
-    items.set(room.id, { room, wrap, label, outLabel, leader, red });
+    items.set(room.id, { room, wrap, label, outLabel, leader });
   }
 
   // runs every animation frame while the plan moves: only touch the DOM where a value actually

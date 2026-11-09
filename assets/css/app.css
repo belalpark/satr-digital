@@ -342,17 +342,17 @@ ul { margin: 0; padding: 0; list-style: none; }
 /* النقطتان الوامضتان والمسمّى */
 .room-marker { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; transition: opacity 220ms; }
 .room-marker > * { pointer-events: auto; position: absolute; }
-.room-marker .dot-blue { left: 0; top: 0; transform: translate(-50%, -50%); }
-.room-marker .dot-red { left: 0; top: 0; transform: translate(calc(-50% - 15px * var(--s, 1)), -50%); }
+.room-marker .dot-room { left: 0; top: 0; width: calc(13px * var(--s, 1)); height: calc(13px * var(--s, 1)); transform: translate(-50%, -50%); }
 .room-marker .room-tag { left: 0; top: 0; transform: translate(-50%, calc(-100% - 10px * var(--s, 1))); }
 .room-marker.is-dim { opacity: 0.25; }
 .room-marker.is-focus .room-tag { display: none; }
 .dot { position: relative; width: calc(11px * var(--s, 1)); height: calc(11px * var(--s, 1)); border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.9); padding: 0; cursor: pointer; flex: 0 0 auto; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35); }
 .dot::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid currentColor; opacity: 0; animation: ping 1.8s var(--ease) infinite; }
 .dot::before { content: ""; position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; transform: translate(-50%, -50%); border-radius: 50%; } /* 28px hit area */
-.dot-blue { background: #5fd3ff; color: #5fd3ff; }
-.dot-red { background: #ff4d4d; color: #ff4d4d; animation-delay: 0.9s; }
-.dot-red::after { animation-delay: 0.9s; }
+/* one dot per room (owner, 2026-11-10): white at 60% opacity, blinking; a thin dark ring keeps it
+   visible on the light 2D plan as well as on the dark 3D model */
+.dot-room { background: rgba(255, 255, 255, 0.6); color: rgba(255, 255, 255, 0.85); border-color: rgba(255, 255, 255, 0.85); box-shadow: 0 0 0 1.5px rgba(10, 12, 15, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3); animation: dot-blink 1.8s ease-in-out infinite; }
+@keyframes dot-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 .dot.mini { width: 9px; height: 9px; border-width: 1.5px; box-shadow: none; }
 .dot.mini::after { display: none; }
 @keyframes ping { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(1.9); opacity: 0; } }
@@ -514,6 +514,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 .route2d-stop { fill: #fff; stroke-width: 4; }
 .route2d-stop.is-start { fill: #fff; stroke: #fff; }
 .route2d-label { font-size: 15px; font-weight: 700; fill: #fff; text-anchor: middle; paint-order: stroke; stroke: rgba(12, 14, 18, 0.85); stroke-width: 4px; stroke-linejoin: round; }
+/* the room tags carry the names now (they were codes): the stop text would repeat them on top of the lines */
+.route2d-label { display: none; }
 .plan-stage-2d .room-tag { background: rgba(255, 255, 255, 0.88); color: var(--ink); border-color: rgba(27, 26, 23, 0.1); }
 .plan-stage-2d .leader { stroke: rgba(27, 26, 23, 0.5); }
 .plan-stage-2d .room-tag.is-outside { background: rgba(255, 255, 255, 0.92); }
@@ -615,7 +617,6 @@ ul { margin: 0; padding: 0; list-style: none; }
   .focus-actions .btn { padding: 8px 10px; font-size: 13px; }
   .plan-stage:not(.is-close) .room-tag:not(.is-outside) { display: none; }
   .plan-stage.labels-outside .room-tag.is-outside { display: block; font-size: 11px; }
-  .plan-stage:not(.is-close) .room-marker:not(.is-focus) .dot-red { display: none; }
   .room-marker .dot { --s: 0.9; }
   .dots-legend { display: none; }
   .scenebar { flex-wrap: nowrap; gap: 6px; padding: 6px 10px; }
@@ -679,6 +680,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 @media (prefers-reduced-motion: reduce) {
   .plan-world.is-animating { transition-duration: 1ms; }
   .dot::after { animation: none; }
+  .dot-room { animation: none; }
   .welcome-photo { animation: none; }
   .welcome-location .loc-main, .welcome-location .loc-city::before, .welcome-actions .btn-primary { animation: none; }
   .view, .view.is-active { transition-duration: 1ms; }

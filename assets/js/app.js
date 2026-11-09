@@ -179,7 +179,7 @@ export async function init() {
   }
   const dotHandlers = {
     onModel: (id) => toggleRoom(id),
-    onPhotos: (id) => navigate({ view: 'details', roomId: id }), // the red dot opens the room details (photos included)
+    onPhotos: (id) => navigate({ view: 'details', roomId: id }), // the room's dot opens its details (photos included)
   };
 
   // the 3D viewer (three.js, ~200 KB compressed) is fetched only when the 3D view is wanted: a hover or
@@ -399,8 +399,7 @@ export async function init() {
       const b = el('button', 'room-item-btn');
       b.type = 'button';
       b.dataset.id = r.id;
-      b.append(el('i', 'dot dot-blue mini'), el('span', 'room-item-name', r.name));
-      if (r.hasPhotos) b.append(el('i', 'dot dot-red mini', ''));
+      b.append(el('i', 'dot dot-room mini'), el('span', 'room-item-name', r.name));
       b.addEventListener('click', () => toggleRoom(r.id));
       li.append(b);
       list.append(li);

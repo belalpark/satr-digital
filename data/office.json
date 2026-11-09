@@ -215,7 +215,7 @@
   "rooms": [
     {
       "id": "ceo",
-      "name": "مكتب الرئيس التنفيذي 01",
+      "name": "مكتب",
       "short": "01",
       "kind": "office",
       "status": "ready",
@@ -317,7 +317,7 @@
     },
     {
       "id": "cfo",
-      "name": "مكتب مشرف 02a",
+      "name": "مكتب",
       "short": "02a",
       "kind": "office",
       "status": "ready",
@@ -344,13 +344,13 @@
         "y": 309
       },
       "use": {
-        "current": "مكتب مشرف بطاولة اجتماع جانبية"
+        "current": "مكتب بطاولة اجتماع جانبية"
       },
       "photos": [
         {
           "src": "media/rooms/cfo/01.webp",
           "thumb": "media/rooms/cfo/thumbs/01.webp",
-          "caption": "مكتب مشرف بواجهة زجاجية وخزانة ملفات",
+          "caption": "مكتب بواجهة زجاجية وخزانة ملفات",
           "source": "IMG_0251"
         },
         {
@@ -392,7 +392,7 @@
     },
     {
       "id": "office-r2",
-      "name": "مكتب مشرف 02b",
+      "name": "مكتب",
       "short": "02b",
       "kind": "office",
       "status": "ready",
@@ -419,13 +419,13 @@
         "y": 428
       },
       "use": {
-        "current": "مكتب مشرف"
+        "current": "مكتب"
       },
       "photos": [
         {
           "src": "media/rooms/office-r2/01.webp",
           "thumb": "media/rooms/office-r2/thumbs/01.webp",
-          "caption": "مكتب مشرف بطاولة جانبية",
+          "caption": "مكتب بطاولة جانبية",
           "source": "IMG_0258"
         },
         {
@@ -467,7 +467,7 @@
     },
     {
       "id": "office-l1",
-      "name": "مكتب مشرف 02c",
+      "name": "مكتب",
       "short": "02c",
       "kind": "office",
       "status": "ready",
@@ -494,13 +494,13 @@
         "y": 714
       },
       "use": {
-        "current": "مكتب مشرف"
+        "current": "مكتب"
       },
       "photos": [
         {
           "src": "media/rooms/office-l1/01.webp",
           "thumb": "media/rooms/office-l1/thumbs/01.webp",
-          "caption": "مكتب مشرف بمقاعد زوار زرقاء",
+          "caption": "مكتب بمقاعد زوار زرقاء",
           "source": "IMG_0301"
         },
         {
@@ -536,7 +536,7 @@
     },
     {
       "id": "office-l2",
-      "name": "مكتب مشرف 02d",
+      "name": "مكتب",
       "short": "02d",
       "kind": "office",
       "status": "ready",
@@ -563,7 +563,7 @@
         "y": 830
       },
       "use": {
-        "current": "مكتب مشرف"
+        "current": "مكتب"
       },
       "photos": [
         {
@@ -587,7 +587,7 @@
     },
     {
       "id": "coo",
-      "name": "مكتب مشرف 02e",
+      "name": "مكتب",
       "short": "02e",
       "kind": "office",
       "status": "ready",
@@ -614,13 +614,13 @@
         "y": 966
       },
       "use": {
-        "current": "مكتب مشرف بطاولة مستديرة"
+        "current": "مكتب بطاولة مستديرة"
       },
       "photos": [
         {
           "src": "media/rooms/coo/01.webp",
           "thumb": "media/rooms/coo/thumbs/01.webp",
-          "caption": "مكتب مشرف بطاولة مستديرة",
+          "caption": "مكتب بطاولة مستديرة",
           "source": "IMG_0319"
         },
         {
@@ -667,7 +667,7 @@
     },
     {
       "id": "open-a",
-      "name": "مكاتب الموظفين 03a",
+      "name": "مكاتب موظفين",
       "short": "03a",
       "kind": "open",
       "status": "ready",
@@ -747,7 +747,7 @@
     },
     {
       "id": "field-qc",
-      "name": "مكاتب الموظفين 03b",
+      "name": "مكاتب موظفين",
       "short": "03b",
       "kind": "open",
       "status": "ready",
@@ -833,7 +833,7 @@
     },
     {
       "id": "finance",
-      "name": "مكاتب الموظفين 03c",
+      "name": "مكاتب موظفين",
       "short": "03c",
       "kind": "open",
       "status": "ready",
@@ -902,7 +902,7 @@
     },
     {
       "id": "inner-1",
-      "name": "مكاتب الموظفين 03d",
+      "name": "مكاتب موظفين",
       "short": "03d",
       "kind": "open",
       "status": "ready",
@@ -971,7 +971,7 @@
     },
     {
       "id": "research",
-      "name": "مكاتب الموظفين 03e",
+      "name": "مكاتب موظفين",
       "short": "03e",
       "kind": "open",
       "status": "ready",
@@ -1051,7 +1051,7 @@
     },
     {
       "id": "hr-pmo-ops",
-      "name": "مكاتب الموظفين 03f",
+      "name": "مكاتب موظفين",
       "short": "03f",
       "kind": "open",
       "status": "ready",
@@ -1137,7 +1137,7 @@
     },
     {
       "id": "inner-3",
-      "name": "مكتب متوسط مغلق 04a",
+      "name": "مكتب",
       "short": "04a",
       "kind": "office",
       "status": "ready",
@@ -1206,7 +1206,7 @@
     },
     {
       "id": "inner-2",
-      "name": "مكتب متوسط مغلق 04b",
+      "name": "مكتب",
       "short": "04b",
       "kind": "office",
       "status": "ready",
@@ -1269,7 +1269,7 @@
     },
     {
       "id": "inner-4",
-      "name": "مكتب صغير مغلق 05a",
+      "name": "مكتب",
       "short": "05a",
       "kind": "office",
       "status": "ready",
@@ -1326,7 +1326,7 @@
     },
     {
       "id": "women-area",
-      "name": "جلسة نساء 06",
+      "name": "جلسة نساء",
       "short": "06",
       "kind": "social",
       "status": "ready",
@@ -1382,7 +1382,7 @@
     },
     {
       "id": "wc-women",
-      "name": "دورة مياه النساء 07",
+      "name": "دورة مياه النساء",
       "short": "07",
       "kind": "service",
       "status": "ready",
@@ -1427,7 +1427,7 @@
     },
     {
       "id": "wc-men",
-      "name": "دورة مياه الرجال ومستودع أغراض 07",
+      "name": "دورة مياه الرجال ومستودع أغراض",
       "short": "07",
       "kind": "service",
       "status": "ready",
@@ -1484,7 +1484,7 @@
     },
     {
       "id": "meeting-medium",
-      "name": "غرفة اجتماعات 08a",
+      "name": "غرفة اجتماعات",
       "short": "08a",
       "kind": "meeting",
       "status": "ready",
@@ -1558,7 +1558,7 @@
     },
     {
       "id": "meeting-large",
-      "name": "غرفة اجتماعات 08b",
+      "name": "غرفة اجتماعات",
       "short": "08b",
       "kind": "meeting",
       "status": "ready",
@@ -1683,7 +1683,7 @@
     },
     {
       "id": "store",
-      "name": "مستودع 09",
+      "name": "مستودع",
       "short": "09",
       "kind": "service",
       "status": "ready",
@@ -1719,7 +1719,7 @@
     },
     {
       "id": "data-center",
-      "name": "غرفة سيرفر 10",
+      "name": "غرفة سيرفر",
       "short": "10",
       "kind": "service",
       "status": "ready",
@@ -1764,7 +1764,7 @@
     },
     {
       "id": "core",
-      "name": "الدرج والمصعد 11",
+      "name": "الدرج والمصعد",
       "short": "11",
       "kind": "circulation",
       "status": "info",
@@ -1800,7 +1800,7 @@
     },
     {
       "id": "entrance",
-      "name": "بهو المصعد 11",
+      "name": "بهو المصعد",
       "short": "11",
       "kind": "circulation",
       "status": "ready",
@@ -1836,7 +1836,7 @@
     },
     {
       "id": "reception",
-      "name": "الاستقبال 12",
+      "name": "الاستقبال",
       "short": "12",
       "kind": "circulation",
       "status": "ready",
@@ -1910,7 +1910,7 @@
     },
     {
       "id": "lounge",
-      "name": "لاونج 13",
+      "name": "لاونج",
       "short": "13",
       "kind": "social",
       "status": "ready",
@@ -2004,7 +2004,7 @@
     },
     {
       "id": "bleachers",
-      "name": "مدرج جلوس داخلي 13",
+      "name": "مدرج جلوس داخلي",
       "short": "13",
       "kind": "social",
       "status": "ready",
@@ -2085,7 +2085,7 @@
       "summary": "ممرات الدور عند المصاعد ومدخل المكتب الخشبي بزجاج.",
       "hasModel": false,
       "key": "14",
-      "name": "الممرات 14",
+      "name": "الممرات",
       "short": "14",
       "use": {
         "current": "ممرات الدور ومدخل المكتب"
@@ -2199,7 +2199,7 @@
                 390,
                 860
               ],
-              "label": "مكاتب الموظفين 03f"
+              "label": "مكاتب موظفين"
             },
             {
               "roomId": "research",
@@ -2207,7 +2207,7 @@
                 331,
                 420
               ],
-              "label": "مكاتب الموظفين 03e"
+              "label": "مكاتب موظفين"
             },
             {
               "roomId": "inner-1",
@@ -2215,7 +2215,7 @@
                 420,
                 278
               ],
-              "label": "مكاتب الموظفين 03d"
+              "label": "مكاتب موظفين"
             },
             {
               "roomId": "open-a",
@@ -2223,7 +2223,7 @@
                 700,
                 278
               ],
-              "label": "مكاتب الموظفين 03a"
+              "label": "مكاتب موظفين"
             },
             {
               "roomId": "finance",
@@ -2231,7 +2231,7 @@
                 877,
                 300
               ],
-              "label": "مكاتب الموظفين 03c"
+              "label": "مكاتب موظفين"
             },
             {
               "roomId": "field-qc",
@@ -2239,7 +2239,7 @@
                 966,
                 700
               ],
-              "label": "مكاتب الموظفين 03b"
+              "label": "مكاتب موظفين"
             }
           ]
         },
@@ -2300,7 +2300,7 @@
                 420,
                 190
               ],
-              "label": "مكتب الرئيس التنفيذي 01"
+              "label": "مكتب"
             }
           ]
         },
@@ -2397,7 +2397,7 @@
                 860,
                 900
               ],
-              "label": "الاستقبال 12"
+              "label": "الاستقبال"
             },
             {
               "roomId": "lounge",
@@ -2405,7 +2405,7 @@
                 1050,
                 935
               ],
-              "label": "لاونج 13"
+              "label": "لاونج"
             },
             {
               "roomId": "meeting-medium",
@@ -2413,7 +2413,7 @@
                 1030,
                 220
               ],
-              "label": "غرفة اجتماعات 08a"
+              "label": "غرفة اجتماعات"
             },
             {
               "roomId": "meeting-large",
@@ -2421,7 +2421,7 @@
                 428,
                 560
               ],
-              "label": "غرفة اجتماعات 08b"
+              "label": "غرفة اجتماعات"
             }
           ]
         }
