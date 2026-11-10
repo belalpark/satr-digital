@@ -309,7 +309,7 @@
       "hasPhotos": true,
       "key": "01",
       "render": {
-        "image": "media/twin/rooms/ceo.webp",
+        "image": "media/twin/rooms/ceo.webp?v=c0c0da319e",
         "width": 1600,
         "height": 1000
       },
@@ -431,19 +431,19 @@
         {
           "src": "media/rooms/office-r2/02.webp",
           "thumb": "media/rooms/office-r2/thumbs/02.webp",
-          "caption": "مكتب العمل وخزانة الملفات",
+          "caption": "مكتب العمل وشاشة عرض على حامل",
           "source": "IMG_0259"
         },
         {
           "src": "media/rooms/office-r2/03.webp",
           "thumb": "media/rooms/office-r2/thumbs/03.webp",
-          "caption": "واجهة المكتب الزجاجية",
+          "caption": "مكتب العمل بجوار النافذة وشاشة العرض",
           "source": "IMG_0261"
         },
         {
           "src": "media/rooms/office-r2/04.webp",
           "thumb": "media/rooms/office-r2/thumbs/04.webp",
-          "caption": "زاوية الجلوس الجانبية",
+          "caption": "مكتب العمل وشاشة العرض من زاوية أخرى",
           "source": "IMG_0260"
         },
         {
@@ -659,7 +659,7 @@
       "hasPhotos": true,
       "key": "02e",
       "render": {
-        "image": "media/twin/rooms/coo.webp",
+        "image": "media/twin/rooms/coo.webp?v=19beb720b0",
         "width": 1600,
         "height": 1000
       },
@@ -739,7 +739,7 @@
       "hasPhotos": true,
       "key": "03a",
       "render": {
-        "image": "media/twin/rooms/open-a.webp",
+        "image": "media/twin/rooms/open-a.webp?v=dc05c0db9f",
         "width": 1600,
         "height": 1000
       },
@@ -825,7 +825,7 @@
       "hasPhotos": true,
       "key": "03b",
       "render": {
-        "image": "media/twin/rooms/field-qc.webp",
+        "image": "media/twin/rooms/field-qc.webp?v=5e640c0a6b",
         "width": 1600,
         "height": 1000
       },
@@ -1043,7 +1043,7 @@
       "hasPhotos": true,
       "key": "03e",
       "render": {
-        "image": "media/twin/rooms/research.webp",
+        "image": "media/twin/rooms/research.webp?v=7e6e7b0cbb",
         "width": 1600,
         "height": 1000
       },
@@ -1129,7 +1129,7 @@
       "hasPhotos": true,
       "key": "03f",
       "render": {
-        "image": "media/twin/rooms/hr-pmo-ops.webp",
+        "image": "media/twin/rooms/hr-pmo-ops.webp?v=3afc239891",
         "width": 1600,
         "height": 1000
       },
@@ -1374,7 +1374,7 @@
       "hasPhotos": true,
       "key": "06",
       "render": {
-        "image": "media/twin/rooms/women-area.webp",
+        "image": "media/twin/rooms/women-area.webp?v=f4e93fe93c",
         "width": 1600,
         "height": 1000
       },
@@ -1550,7 +1550,7 @@
       "hasPhotos": true,
       "key": "08a",
       "render": {
-        "image": "media/twin/rooms/meeting-medium.webp",
+        "image": "media/twin/rooms/meeting-medium.webp?v=26f1d0f9bd",
         "width": 1600,
         "height": 1000
       },
@@ -1675,7 +1675,7 @@
       "key": "08b",
       "photosConfidence": "key",
       "render": {
-        "image": "media/twin/rooms/meeting-large.webp",
+        "image": "media/twin/rooms/meeting-large.webp?v=333493434e",
         "width": 1600,
         "height": 1000
       },
@@ -1829,10 +1829,19 @@
       "use": {
         "current": "مدخل الدور ودرج الوصول"
       },
-      "photos": [],
+      "photos": [
+        {
+          "src": "media/rooms/entrance/01.webp",
+          "thumb": "media/rooms/entrance/thumbs/01.webp",
+          "caption": "المصاعد في بهو الدور",
+          "source": "IMG_0346"
+        }
+      ],
       "hasModel": true,
-      "hasPhotos": false,
-      "key": "11"
+      "hasPhotos": true,
+      "key": "11",
+      "photosConfidence": "key",
+      "cover": "media/rooms/entrance/cover.webp"
     },
     {
       "id": "reception",
@@ -1902,7 +1911,7 @@
       "hasPhotos": true,
       "key": "12",
       "render": {
-        "image": "media/twin/rooms/reception.webp",
+        "image": "media/twin/rooms/reception.webp?v=05617d0fc1",
         "width": 1600,
         "height": 1000
       },
@@ -1996,7 +2005,7 @@
       "hasPhotos": true,
       "key": "13",
       "render": {
-        "image": "media/twin/rooms/lounge.webp",
+        "image": "media/twin/rooms/lounge.webp?v=0b28f7d32d",
         "width": 1600,
         "height": 1000
       },
@@ -2072,7 +2081,7 @@
       "key": "13",
       "photosConfidence": "key",
       "render": {
-        "image": "media/twin/rooms/bleachers.webp",
+        "image": "media/twin/rooms/bleachers.webp?v=70094abc27",
         "width": 1600,
         "height": 1000
       },

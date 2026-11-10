@@ -72,6 +72,11 @@ ul { margin: 0; padding: 0; list-style: none; }
   visibility: hidden; pointer-events: none;
 }
 .view.is-active { visibility: visible; pointer-events: auto; }
+/* A hidden page hides everything inside it by rule, not by inheritance alone. Leaving a page while its
+   content was still fading in (within a fifth of a second of arriving) left that content visible and
+   clickable on top of the next page in Chrome: the element that had been animating kept the "visible" it
+   had inherited earlier. A rule that names every element does not depend on inheritance. */
+.view:not(.is-active) *, .view:not(.is-active) *::before, .view:not(.is-active) *::after { visibility: hidden !important; pointer-events: none !important; }
 .view-room { z-index: 3; }
 .view-details { z-index: 4; }
 .view-gallery { z-index: 2; }
@@ -609,7 +614,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   .room-sidebar.is-focus { position: relative; }
   .room-card { max-height: 38dvh; padding: 10px 12px 12px; gap: 6px; border-top: 0; animation: none; grid-template-rows: auto auto minmax(0, 1fr) auto auto; }
   .room-card .btn-sm { position: absolute; inset-inline-end: 12px; margin-top: 2px; }
-  .focus-title { font-size: 16px; padding-inline-end: 120px; }
+  .focus-title { font-size: 16px; padding-inline-end: 120px; min-height: 38px; display: flex; align-items: center; } /* as tall as the «back» button beside it: the photo strip below must not slide under that button */
   .focus-summary { display: none; }
   .focus-facts { grid-template-columns: 1fr 1fr; gap: 4px; overflow: auto; min-height: 0; }
   .focus-facts li { padding: 5px 8px; font-size: 12px; }

@@ -229,7 +229,7 @@ def build_materials():
     textured('stone', (0.5, 0.49, 0.47), (0.6, 0.59, 0.57), 0.55, 'stone', bump=0.05)
     textured('stone_light', (0.74, 0.71, 0.66), (0.84, 0.81, 0.76), 0.3, 'tiles', bump=0.04)
     textured('slab', (0.62, 0.6, 0.57), (0.7, 0.68, 0.64), 0.6, 'stone', bump=0.0)
-    textured('tile_grey', (0.55, 0.54, 0.52), (0.62, 0.61, 0.59), 0.32, 'tiles', scale=0.8, bump=0.03)   # corridors / reception: large grey porcelain (photos 0357, 0375, 0134)
+    textured('tile_grey', (0.33, 0.30, 0.26), (0.38, 0.345, 0.30), 0.32, 'tiles', scale=0.8, bump=0.03)   # corridors / reception: large warm-grey porcelain, mid-tone in the photos (0357, 0375, 0134)
     textured('walnut_dark', (0.09, 0.055, 0.035), (0.17, 0.1, 0.06), 0.3, 'grain', bump=0.04)              # CEO desk / meeting table (photos 0203-0218)
     principled('cabinet_white', (0.84, 0.83, 0.81), 0.28, coat=0.25)
     principled('shelf_black', (0.045, 0.045, 0.05), 0.5)
@@ -237,7 +237,7 @@ def build_materials():
     textured('oak', (0.5, 0.33, 0.18), (0.68, 0.48, 0.28), 0.42, 'grain', bump=0.04)
     textured('walnut', (0.16, 0.09, 0.05), (0.3, 0.18, 0.1), 0.35, 'grain', bump=0.04)
     textured('concrete', (0.36, 0.38, 0.41), (0.47, 0.49, 0.52), 0.75, 'stone', bump=0.08)
-    textured('moss', (0.05, 0.16, 0.04), (0.16, 0.34, 0.08), 0.9, 'stone', bump=0.6)
+    textured('moss', (0.03, 0.055, 0.025), (0.07, 0.115, 0.045), 0.9, 'stone', bump=0.6)   # planting: deep, muted green (ground cover seen from above), not a lawn-bright one
     textured('rug_beige', (0.62, 0.56, 0.47), (0.7, 0.64, 0.55), 0.95, 'carpet', bump=0.3)
     textured('rug_grey', (0.36, 0.37, 0.4), (0.44, 0.45, 0.48), 0.95, 'carpet', bump=0.3)
     textured('gravel', (0.56, 0.55, 0.52), (0.7, 0.69, 0.66), 0.9, 'carpet', bump=0.4)
@@ -926,18 +926,47 @@ def build_wc(col):
 
 
 def build_core(col):
-    """Service core (stairs + lifts) shown as a solid block; lift doors face the lobby."""
+    """Service core, open like the rest of the model: two lift cars behind their lobby doors and the two
+    stairwells. Positions follow the furniture plan (stairs north and south of the lifts); the lift
+    doors face the lobby as in photo 0346. Everything is cut at the model's wall height."""
     b = Builder('core')
-    pts = [tuple(W(x, y)[:2]) for x, y in ((502, 425), (688, 425), (688, 720), (502, 720))]
-    b.prism('core_top', pts, 0.0, L.WALL_H, side_mat='concrete')
-    for (p1, p2) in (((502, 425), (688, 425)), ((688, 425), (688, 720)), ((688, 720), (502, 720)), ((502, 720), (502, 425))):
-        b.seg_box('cap', W(*p1), W(*p2), 0.1, L.WALL_H, L.WALL_H + 0.012)
+    h = L.WALL_H
+    # --- lifts: two shafts against the lobby wall (x = 690), a steel car in each
+    sx0, sx1 = 626, 688
+    shafts = ((512, 568), (574, 630))
+    for ya, yb in shafts:
+        a, c = W(sx0 + 5, ya + 4), W(sx1 - 3, yb - 4)
+        cx, cy = (a.x + c.x) / 2, (a.y + c.y) / 2
+        b.box('tile', (cx, cy, 0.03), (abs(c.x - a.x), abs(c.y - a.y), 0.06))             # car floor
+        b.seg_box('steel', W(sx0 + 5, ya + 4), W(sx0 + 5, yb - 4), 0.035, 0.06, h - 0.08)   # back wall
+        b.seg_box('steel', W(sx0 + 5, ya + 4), W(sx1 - 3, ya + 4), 0.035, 0.06, h - 0.08)   # side walls
+        b.seg_box('steel', W(sx0 + 5, yb - 4), W(sx1 - 3, yb - 4), 0.035, 0.06, h - 0.08)
+        b.seg_box('metal_dark', W(sx0 + 8, ya + 8), W(sx0 + 8, yb - 8), 0.03, 0.9, 0.94)    # handrail
+    for p1, p2 in (((sx0, 506), (sx0, 636)), ((sx0, 506), (690, 506)), ((sx0, 571), (690, 571)), ((sx0, 636), (690, 636))):
+        solid(b, W(*p1), W(*p2), 0.18, 'concrete')
+    # lift doors on the lobby side of the core wall, with the call panel light above
     for ya, yb in ((522, 560), (584, 622)):
         a, c = W(692, ya), W(692, yb)
-        b.seg_box('steel', a, c, 0.05, 0.0, L.WALL_H - 0.02)
+        b.seg_box('steel', a, c, 0.05, 0.0, h - 0.02)
         mid = (ya + yb) / 2
-        b.seg_box('metal_dark', W(693, mid - 0.4), W(693, mid + 0.4), 0.055, 0.0, L.WALL_H - 0.02)
-        b.seg_box('led', W(694, ya - 2), W(694, yb + 2), 0.02, L.WALL_H - 0.05, L.WALL_H - 0.03)
+        b.seg_box('metal_dark', W(693, mid - 0.4), W(693, mid + 0.4), 0.055, 0.0, h - 0.02)
+        b.seg_box('led', W(694, ya - 2), W(694, yb + 2), 0.02, h - 0.05, h - 0.03)
+    # --- stairwells: two flights side by side with a stringer wall between them, rising to the cut
+    x0, x1, steps = 542, 624, 10
+    tread = (x1 - x0) / steps
+    rise = (h - 0.04) / steps
+    for y0, y1 in ((431, 499), (645, 714)):
+        ym = (y0 + y1) / 2
+        for i in range(steps):
+            top = rise * (i + 1)
+            # the northern flight climbs toward the east, its twin toward the west
+            for ya, yb, k in ((y0, ym - 3, i), (ym + 3, y1, steps - 1 - i)):
+                p, q = W(x0 + k * tread, ya), W(x0 + (k + 1) * tread, yb)
+                b.box('stone_light', ((p.x + q.x) / 2, (p.y + q.y) / 2, top / 2), (abs(q.x - p.x), abs(q.y - p.y), top), bevel=0.006)
+        b.seg_box('plaster', W(x0, ym), W(x1, ym), 0.1, 0.0, 1.05)
+        b.seg_box('cap', W(x0, ym), W(x1, ym), 0.104, 1.05, 1.062)
+        b.seg_box('metal_dark', W(x0, y0 - 1), W(x1, y0 - 1), 0.03, 0.9, 0.94)               # wall handrails
+        b.seg_box('metal_dark', W(x0, y1 + 1), W(x1, y1 + 1), 0.03, 0.9, 0.94)
     b.to_object(col)
 
 
@@ -1108,9 +1137,9 @@ def build_lights(col, office, energy):
         nx = max(1, round((x1 - x0) / step))
         ny = max(1, round((y1 - y0) / step))
         k = 1.0 if r['kind'] in ('office', 'meeting') else 0.85
-        if r['id'] in ('core', 'store', 'data-center'):
+        if r['id'] in ('store', 'data-center'):
             continue
-        if r['kind'] == 'service':
+        if r['kind'] == 'service' or r['id'] == 'core':
             k = 0.5
         for i in range(nx):
             for j in range(ny):

@@ -3,8 +3,9 @@
     .blender/bin/python tools/twin/export_web.py --out media/twin/web
 
 Writes:
-    <out>/office.glb        geometry + PBR materials (procedural textures baked to tiles)
-    <out>/scene.json        lights (position, colour, power), room metadata for the viewer
+    <out>/office.glb        geometry + PBR materials (procedural textures baked to tiles, embedded as WebP)
+    <out>/scene.json        room metadata for the viewer, the ceiling lights as data, and the `light` block
+                            of the baked light maps when tools/twin/finish_light.py has published them
 
 Procedural node materials cannot be exported, so each textured material is
 baked to a tileable 512 px albedo (+ normal from the bump) tile; plain
@@ -12,6 +13,8 @@ Principled materials export as constants; glass becomes a transmissive,
 low-alpha material; emissive strips keep their colour and strength.
 """
 import argparse
+import hashlib
+import tempfile
 import json
 import math
 import os
@@ -70,6 +73,7 @@ def main():
     ap.add_argument('--no-bake', action='store_true', help='flat colours instead of baked texture tiles (fast check)')
     args = ap.parse_args(sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:])
     os.makedirs(args.out, exist_ok=True)
+    tile_dir = tempfile.mkdtemp(prefix='twin-tiles-')
 
     with open(os.path.join(ROOT, 'data', 'office.json'), encoding='utf-8') as fh:
         office = json.load(fh)
@@ -117,9 +121,11 @@ def main():
             nodes.clear()
             out = nodes.new('ShaderNodeOutputMaterial')
             p = nodes.new('ShaderNodeBsdfPrincipled')
-            p.inputs['Base Color'].default_value = (0.75, 0.86, 0.9, 1) if name == 'glass_ext' else (0.86, 0.93, 0.95, 1)
-            p.inputs['Roughness'].default_value = 0.05
-            p.inputs['Alpha'].default_value = 0.22 if name == 'glass_ext' else 0.16
+            # a grey-green tint at low alpha: under the baked light a white pane would lay a milky veil over
+            # the room behind it; the glass reads through its reflections and its dark frames instead
+            p.inputs['Base Color'].default_value = (0.36, 0.5, 0.56, 1) if name == 'glass_ext' else (0.42, 0.55, 0.6, 1)
+            p.inputs['Roughness'].default_value = 0.06
+            p.inputs['Alpha'].default_value = 0.22 if name == 'glass_ext' else 0.18
             nt.links.new(p.outputs['BSDF'], out.inputs['Surface'])
             mat.blend_method = 'BLEND'
             mat['web_kind'] = 'glass'
@@ -142,7 +148,7 @@ def main():
         if linked and not args.no_bake:
             metres = TILE_METRES.get(name, 1.0)
             img = bake_tile(mat, BAKE_TILE, metres)
-            path = os.path.join(args.out, f'tex_{name}.png')
+            path = os.path.join(tile_dir, f'tex_{name}.png')  # scratch: the exporter embeds the tiles in the GLB
             img.filepath_raw = path
             img.file_format = 'PNG'
             img.save()
@@ -216,11 +222,15 @@ def main():
         obj.select_set(True)
     bpy.ops.export_scene.gltf(
         filepath=glb, export_format='GLB', use_selection=True,
-        export_apply=True, export_yup=True, export_materials='EXPORT', export_image_format='AUTO',
+        export_apply=True, export_yup=True, export_materials='EXPORT', export_image_format='WEBP', export_image_quality=90,
         export_texcoords=True, export_normals=True, export_lights=False, export_cameras=False,
         export_extras=False, export_animations=False,
     )
+    with open(glb, 'rb') as fh:
+        stamp = hashlib.sha1(fh.read()).hexdigest()[:10]
     info = {
+        # the model is cached for days by the host: its address changes whenever its bytes do
+        'glb': f'office.glb?v={stamp}',
         'scale': L.SCALE,
         'wallHeight': L.WALL_H,
         'slab': L.SLAB,
@@ -233,7 +243,14 @@ def main():
         'rooms': rooms,
         'baked': baked,
     }
-    with open(os.path.join(args.out, 'scene.json'), 'w', encoding='utf-8') as fh:
+    scene_path = os.path.join(args.out, 'scene.json')
+    if os.path.exists(scene_path):
+        # the baked light maps are published separately (tools/twin/finish_light.py): keep their record
+        with open(scene_path, encoding='utf-8') as fh:
+            light = json.load(fh).get('light')
+        if light:
+            info['light'] = light
+    with open(scene_path, 'w', encoding='utf-8') as fh:
         json.dump(info, fh, ensure_ascii=False, indent=1)
     print(f'exported {glb} ({os.path.getsize(glb) // 1024} KB), lights: {len(lights)}, baked: {sorted(baked)}')
 

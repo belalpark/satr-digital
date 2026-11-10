@@ -2,6 +2,7 @@
 //
 //   node tests/e2e/flow.mjs            → docs/qa/<yyyy-mm-dd>/<device>-<nn>-<step>.jpg
 //   PLAYWRIGHT_MODULE=/path/to/playwright/index.js node tests/e2e/flow.mjs
+//   E2E_FLOW=desktop|mobile runs one flow; E2E_UNTIL=2d-plan stops before the 3D steps (a fast loop, no WebGL)
 //
 // The live 3D model needs WebGL; headless Chromium gets SwiftShader (software GL),
 // so the model takes 10-20 s to load there. Exits non-zero on the first failed assertion.
@@ -52,7 +53,9 @@ async function flow(name, contextOptions, { mobile, team }) {
     window.__viewFrames = [];
     const t0 = performance.now();
     const tick = (now) => {
-      const vis = [...document.querySelectorAll('.view')].filter((v) => { const cs = getComputedStyle(v); return cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0.02; }).map((v) => v.dataset.view);
+      // a page is on screen when the page itself or any of its blocks can be seen (a hidden page whose content
+      // stayed visible is still "on screen" for the visitor)
+      const vis = [...document.querySelectorAll('.view')].filter((v) => { const cs = getComputedStyle(v); return (cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0.02) || [...v.children].some((c) => !c.hidden && getComputedStyle(c).visibility === 'visible'); }).map((v) => v.dataset.view);
       window.__viewFrames.push(vis);
       if (now - t0 < 900) requestAnimationFrame(tick);
     };
@@ -64,6 +67,20 @@ async function flow(name, contextOptions, { mobile, team }) {
     const both = frames.filter((f) => f.length > 1);
     assert.ok(frames.length > 3 && both.length === 0, `${what}: one page on screen per frame (${both.length} of ${frames.length} frames showed ${JSON.stringify(both[0] || [])})`);
   };
+  // what is left on screen of the pages that are not the current one: visible elements, and points of the
+  // viewport where the pointer would reach one of them ('' = nothing)
+  const leftover = () => page.evaluate(() => {
+    const out = [];
+    for (const v of document.querySelectorAll('.view:not(.is-active)')) {
+      const k = [...v.querySelectorAll('*')].filter((e) => getComputedStyle(e).visibility === 'visible' && e.getClientRects().length).length;
+      if (k) out.push(`${v.dataset.view}: ${k} elements visible`);
+    }
+    const cur = document.getElementById('app').dataset.currentView;
+    let wrong = 0;
+    for (let x = 0.1; x < 1; x += 0.2) for (let y = 0.15; y < 1; y += 0.14) { const e = document.elementFromPoint(innerWidth * x, innerHeight * y); const v = e && e.closest('.view'); if (v && v.dataset.view !== cur) wrong += 1; }
+    if (wrong) out.push(`the pointer reaches another page at ${wrong} points`);
+    return out.join('; ');
+  });
   const modelReady = () => page.waitForSelector('#plan-stage.is-ready', { timeout: 120000 });
   const focusedOn = (id) => page.waitForFunction((rid) => document.getElementById('plan-stage').dataset.focus === rid, id, { timeout: 60000 });
   // the camera flight has ended and one more frame was drawn (software GL can take seconds per frame)
@@ -311,6 +328,27 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.match(await page.textContent('#btn-back-plan'), /العودة للمعرض/);
     await click('#btn-back-plan');
     await page.waitForFunction(() => location.hash === '#/gallery');
+    // A quick visitor: back to the gallery, then straight on to a room while the gallery's content is still
+    // fading in. Nothing of the gallery may stay visible or clickable over the plan. It did, in Chrome, in
+    // roughly one visit out of two of exactly this kind (a real click on a card after a repaint, back, on):
+    // the block that had been animating kept the "visible" it had inherited before its page was hidden.
+    for (let round = 1; round <= 5; round++) {
+      await page.goto(`${url}/#/room/meeting-large`);
+      await page.waitForFunction(() => !document.getElementById('focus-thumbs').hidden);
+      await page.waitForTimeout(350); // longer than the fade-in
+      assert.equal(await leftover(), '', `leaving the gallery at once leaves nothing of it on screen (round ${round})`);
+      await page.goto(`${url}/#/plan`);
+      await page.waitForFunction(() => document.getElementById('app').dataset.currentView === 'plan' && location.hash === '#/plan');
+      await click('.site-nav a[data-nav="gallery"]');
+      await page.waitForFunction(() => location.hash === '#/gallery' && document.getElementById('app').dataset.currentView === 'gallery');
+      await page.waitForTimeout(250);
+      await page.screenshot({ type: 'jpeg', quality: 30 }); // the repaint is part of the recipe (not saved)
+      await page.locator('#gallery-grid .gallery-card[data-id="bleachers"]').click();
+      await page.waitForFunction(() => location.hash === '#/room/bleachers/photos' && document.getElementById('app').dataset.currentView === 'photos');
+      await page.waitForTimeout(950);
+      await click('#btn-back-plan');
+      await page.waitForFunction(() => location.hash === '#/gallery');
+    }
     // the room card shows the first photos as a strip; a thumbnail opens the photos at that picture
     await page.goto(`${url}/#/room/meeting-large`);
     await page.waitForFunction(() => !document.getElementById('focus-thumbs').hidden);
@@ -338,6 +376,8 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.match(await page.textContent('#btn-back-plan'), /العودة للمنظور/);
     await page.goto(`${url}/#/plan`);
     await page.waitForFunction(() => !document.getElementById('plan2d-stage').dataset.focus);
+
+    if (process.env.E2E_UNTIL === '2d-plan') { console.log(`✓ ${name}: 2D steps passed (E2E_UNTIL)`); return; } // quick loop over the steps that need no WebGL
 
     // 2. switch to the live 3D model: two scene tabs, sidebar list, dots legend
     step = '2 plan 3D';
@@ -368,12 +408,33 @@ async function flow(name, contextOptions, { mobile, team }) {
     // 2b. lighting toggle: day by default, evening on request, remembered
     step = '2b lighting';
     assert.equal(await page.getAttribute('#plan-stage', 'data-lighting'), 'day', 'daylight by default');
+    assert.equal(await page.getAttribute('#plan-stage', 'data-lit'), 'day', 'the baked daylight is on the model');
+    // mean brightness of the canvas: the baked evening is clearly darker than the baked day, and neither is black
+    const meanLuma = () => page.evaluate(async () => {
+      const url = document.getElementById('plan-stage').__twin.snapshot(0.8);
+      const img = new Image();
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+      const c = document.createElement('canvas');
+      c.width = 96; c.height = 60;
+      const g = c.getContext('2d');
+      g.drawImage(img, 0, 0, 96, 60);
+      const d = g.getImageData(24, 15, 48, 30).data; // the middle of the stage: the model
+      let s = 0;
+      for (let i = 0; i < d.length; i += 4) s += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+      return s / (d.length / 4);
+    });
+    const lumaDay = await meanLuma();
     await click('#btn-lighting');
     await page.waitForFunction(() => document.getElementById('plan-stage').dataset.lighting === 'night');
+    await page.waitForFunction(() => document.getElementById('plan-stage').dataset.lit === 'night', null, { timeout: 60000 }); // the evening maps load on demand
+    const lumaNight = await meanLuma();
+    assert.ok(lumaDay > 55, `baked daylight lights the model (mean luma ${lumaDay.toFixed(0)})`);
+    assert.ok(lumaNight > 14 && lumaNight < lumaDay * 0.8, `baked evening: darker than the day, not black (day ${lumaDay.toFixed(0)}, night ${lumaNight.toFixed(0)})`);
     await page.waitForTimeout(900);
     await shot('night');
     await click('#btn-lighting');
     await page.waitForFunction(() => document.getElementById('plan-stage').dataset.lighting === 'day');
+    await page.waitForFunction(() => document.getElementById('plan-stage').dataset.lit === 'day');
 
     // 2c. routes: three colours, each can be toggled; employees loop, guests to meetings + lounge
     step = '2c routes';
@@ -422,6 +483,9 @@ async function flow(name, contextOptions, { mobile, team }) {
       const bb = await page.locator(sel).boundingBox();
       assert.ok(bb && bb.y >= 0 && bb.y + bb.height <= page.viewportSize().height, `${sel} inside the viewport`);
     }
+    // the «back» button sits beside the room name, clear of the photo strip under it (on phones it overlapped the strip)
+    const cardGap = await page.evaluate(() => document.getElementById('focus-thumbs').getBoundingClientRect().top - document.getElementById('btn-focus-back').getBoundingClientRect().bottom);
+    assert.ok(cardGap >= 0, `the photo strip starts below the «back» button (gap ${cardGap.toFixed(1)}px)`);
     await shot('focus');
 
     // 3b. clicking the same room again returns to the plan; clicking another room switches
@@ -433,13 +497,20 @@ async function flow(name, contextOptions, { mobile, team }) {
     await click('#room-list .room-item-btn[data-id="ceo"]');
     await page.waitForFunction(() => location.hash === '#/room/ceo');
     await focusedOn('ceo');
-    await click('#room-list .room-item-btn[data-id="meeting-large"]');
-    await page.waitForFunction(() => location.hash === '#/room/meeting-large');
-    await focusedOn('meeting-large');
 
-    // 4. red dot / photos button -> real photos, gallery, back to the model
+    // 4. photos button -> real photos, gallery, back to the model.
+    // A quick visitor opens the photos while the camera is still flying to the room: hidden behind the photos,
+    // the model must not keep drawing that flight (wasted GPU work; on a slow GPU the unseen frames piled up
+    // and froze the page for a long while on the way back)
     step = '4 photos';
-    await click('#btn-photos');
+    await page.evaluate(() => {
+      window.__hiddenFrames = 0;
+      window.__stopCount = document.getElementById('plan-stage').__twin.onFrame(() => { if (document.getElementById('app').dataset.currentView !== 'plan') window.__hiddenFrames += 1; });
+    });
+    await page.evaluate(() => new Promise((res) => {
+      document.querySelector('#room-list .room-item-btn[data-id="meeting-large"]').click();
+      setTimeout(() => { document.getElementById('btn-photos').click(); res(); }, 60); // the 1.1 s flight has only begun
+    }));
     await page.waitForFunction(() => location.hash === '#/room/meeting-large/photos');
     await page.waitForFunction(() => {
       const img = document.getElementById('room-photo');
@@ -451,10 +522,21 @@ async function flow(name, contextOptions, { mobile, team }) {
     await click('#gallery-next');
     await page.waitForTimeout(400);
     assert.ok((await page.getAttribute('#room-photo', 'src')).includes('/02.webp'), 'second photo shown');
+    assert.equal(await page.evaluate(() => window.__hiddenFrames), 0, 'the 3D model draws nothing behind the photos');
     await click('#btn-back-plan');
     await page.waitForFunction(() => location.hash === '#/room/meeting-large');
     await page.waitForTimeout(500);
     assert.ok(await page.isVisible('#room-card'), 'back on the 3D view of the room');
+    // the flight that was cut short landed on the room: the first frame back shows its close-up, at rest
+    await focusedOn('meeting-large');
+    await settled();
+    await page.evaluate(() => window.__stopCount());
+    const landed = await page.evaluate(() => {
+      const st = document.getElementById('plan-stage');
+      const b = st.__twin.roomScreenBox('meeting-large');
+      return { size: Math.max(b.w, b.h), stage: Math.min(st.clientWidth, st.clientHeight) };
+    });
+    assert.ok(landed.size > landed.stage * (mobile ? 0.22 : 0.3), `back from the photos the camera rests on the room (room ${landed.size.toFixed(0)}px on a ${landed.stage.toFixed(0)}px stage)`);
 
     // 4b. a room with photos but no documented capacity still opens its photos (red dot)
     step = '4b other room photos';
@@ -484,7 +566,7 @@ async function flow(name, contextOptions, { mobile, team }) {
     await page.waitForFunction(() => { const i = document.querySelector('#details-stage .details-render'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 60000 });
     // the centre image is the furnished Cycles perspective of this room, not a plan snapshot
     const detailsSrc = await page.getAttribute('#details-stage .details-render', 'src');
-    assert.ok(detailsSrc.endsWith('media/twin/rooms/meeting-large.webp'), `room render shown, got ${detailsSrc}`);
+    assert.match(detailsSrc, /media\/twin\/rooms\/meeting-large\.webp\?v=[0-9a-f]{10}$/, `room render shown at its fingerprinted address, got ${detailsSrc}`);
     assert.ok((await page.textContent('#view-details .details-plan-caption')).includes('بفرشها'), 'render caption');
     // thumbnails keep their 3:2 size inside the scrolling photos panel (rows must not share the panel height)
     const thumbH = await page.evaluate(() => document.querySelector('#details-photos button').getBoundingClientRect().height);
@@ -775,7 +857,18 @@ async function flow(name, contextOptions, { mobile, team }) {
   } catch (err) {
     failures += 1;
     console.error(`✗ ${name} at step "${step}": ${err.message.split('\n')[0]}`);
-    const state = await page.evaluate(() => ({ hash: location.hash, view: document.getElementById('app').dataset.currentView })).catch(() => null);
+    // Playwright's call log says why an action waited (covered by another element, not stable, ...)
+    for (const line of err.message.split('\n').slice(1, 16)) console.error(`    ${line.trim()}`);
+    const state = await page.evaluate(() => ({
+      hash: location.hash,
+      view: document.getElementById('app').dataset.currentView,
+      // every page and whether anything of it can still be seen (a hidden page must hide its content too)
+      pages: [...document.querySelectorAll('.view')].map((v) => {
+        const shown = [...v.querySelectorAll('*')].filter((e) => getComputedStyle(e).visibility === 'visible' && e.getClientRects().length).length;
+        return `${v.dataset.view}:${v.classList.contains('is-active') ? 'active' : 'off'}/${getComputedStyle(v).visibility}/${shown} shown`;
+      }),
+      centre: (() => { const e = document.elementFromPoint(innerWidth / 2, innerHeight / 2); return e ? `${e.tagName}.${String(e.className).slice(0, 40)} in ${e.closest('.view') ? e.closest('.view').dataset.view : '-'}` : null; })(),
+    })).catch(() => null);
     console.error(`  state: ${JSON.stringify(state)}; page errors: ${JSON.stringify(errors)}`);
     await page.screenshot({ path: resolve(outDir, `${name}-FAILED.png`), timeout: 60000 }).catch(() => {});
   } finally {
@@ -783,8 +876,9 @@ async function flow(name, contextOptions, { mobile, team }) {
   }
 }
 
-await flow('desktop', { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 }, { mobile: false, team: true });
-await flow('mobile', { ...devices['iPhone 13'], deviceScaleFactor: 1 }, { mobile: true, team: false });
+const only = process.env.E2E_FLOW; // "desktop" or "mobile": run one of the two flows
+if (only !== 'mobile') await flow('desktop', { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 }, { mobile: false, team: true });
+if (only !== 'desktop') await flow('mobile', { ...devices['iPhone 13'], deviceScaleFactor: 1 }, { mobile: true, team: false });
 
 await browser.close();
 server.close();

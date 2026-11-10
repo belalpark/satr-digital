@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const data = JSON.parse(readFileSync(resolve(root, 'data/office.json'), 'utf8'));
@@ -95,8 +96,11 @@ test('room perspective renders (where present) exist and only belong to modelled
   assert.ok(rendered.length >= 10, `expected the main rooms to carry a render, got ${rendered.length}`);
   for (const r of rendered) {
     assert.notEqual(r.hasModel, false, `${r.id} has no model but carries a render`);
-    assert.match(r.render.image, /^media\/twin\/rooms\/[a-z0-9-]+\.webp$/, `${r.id} render path`);
-    assert.ok(existsSync(resolve(root, r.render.image)), `missing ${r.render.image}`);
+    // the host caches images for a month: the address carries the file's fingerprint, so a re-render is seen at once
+    const m = r.render.image.match(/^(media\/twin\/rooms\/[a-z0-9-]+\.webp)\?v=([0-9a-f]{10})$/);
+    assert.ok(m, `${r.id} render path with its fingerprint (${r.render.image})`);
+    assert.ok(existsSync(resolve(root, m[1])), `missing ${m[1]}`);
+    assert.equal(m[2], createHash('sha1').update(readFileSync(resolve(root, m[1]))).digest('hex').slice(0, 10), `${r.id}: the fingerprint is the file's (run tools/twin/finish_rooms.py --restamp)`);
     assert.ok(r.render.width > r.render.height, `${r.id} render is landscape`);
   }
 });
@@ -283,4 +287,50 @@ test('room names carry no plan codes; offices are «مكتب», employee areas �
   }
   // the key-plan codes stay in the data (photos key, routes), they are just not shown
   assert.ok(data.rooms.every((r) => r.key), 'every room keeps its key-plan code');
+});
+
+test('live 3D: baked light maps are published and cover the model (no real-time lights in the viewer)', () => {
+  const sceneInfo = JSON.parse(readFileSync(resolve(root, data.office.model.scene), 'utf8'));
+  const dir = dirname(resolve(root, data.office.model.scene));
+  const L = sceneInfo.light;
+  assert.ok(L, 'scene.json carries the light block (tools/twin/finish_light.py)');
+  assert.ok(L.gain > 0 && L.rect.w > 0 && L.rect.h > 0);
+  // the maps' rectangle (Blender x/y, metres) contains the whole office outline, with ground to spare
+  assert.ok(L.rect.x0 < sceneInfo.bounds.min[0] - 2 && L.rect.y0 < sceneInfo.bounds.min[1] - 2, 'rect starts beyond the outline');
+  assert.ok(L.rect.x0 + L.rect.w > sceneInfo.bounds.max[0] + 2 && L.rect.y0 + L.rect.h > sceneInfo.bounds.max[1] + 2, 'rect ends beyond the outline');
+  for (const mood of ['day', 'night']) {
+    assert.equal(L.moods[mood].length, 2, `${mood}: structure map + furniture map`);
+    for (const f of L.moods[mood]) {
+      assert.match(f, /^light_[a-z]+_[ab]\.webp\?v=[0-9a-f]{6,}$/, `${f}: versioned address (the host caches images for a month)`);
+      const file = resolve(dir, f.split('?')[0]);
+      assert.ok(existsSync(file), `${f} exists`);
+      assert.ok(statSync(file).size < 1500 * 1024, `${f} stays light`);
+    }
+  }
+  assert.notDeepEqual(L.moods.day, L.moods.night, 'the evening has its own maps');
+  assert.ok(L.static.includes('architecture'));
+  // the model's address is versioned too, and the file is there
+  assert.match(sceneInfo.glb, /^office\.glb\?v=[0-9a-f]{6,}$/);
+  assert.ok(existsSync(resolve(dir, 'office.glb')));
+  // the viewer multiplies its materials by the maps: no lights, no shadow maps
+  const viewer = readFileSync(resolve(root, 'assets/js/twin3d.js'), 'utf8');
+  assert.doesNotMatch(viewer, /new T\.(DirectionalLight|PointLight|SpotLight|HemisphereLight|AmbientLight)\b|shadowMap\.enabled\s*=\s*true/, 'no real-time lights');
+});
+
+test('one page on screen: a hidden page hides its content by rule, and the 3D viewer draws nothing while covered', () => {
+  // Leaving a page while its content was still fading in left that content visible and clickable over the
+  // next page (Chrome kept the visibility the animated block had inherited earlier). The rule must name the
+  // elements themselves, with !important, so it never depends on inheritance.
+  const css = readFileSync(resolve(root, 'assets/css/app.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = css.match(/\.view:not\(\.is-active\) \*[^{]*\{([^}]*)\}/);
+  assert.ok(rule, 'app.css hides every element of a page that is not the active one');
+  assert.match(rule[1], /visibility:\s*hidden\s*!important/, 'visibility is forced on each element');
+  assert.match(rule[1], /pointer-events:\s*none\s*!important/, 'and so are pointer events');
+  // A camera flight used to keep rendering behind the photos page: unseen frames, and on a slow GPU a long
+  // freeze on the way back. The frame loop and the flights must both check that the stage can be seen.
+  const viewer = readFileSync(resolve(root, 'assets/js/twin3d.js'), 'utf8');
+  const frame = viewer.slice(viewer.indexOf('function frame(now)'), viewer.indexOf('function frame(now)') + 400);
+  assert.match(frame, /if \(unseen\(\)\)/, 'frame() draws nothing while the stage is covered');
+  assert.match(viewer, /function flyTo[\s\S]{0,400}reducedMotion \|\| unseen\(\)/, 'a flight nobody can see lands at once');
+  assert.match(viewer, /function requestRender[\s\S]{0,400}if \(unseen\(\)\) return;/, 'no frame is queued while covered');
 });

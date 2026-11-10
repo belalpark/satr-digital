@@ -1,4 +1,5 @@
 {
+ "glb": "office.glb?v=37b7776f65",
  "scale": 32.0,
  "wallHeight": 1.4,
  "slab": 0.32,
@@ -534,6 +535,90 @@
     0.52
    ],
    "power": 1.0
+  },
+  {
+   "type": "spot",
+   "pos": [
+    -2.891,
+    3.271,
+    2.75
+   ],
+   "color": [
+    1.0,
+    0.78,
+    0.52
+   ],
+   "power": 0.5
+  },
+  {
+   "type": "spot",
+   "pos": [
+    -2.891,
+    0.156,
+    2.75
+   ],
+   "color": [
+    1.0,
+    0.78,
+    0.52
+   ],
+   "power": 0.5
+  },
+  {
+   "type": "spot",
+   "pos": [
+    -2.891,
+    -2.958,
+    2.75
+   ],
+   "color": [
+    1.0,
+    0.78,
+    0.52
+   ],
+   "power": 0.5
+  },
+  {
+   "type": "spot",
+   "pos": [
+    0.078,
+    3.271,
+    2.75
+   ],
+   "color": [
+    1.0,
+    0.78,
+    0.52
+   ],
+   "power": 0.5
+  },
+  {
+   "type": "spot",
+   "pos": [
+    0.078,
+    0.156,
+    2.75
+   ],
+   "color": [
+    1.0,
+    0.78,
+    0.52
+   ],
+   "power": 0.5
+  },
+  {
+   "type": "spot",
+   "pos": [
+    0.078,
+    -2.958,
+    2.75
+   ],
+   "color": [
+    1.0,
+    0.78,
+    0.52
+   ],
+   "power": 0.5
   },
   {
    "type": "spot",
@@ -1789,19 +1874,65 @@
   }
  ],
  "baked": {
-  "slab": 2.0,
-  "moss": 1.0,
-  "wood_deck": 2.5,
-  "oak": 1.0,
-  "walnut_dark": 1.0,
-  "stone": 2.0,
-  "tile": 1.2,
-  "carpet_blue": 1.0,
   "carpet_grey": 1.0,
-  "concrete": 2.0,
-  "walnut": 1.0,
   "tile_grey": 1.0,
+  "tile": 1.2,
   "stone_light": 1.2,
+  "wood_deck": 2.5,
+  "stone": 2.0,
+  "concrete": 2.0,
+  "oak": 1.0,
+  "moss": 1.0,
+  "walnut_dark": 1.0,
+  "carpet_blue": 1.0,
+  "walnut": 1.0,
+  "slab": 2.0,
   "rug_beige": 1.0
+ },
+ "light": {
+  "rect": {
+   "x0": -24.125,
+   "y0": -23.7969,
+   "w": 48.5,
+   "h": 47.5938
+  },
+  "gain": 2.0,
+  "static": [
+   "architecture",
+   "reception",
+   "feature_shelves",
+   "bleachers",
+   "platform",
+   "wc",
+   "core",
+   "tv_wall",
+   "green_wall",
+   "rug",
+   "stage"
+  ],
+  "size": {
+   "day": [
+    3072,
+    3016
+   ],
+   "night": [
+    1536,
+    1508
+   ]
+  },
+  "samples": {
+   "day": 40,
+   "night": 56
+  },
+  "moods": {
+   "day": [
+    "light_day_a.webp?v=683558c120",
+    "light_day_b.webp?v=0aeae0dfc2"
+   ],
+   "night": [
+    "light_night_a.webp?v=784bd71eb6",
+    "light_night_b.webp?v=1c5c78bc71"
+   ]
+  }
  }
 }

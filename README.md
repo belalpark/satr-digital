@@ -32,7 +32,7 @@ index.html                 صفحة واحدة؛ التطبيق يبدّل ال�
 assets/js/app.js           نقطة الدخول: التوجيه، الهيدر، الترحيب، القائمة الجانبية وبطاقة الغرفة، المشاهد
 assets/js/router.js        #/ ، #/plan[?scene=paths] ، #/room/:id (المنظور القريب) ، #/room/:id/photos ، #/room/:id/details
 assets/js/plan2d.js        مخطط المكتب ثنائي الأبعاد: الصورة + طبقة SVG (الغرف، التعتيم، المسارات)، سحب وتكبير — الواجهة نفسها التي يقدمها العارض الحي
-assets/js/twin3d.js        العارض الحي (three.js): تحميل glTF، التدوير حول محور ثابت/التكبير، نهار/مساء، مُنظِّم جودة تكيفي، التركيز على غرفة، المسارات، الإسقاط للشاشة
+assets/js/twin3d.js        العارض الحي (three.js): تحميل glTF، **إضاءة مخبوزة من Cycles** (خرائط ضوء علوية تُضرب في خامات النموذج؛ لا أضواء لحظية ولا خرائط ظل)، التدوير حول محور ثابت/التكبير، نهار/مساء، مُنظِّم دقة تكيفي، التركيز على غرفة، المسارات، الإسقاط للشاشة
 assets/js/overlay.js       النقاط الوامضة والمسميات (داخل المخطط أو خارجه بأسهم) فوق العارض
 assets/js/room.js          صور الغرفة الحقيقية (معرض)
 assets/js/details.js       لوحة التفاصيل (3 أعمدة / تبويبان)، وفي وسطها رندر الغرفة أو لقطة من النموذج الحي
@@ -42,11 +42,11 @@ data/office.json           سجل المكتب — مصدر الحقيقة ال�
 media/plan/office-2d.webp  مخطط المكتب — الصورة الأساسية الخفيفة (1.6× المخطط المرجعي 1309×1201)
 media/plan/tiles/          مربعات الدقة العالية (4×، تكبير Real-ESRGAN للمخطط الأول) تُجلب فقط للجزء الظاهر عند التكبير
 media/rooms/<id>/cover.webp  غلاف بطاقة المعرض (960 بكسل) — tools/make_covers.py
-media/twin/web/            النموذج للمتصفح: office.glb + scene.json (الإضاءات ومراسي الغرف) + خامات مخبوزة
+media/twin/web/            النموذج للمتصفح: office.glb (الخامات المخبوزة مضمّنة WebP) + scene.json (مراسي الغرف وسجل خرائط الضوء) + light_<day|night>_<a|b>.webp (خرائط الضوء المخبوزة)
 media/twin/rooms/          لقطات Cycles قريبة لكل غرفة (تُعرض في صفحة التفاصيل)
 media/twin/                رندرات Cycles الثابتة (اللقطة الثانية لغرفة الاجتماعات، للتفاصيل)
 media/rooms, media/hero    الصور الحقيقية المنشورة (WebP) — الأصول خارج المستودع
-tools/twin/                layout.py (الجدران/الأبواب/الفرش)، build_twin.py (Blender/Cycles)، export_web.py (glTF)، finish.py
+tools/twin/                layout.py (الجدران/الأبواب/الفرش)، build_twin.py (Blender/Cycles)، export_web.py (glTF)، bake_light.py + finish_light.py (خرائط الضوء للعارض الحي)، finish_rooms.py (لقطات الغرف)، finish.py
 tools/key_index.json       دليل المساحات من صاحب المشروع: رمز كل فراغ ← أرقام صوره (المرجع المعتمد لتوزيع الصور)
 tools/photos_proposal.json التوزيع المقترح السابق (قبل الدليل) مع أسباب استبعاد الصور
 tools/                     اشتقاق الصور، إزالة الشعارات، تجميع نشرة Pages
@@ -80,11 +80,46 @@ docs/qa/<تاريخ>/           لقطات الاختبار الشامل لكل 
 
 ```bash
 uv venv --python 3.11 .blender && uv pip install --python .blender/bin/python bpy==5.0.1
-.blender/bin/python tools/twin/export_web.py --out media/twin/web       # office.glb + scene.json + خامات مخبوزة (≈3 دقائق)
+.blender/bin/python tools/twin/export_web.py --out media/twin/web       # office.glb + scene.json (≈ نصف دقيقة)
+.blender/bin/python tools/twin/bake_light.py --out .twin-render/light   # خرائط الضوء: نهار 3072 بكسل ومساء 2048 (≈ 45 دقيقة على معالجين؛ --res 1024 --samples 16 للمعاينة في دقيقتين)
+python3 tools/twin/finish_light.py .twin-render/light                   # WebP بجوار النموذج + تسجيلها في scene.json (بعناوين تحمل بصمة الملف)
 .blender/bin/python tools/twin/build_twin.py                            # رندرات Cycles الثابتة (≈30 دقيقة على معالجين)
 .blender/bin/python tools/twin/build_twin.py --preview                  # معاينة سريعة بثلث الدقة
 .blender/bin/python tools/twin/build_twin.py --room lounge,ceo --daylight --res 1600x1000 --samples 48 --out .twin-render   # لقطات قريبة للغرف (أضف --camera-report لمعرفة اتجاه الكاميرا ونسبة الأرضية المرئية دون رندر)
+python3 tools/twin/finish_rooms.py .twin-render                         # room-<id>.png ← media/twin/rooms/<id>.webp + تسجيلها في office.json بعنوان يحمل بصمة الملف (‎--restamp لتحديث البصمات فقط)
 python3 tools/twin/finish.py --src .twin-render --out media/twin        # WebP + توهج خفيف للإضاءات
+```
+
+**الإضاءة المخبوزة:** النموذج الحي يُرى من الأعلى، فصورة Cycles واحدة بكاميرا عمودية تحمل الضوء الواصل لكل سطح ظاهر:
+الشمس والسماء، إضاءات السقف الدافئة، الارتداد الملوّن، الظلال الناعمة وظلال التلامس تحت الفرش. `bake_light.py` يجعل كل خامة
+معتمة تجيب أشعة الكاميرا بسطح أبيض ناشر (وباقي الأشعة ترى الخامة الحقيقية)، فكل بكسل = الضوء الواصل بلا لون السطح. خريطتان لكل
+مزاج: `a` المبنى وحده ظاهر (الفرش مخفي عن الكاميرا لكنه يُظل)، و`b` الكل ظاهر (أسطح الفرش العلوية). العارض يقرأهما بموضع
+النقطة في العالم (x, z): الأسطح الأفقية تأخذ نقطتها، والرأسية تأخذ ضوء الأرض أمامها وتزداد إضاءة نحو أعلاها.
+أي تغيير في `layout.py` أو الخامات أو مضلعات الغرف يستلزم إعادة التصدير ثم إعادة الخَبز.
+
+**صفحة واحدة على الشاشة:** الصفحات (`.view`) تتبدّل بالصنف `is-active` وخاصية `visibility` فقط، ومحتوى الصفحة الجديدة يظهر
+بتلاشٍ قصير (220ms). الصفحة غير النشطة تُخفي كل عنصر بداخلها **بقاعدة صريحة** (`.view:not(.is-active) *` مع `!important`)
+لا بالوراثة وحدها: مغادرة صفحة ومحتواها ما زال يتلاشى (خلال خُمس ثانية من الوصول) كانت تترك محتواها ظاهرًا وقابلًا للنقر
+فوق الصفحة التالية في Chrome، لأن العنصر الذي كان يتحرك احتفظ بقيمة الظهور التي ورثها قبل الإخفاء.
+
+**لا رسم خلف صفحة أخرى:** حين تغطي صفحةُ الصور أو التفاصيل المخططَ (أو يُعرض المخطط ثنائي الأبعاد، أو يُخفى التبويب) لا يرسم
+العارض أي إطار: رحلة الكاميرا الجارية تهبط فورًا عند وجهتها، والإطار المستحق يُرسم مرة واحدة عند العودة. قبل ذلك كانت الرحلة
+تُرسم كاملة دون أن يراها أحد (عمل ضائع للمعالج الرسومي، وعلى الأجهزة الضعيفة تتراكم الإطارات فتتجمد الصفحة عند العودة).
+
+### فيديو المنصة والكتيّب (PDF)
+
+الفيديو يُصوَّر من الموقع نفسه (نسخة مبنية بـ`tools/variant.mjs`، مقاس جوال 432×768 بكثافة 2.5 = 1080×1920) إطارًا بإطار، فلا يعتمد على
+سرعة الجهاز: حركات الصفحة الرئيسية تُضبط على زمن كل إطار، وكاميرا النموذج ثلاثي الأبعاد توضع لكل إطار. ثم تُركَّب العناوين والمزايا
+ويُرمَّز كل مشهد في ملف ويُدمج الكل دون إعادة ترميز. المساحات الاثنتا عشرة وصورها ومزاياها في `tools/film/content.json`؛ كل عبارة
+فيه مأخوذة من تعليقات صور الغرفة أو سطر استخدامها أو سعتها الموثقة في `data/office.json`.
+
+```bash
+node tools/variant.mjs --variant satr --out dist/satr
+SITE=dist/satr/public_html node tools/film/cap_all.mjs .film/cap        # ≈ 12 دقيقة برسم برمجي (جزء واحد: أضف welcome أو plan أو rooms أو photos)
+python3 tools/film/compose.py .film/cap .film/out --preview 75,300,1739 # لقطات بالحجم الكامل قبل الرندر
+python3 tools/film/compose.py .film/cap .film/out                       # 58 ث، 1740 إطارًا ← .film/out/film.mp4 (≈ دقيقتان)
+node tools/brochure/cap_model.mjs dist/satr/public_html .film/model3d.jpg
+python3 tools/brochure/build.py .film/brochure .film/model3d.jpg && node tools/brochure/print_pdf.mjs "$PWD/.film/brochure/brochure.html" .film/brochure.pdf
 ```
 
 حزمة three.js: `npm pack three@0.187.0` ثم esbuild على `entry.js` (three + GLTFLoader + OrbitControls + RoomEnvironment) → `assets/vendor/three-bundle.js`.

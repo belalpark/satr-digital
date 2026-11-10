@@ -2,6 +2,11 @@
 // room picking, focus fly-to with neighbour dimming, route ribbons, and screen
 // anchors so the page can place its dots and labels over the model.
 //
+// Lighting is baked: tools/twin/bake_light.py path-traces the light arriving at every surface
+// seen from above (sun, sky, ceiling pools, coloured bounce, soft and contact shadows) into two
+// top-down maps per mood, and the materials here multiply their own textures by those maps.
+// No real-time lights and no shadow maps: it looks rendered and it is lighter on the GPU.
+//
 // Coordinates: the model is exported from Blender (metres, z-up) as glTF (y-up),
 // so a plan point (x, y) maps to three.js (X = x_m, Z = -y_m) with world height Y.
 import * as T from '../vendor/three-bundle.js';
@@ -21,11 +26,9 @@ export async function createTwin3D(container, data, opts = {}) {
   // 1.5x is plenty for a model this size; the adaptive governor below drops to 1x on weak GPUs
   let pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
   renderer.setPixelRatio(pixelRatio);
-  renderer.toneMapping = T.ACESFilmicToneMapping;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = T.PCFShadowMap;
-  renderer.shadowMap.autoUpdate = false; // the sun and the model never move: one shadow pass per lighting change
+  renderer.toneMapping = T.NeutralToneMapping; // true material colours up to the highlights, which roll off instead of clipping
   renderer.domElement.className = 'twin-canvas';
+  renderer.domElement.style.visibility = 'hidden'; // shown with its light on (setLighting): never a frame of an unlit model
   container.append(renderer.domElement);
 
   const scene = new T.Scene();
@@ -46,107 +49,201 @@ export async function createTwin3D(container, data, opts = {}) {
   controls.enablePan = false;
   controls.zoomToCursor = false;
 
-  // ---------- lighting rigs ----------
-  const sun = new T.DirectionalLight(0xfff1dc, 2.4);
-  sun.position.set(-16, 34, 20);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
-  Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 100 });
-  sun.shadow.bias = -0.0005;
-  sun.shadow.normalBias = 0.02;
-  const sky = new T.HemisphereLight(0xd6e6ff, 0x4a4036, 0.9);
-  scene.add(sun, sky);
-
-  // Evening rig: a budget of real point lights (GPU cost grows with each one) placed
-  // by clustering the exported ceiling pools, plus the model's own emissive strips.
-  const nightGroup = new T.Group();
-  const LIGHT_BUDGET = 18;
-  const pools = info.lights.filter((l) => !l.lamp).map((l) => ({ x: l.pos[0], z: -l.pos[1], y: l.pos[2], c: l.color }));
-  const clusters = kmeans(pools, Math.min(LIGHT_BUDGET, pools.length));
-  for (const cl of clusters) {
-    const p = new T.PointLight(new T.Color(1.0, 0.8, 0.56), 0, 12 + 1.6 * Math.sqrt(cl.n), 1.6);
-    p.userData.on = 30 * Math.sqrt(cl.n);
-    p.position.set(cl.x, 3.0, cl.z);
-    nightGroup.add(p);
-  }
-  for (const l of info.lights.filter((x) => x.lamp)) {
-    const p = new T.PointLight(new T.Color(...l.color), 0, 6, 2);
-    p.userData.on = 7;
-    p.position.set(l.pos[0], l.pos[2], -l.pos[1]);
-    nightGroup.add(p);
-  }
-  // the point lights only join the scene in the evening mode: by day the shaders carry no point lights at all
-
-  function kmeans(points, k) {
-    if (!points.length) return [];
-    let centres = points.filter((_, i) => i % Math.max(1, Math.floor(points.length / k)) === 0).slice(0, k).map((p) => ({ x: p.x, z: p.z }));
-    let groups = [];
-    for (let iter = 0; iter < 12; iter++) {
-      groups = centres.map(() => []);
-      for (const p of points) {
-        let best = 0;
-        let bd = Infinity;
-        centres.forEach((c, i) => { const d = (p.x - c.x) ** 2 + (p.z - c.z) ** 2; if (d < bd) { bd = d; best = i; } });
-        groups[best].push(p);
-      }
-      centres = centres.map((c, i) => groups[i].length ? { x: groups[i].reduce((a, p) => a + p.x, 0) / groups[i].length, z: groups[i].reduce((a, p) => a + p.z, 0) / groups[i].length } : c);
+  // ---------- baked lighting ----------
+  const LIGHT = info.light; // { rect, gain, static, moods: { day: [a, b], night: [a, b] } }
+  const texLoader = new T.TextureLoader();
+  const maxAniso = renderer.capabilities.getMaxAnisotropy();
+  // phones and low-memory devices get the maps at half size (a quarter of the GPU memory) and keep one mood at a time
+  const compact = Math.max(window.screen.width, window.screen.height) < 1000 || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+  const COMPACT_SIDE = 2048;
+  const loadMap = async (file) => {
+    let t = await texLoader.loadAsync(`${base}${file}`);
+    const img = t.image;
+    if (compact && Math.max(img.width, img.height) > COMPACT_SIDE) {
+      const k = COMPACT_SIDE / Math.max(img.width, img.height);
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k);
+      c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      t.dispose();
+      t = new T.CanvasTexture(c);
     }
-    return centres.map((c, i) => ({ ...c, n: groups[i].length })).filter((c) => c.n > 0);
+    t.colorSpace = T.SRGBColorSpace; // stored through the sRGB curve: the GPU hands the shader linear light
+    t.anisotropy = Math.min(4, maxAniso);
+    return t;
+  };
+  const moodMaps = new Map(); // mood -> Promise<[a, b]>
+  const loadMood = (m) => {
+    if (!moodMaps.has(m)) {
+      const p = Promise.all(LIGHT.moods[m].map(loadMap));
+      p.catch(() => moodMaps.delete(m)); // a failed download can be retried by toggling again
+      moodMaps.set(m, p);
+    }
+    return moodMaps.get(m);
+  };
+  // one set of uniforms shared by every material: switching the mood swaps two textures
+  const bake = {
+    a: { value: null },
+    b: { value: null },
+    rect: { value: new T.Vector4(LIGHT.rect.x0, LIGHT.rect.y0, 1 / LIGHT.rect.w, 1 / LIGHT.rect.h) },
+    gain: { value: LIGHT.gain * Math.PI }, // map texel = radiance of a white surface = irradiance / pi
+    fill: { value: 0.12 },                 // share of the environment's diffuse light kept as a soft fill
+  };
+  const BAKE_VERT_DECL = 'varying vec3 vBakeWorld;\nvarying vec3 vBakeNormal;';
+  const BAKE_VERT_MAIN = 'vBakeWorld = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\n\tvBakeNormal = normalize( mat3( modelMatrix ) * objectNormal );';
+  // The maps are looked up by world position (x, z): exact for every upward face. A vertical face has no
+  // texel of its own, so it takes the (mip-averaged) light of the floor just in front of it, which already
+  // knows whether that side is sunlit, shaded or tucked behind furniture, and brightens toward its top edge.
+  const bakeFrag = (furniture) => `
+uniform sampler2D bakeA;
+uniform sampler2D bakeB;
+uniform vec4 bakeRect;
+uniform float bakeGain;
+uniform float bakeFill;
+varying vec3 vBakeWorld;
+varying vec3 vBakeNormal;
+vec2 bakeUv( vec2 p ) { return vec2( ( p.x - bakeRect.x ) * bakeRect.z, ( - p.y - bakeRect.y ) * bakeRect.w ); }
+// mip level whose texels are about that many metres wide: a soft average of the floor, whatever the map's size
+float bakeLod( float metres ) { return max( 0.0, log2( metres * float( textureSize( bakeA, 0 ).x ) * bakeRect.z ) ); }
+vec3 bakedIrradiance() {
+	vec3 n = normalize( vBakeNormal );
+	#ifdef DOUBLE_SIDED
+		if ( ! gl_FrontFacing ) n = - n;
+	#endif
+	vec2 p = vBakeWorld.xz;
+	float up = smoothstep( 0.45, 0.8, n.y );
+	float down = smoothstep( 0.45, 0.8, - n.y );
+	vec2 out2 = length( n.xz ) > 0.001 ? normalize( n.xz ) : vec2( 0.0 );
+	${furniture ? `
+	vec3 nearFloor = textureLod( bakeA, bakeUv( p + out2 * 0.2 ), bakeLod( 0.18 ) ).rgb;
+	vec3 top = texture2D( bakeB, bakeUv( p ) ).rgb;
+	vec3 topIn = texture2D( bakeB, bakeUv( p - out2 * 0.05 ) ).rgb;
+	float h = smoothstep( 0.0, 0.85, vBakeWorld.y );
+	vec3 side = mix( nearFloor, 0.5 * ( nearFloor + topIn ), h ) * mix( 0.78, 1.0, h );` : `
+	// a wall takes the averaged light of the strip of floor in front of it: the shadows of single chairs
+	// must not climb the wall as stripes
+	vec3 nearFloor = textureLod( bakeA, bakeUv( p + out2 * 0.38 ), bakeLod( 0.42 ) ).rgb;
+	vec3 top = texture2D( bakeA, bakeUv( p ) ).rgb;
+	float h = smoothstep( 0.0, 1.3, vBakeWorld.y );
+	vec3 side = nearFloor * mix( 0.74, 1.04, h );`}
+	vec3 e = mix( side, top, up );
+	e = mix( e, nearFloor * 0.45, down );
+	return e * bakeGain;
+}`;
+  const bakedMaterials = new Map();
+  function bakedMaterial(src, furniture) {
+    const key = `${src.uuid}:${furniture ? 'f' : 's'}`;
+    let m = bakedMaterials.get(key);
+    if (m) return m;
+    m = src.clone();
+    m.onBeforeCompile = (shader) => {
+      Object.assign(shader.uniforms, { bakeA: bake.a, bakeB: bake.b, bakeRect: bake.rect, bakeGain: bake.gain, bakeFill: bake.fill });
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', `#include <common>\n${BAKE_VERT_DECL}`)
+        .replace('#include <project_vertex>', `#include <project_vertex>\n\t${BAKE_VERT_MAIN}`);
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', `#include <common>\n${bakeFrag(furniture)}`)
+        .replace('#include <lights_fragment_maps>', '#include <lights_fragment_maps>\n#if defined( RE_IndirectDiffuse )\n\tirradiance += bakedIrradiance();\n\tiblIrradiance *= bakeFill;\n#endif');
+    };
+    m.customProgramCacheKey = () => (furniture ? 'baked-furniture' : 'baked-static');
+    bakedMaterials.set(key, m);
+    return m;
   }
 
+  const MOOD = {
+    day: { exposure: 0.82, env: 0.45, fill: 0.10 },
+    night: { exposure: 1.18, env: 0.16, fill: 0.05 },
+  };
   let mode = 'day';
-  function setLighting(next) {
+  let moodSeq = 0;
+  async function setLighting(next) {
     mode = next === 'night' ? 'night' : 'day';
+    container.dataset.lighting = mode; // the button reflects the choice at once; the maps follow when loaded
+    const seq = ++moodSeq;
+    let maps;
+    try {
+      maps = await loadMood(mode);
+    } catch (err) {
+      if (!container.dataset.lit) throw err; // nothing to show at all: the caller reports it
+      if (seq === moodSeq) { mode = container.dataset.lit; container.dataset.lighting = mode; } // keep the light that is on
+      return;
+    }
+    if (seq !== moodSeq) return; // switched again while the maps were loading
+    const [a, b] = maps;
     const night = mode === 'night';
-    sun.intensity = night ? 0.05 : 2.4;
-    sun.color.set(night ? 0x9fb4ff : 0xfff1dc);
-    sky.intensity = night ? 0.12 : 0.9;
-    sky.color.set(night ? 0x3a4a7a : 0xd6e6ff);
-    for (const l of nightGroup.children) l.intensity = night ? l.userData.on : 0;
-    if (night && nightGroup.parent !== scene) scene.add(nightGroup);
-    if (!night && nightGroup.parent === scene) scene.remove(nightGroup);
-    renderer.toneMappingExposure = night ? 1.25 : 0.95;
-    scene.environmentIntensity = night ? 0.12 : 1.0;
-    container.dataset.lighting = mode;
+    const previous = [bake.a.value, bake.b.value];
+    bake.a.value = a;
+    bake.b.value = b;
+    if (compact && previous[0] && previous[0] !== a) {
+      // free the other mood's maps; they download again from the browser cache if the visitor switches back
+      for (const t of previous) t.dispose();
+      for (const [k, p] of moodMaps) if (k !== mode) { moodMaps.delete(k); p.catch(() => {}); }
+    }
+    bake.fill.value = MOOD[mode].fill;
+    renderer.toneMappingExposure = MOOD[mode].exposure;
+    scene.environmentIntensity = MOOD[mode].env;
     for (const m of emissives) m.emissiveIntensity = night ? m.userData.nightEmissive : m.userData.dayEmissive;
-    renderer.shadowMap.needsUpdate = true;
+    container.dataset.lit = mode; // the mood whose light is on screen (data-lighting is the mood asked for)
+    renderer.domElement.style.visibility = '';
     requestRender();
   }
 
   // ---------- model ----------
+  loadMood(opts.lighting === 'night' ? 'night' : 'day'); // the light maps download alongside the model
   const loader = new T.GLTFLoader();
-  const gltf = await loader.loadAsync(`${base}office.glb`);
+  const gltf = await loader.loadAsync(`${base}${info.glb || 'office.glb'}`);
   const model = gltf.scene;
   const emissives = [];
-  const roomOf = new Map(); // mesh -> room id (by floor polygon containment of the mesh centre)
+  // the building (floors, walls, joinery) reads map A; loose furniture reads map B for its own top faces
+  const staticRe = new RegExp(`^(${LIGHT.static.join('|')})(\\d{3})?(_\\d+)?$`);
+  const isStatic = (o) => { for (let p = o; p && p !== model; p = p.parent) if (staticRe.test(p.name)) return true; return false; };
   model.traverse((o) => {
     if (!o.isMesh) return;
-    o.castShadow = true;
-    o.receiveShadow = true;
-    const mats = Array.isArray(o.material) ? o.material : [o.material];
-    for (const m of mats) {
-      if (!m) continue;
-      if (m.transparent) {
-        o.castShadow = false;
-        m.depthWrite = false;
-        m.opacity = Math.min(m.opacity, 0.28);
-      }
-      if (m.emissive && (m.emissive.r + m.emissive.g + m.emissive.b) > 0.05) {
+    const furniture = !isStatic(o);
+    const src = Array.isArray(o.material) ? o.material : [o.material];
+    const out = src.map((m0) => {
+      if (!m0) return m0;
+      const m = bakedMaterial(m0, furniture);
+      if (m.transparent) m.depthWrite = false;
+      if (m.emissive && (m.emissive.r + m.emissive.g + m.emissive.b) > 0.05 && !emissives.includes(m)) {
         m.userData.dayEmissive = Math.min(m.emissiveIntensity, 0.6);
         m.userData.nightEmissive = Math.min(m.emissiveIntensity, 6);
         m.emissiveIntensity = m.userData.dayEmissive;
         emissives.push(m);
       }
-    }
+      return m;
+    });
+    o.material = Array.isArray(o.material) ? out : out[0];
   });
   scene.add(model);
 
-  // ground shadow catcher below the slab
-  const ground = new T.Mesh(new T.PlaneGeometry(400, 400), new T.ShadowMaterial({ opacity: 0.38 }));
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -info.slab - 0.02;
-  ground.receiveShadow = true;
-  scene.add(ground);
+  // the table the model stands on: a matte sheet that carries the building's baked shadow (map A holds
+  // the light on the ground around the building) and fades into the page background toward its edges
+  {
+    const c = document.createElement('canvas');
+    c.width = c.height = 256;
+    const g = c.getContext('2d');
+    g.fillStyle = '#000';
+    g.fillRect(0, 0, 256, 256);
+    // opaque under and around the building, a soft ramp over the outer band (nested rounded rects: no canvas filter needed)
+    const band = 46;
+    for (let i = 0; i <= band; i++) {
+      const k = i / band;
+      const v = Math.round(255 * k * k * (3 - 2 * k));
+      g.fillStyle = `rgb(${v},${v},${v})`;
+      g.beginPath();
+      if (g.roundRect) g.roundRect(i, i, 256 - 2 * i, 256 - 2 * i, 70 - i * 0.6);
+      else g.rect(i, i, 256 - 2 * i, 256 - 2 * i);
+      g.fill();
+    }
+    const fade = new T.CanvasTexture(c);
+    const stageMat = bakedMaterial(new T.MeshStandardMaterial({ color: 0x3d4149, roughness: 1, metalness: 0, transparent: true, alphaMap: fade, depthWrite: false }), false);
+    const stage = new T.Mesh(new T.PlaneGeometry(LIGHT.rect.w, LIGHT.rect.h), stageMat);
+    stage.rotation.x = -Math.PI / 2;
+    stage.position.set(LIGHT.rect.x0 + LIGHT.rect.w / 2, -info.slab - 0.01, -(LIGHT.rect.y0 + LIGHT.rect.h / 2));
+    stage.renderOrder = -1;
+    scene.add(stage);
+  }
 
   // ---------- room floors: pick targets + highlight/dim overlays ----------
   const roomGroup = new T.Group();
@@ -316,9 +413,14 @@ export async function createTwin3D(container, data, opts = {}) {
     cancelTween();
     placeCamera(target, azimuth, polar, distance);
   }
+  /** Lands the flight in progress at its destination now (its promise resolves): used when nobody can see it. */
+  function finishTween() {
+    if (tween) tween(Infinity);
+  }
   function flyTo(target, azimuth, polar, distance, ms = 1100) {
     cancelTween(); // supersede the flight in progress
-    if (reducedMotion) { placeCamera(target, azimuth, polar, distance); requestRender(); return Promise.resolve(); }
+    // a flight nobody can see (another page covers the stage, hidden tab) is not animated: the camera lands at once
+    if (reducedMotion || unseen()) { placeCamera(target, azimuth, polar, distance); requestRender(); return Promise.resolve(); }
     const from = {
       target: controls.target.clone(),
       azimuth: Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z),
@@ -375,7 +477,7 @@ export async function createTwin3D(container, data, opts = {}) {
     const distance = fitBox(box, c, home.azimuth, polar, 0.04);
     for (const [rid, v] of veilGroup.children.map((m) => [m.userData.roomId, m])) v.visible = rid !== id;
     veilGroup.visible = true;
-    for (const [rid, m] of roomMeshes) m.material.opacity = rid === id ? 0.16 : 0;
+    // the focused room keeps its true rendered colours; the veil over its neighbours is what singles it out
     container.dataset.focus = id;
     const az = home.azimuth;
     if (animate) await flyTo(c, az, polar, distance);
@@ -427,15 +529,15 @@ export async function createTwin3D(container, data, opts = {}) {
     return project(a.label[0], a.label[1], info.wallHeight + 0.15);
   }
 
-  // ---------- adaptive quality: weak GPUs get 1x pixels and no shadows ----------
+  // ---------- adaptive quality: weak GPUs get 1x pixels ----------
   // fed with the time between consecutive rendered frames (turntable / flights / route animation):
   // under 30 fps on average means the GPU cannot keep up, so the viewer steps down and stays there
   let frameSamples = 0;
   let frameSum = 0;
-  let qualityStep = 0; // 0 = full, 1 = 1x pixels, 2 = also no shadows
+  let qualityStep = 0; // 0 = full, 1 = 1x pixels
   const createdAt = performance.now();
   function governor(ms) {
-    if (qualityStep >= 2) return;
+    if (qualityStep >= 1 || pixelRatio <= 1) return;
     // the first seconds compile shaders and upload textures on any GPU; a single long gap is a
     // hitch (tab switch, GC), not sustained load — neither says anything about the GPU
     if (performance.now() - createdAt < 2500 || ms > 250) return;
@@ -446,9 +548,10 @@ export async function createTwin3D(container, data, opts = {}) {
     frameSamples = 0;
     frameSum = 0;
     if (avg <= 34) return;
-    qualityStep += 1;
-    if (qualityStep === 1 && pixelRatio > 1) { pixelRatio = 1; renderer.setPixelRatio(1); container.dataset.quality = 'reduced'; }
-    else if (qualityStep >= 1) { renderer.shadowMap.enabled = false; for (const m of scene.children) if (m.isMesh) m.material.needsUpdate = true; model.traverse((o) => { if (o.isMesh) { const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const mt of ms) if (mt) mt.needsUpdate = true; } }); qualityStep = 2; container.dataset.quality = 'low'; }
+    qualityStep = 1;
+    pixelRatio = 1;
+    renderer.setPixelRatio(1);
+    container.dataset.quality = 'reduced';
     requestRender();
   }
 
@@ -459,12 +562,17 @@ export async function createTwin3D(container, data, opts = {}) {
   let stageVisible = false; // kept current by the IntersectionObserver below
   let active = opts.active !== false; // false while the page shows another view over the stage (views hide by visibility, not display)
   const onScreen = () => active && stageVisible && !document.hidden;
+  // nobody can see the stage: another page covers it, the 2D plan is the one shown, or the tab is hidden
+  const unseen = () => !active || document.hidden;
   const listeners = new Set();
   // `paced` = the caller drives one frame per animation tick (the turntable), so the gap to the
   // previous frame measures the GPU; any other request after an idle loop starts a new pacing chain
   let inFrame = false; // requests raised while a frame runs (controls' change event) keep the chain
   function requestRender(paced = false) {
     needsRender = true;
+    // behind another page (or in a hidden tab) nothing is drawn: the frame is owed until the stage is seen
+    // again (setActive and visibilitychange below ask for it)
+    if (unseen()) return;
     if (!rafId) {
       if (paced !== true && !inFrame) lastFrameAt = 0;
       rafId = requestAnimationFrame(frame);
@@ -477,6 +585,13 @@ export async function createTwin3D(container, data, opts = {}) {
   const routesAnimating = () => routeGroup.visible && anyRouteVisible() && !reducedMotion && onScreen();
   function frame(now) {
     rafId = 0;
+    if (unseen()) {
+      // the page changed while this frame was queued: draw nothing behind it, and land a flight in progress
+      // (frames drawn unseen are wasted work, and on a slow GPU they pile up and freeze the page on return)
+      finishTween();
+      lastFrameAt = 0;
+      return;
+    }
     inFrame = true;
     if (tween) {
       tween(now);
@@ -520,14 +635,14 @@ export async function createTwin3D(container, data, opts = {}) {
     stageVisible = true;
   }
   document.addEventListener('visibilitychange', () => {
-    if (!onScreen()) return;
-    requestRender();
-    if (idle && !idleRaf) idleRaf = requestAnimationFrame(spin);
+    if (unseen()) return;
+    requestRender(); // the frame owed while the tab was hidden
+    if (onScreen() && idle && !idleRaf) idleRaf = requestAnimationFrame(spin);
   });
   /** The page tells the viewer whether its view is the one on screen; nothing animates behind another view. */
   function setActive(on) {
     active = !!on;
-    if (!active) return;
+    if (!active) { finishTween(); return; } // the flight would be drawn unseen: land now, the frame is owed
     requestRender();
     if (onScreen() && idle && !idleRaf) idleRaf = requestAnimationFrame(spin);
   }
@@ -565,7 +680,7 @@ export async function createTwin3D(container, data, opts = {}) {
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(resize).observe(container);
   else window.addEventListener('resize', resize);
   resize();
-  setLighting(opts.lighting || 'day');
+  await setLighting(opts.lighting || 'day'); // the first frame is drawn with its light: no flash of an unlit model
   if (idle && onScreen()) idleRaf = requestAnimationFrame(spin);
 
   return {

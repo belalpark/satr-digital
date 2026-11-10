@@ -302,8 +302,8 @@ export async function init() {
     if (!twin) return;
     twin.stopIdle();
     const next = twin.getLighting() === 'night' ? 'day' : 'night';
-    twin.setLighting(next);
-    writePref('lighting', next);
+    // the evening maps load on demand: the button follows the choice at once and is corrected if they fail
+    twin.setLighting(next).then(() => { writePref('lighting', twin.getLighting()); updateLightingButton(); });
     updateLightingButton();
   });
   const labelsBtn = document.getElementById('btn-labels');
