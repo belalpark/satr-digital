@@ -1,0 +1,17 @@
+{
+  "name": "جولة المكتب",
+  "short_name": "جولة المكتب",
+  "description": "جولة تفاعلية في مكتب مجهّز: المخطط، النموذج ثلاثي الأبعاد والصور الحقيقية",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#051b30",
+  "theme_color": "#051b30",
+  "icons": [
+    { "src": "assets/icons/app-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/app-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/app-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

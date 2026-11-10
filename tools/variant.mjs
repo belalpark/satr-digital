@@ -34,6 +34,8 @@ AddType image/webp .webp
 AddType application/json .json
 AddType text/javascript .mjs .js
 AddType font/woff2 .woff2
+AddType application/octet-stream .bin
+AddType application/manifest+json .webmanifest
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json model/gltf-binary image/svg+xml
 </IfModule>
@@ -43,14 +45,20 @@ AddType font/woff2 .woff2
   ExpiresByType image/png "access plus 30 days"
   ExpiresByType image/jpeg "access plus 30 days"
   ExpiresByType model/gltf-binary "access plus 7 days"
+  ExpiresByType application/octet-stream "access plus 30 days"
   ExpiresByType font/woff2 "access plus 1 year"
   ExpiresByType text/css "access plus 1 year"
   ExpiresByType text/javascript "access plus 1 year"
   ExpiresByType application/javascript "access plus 1 year"
   ExpiresByType application/json "access plus 5 minutes"
+  ExpiresByType application/manifest+json "access plus 5 minutes"
   ExpiresByType text/html "access plus 5 minutes"
 </IfModule>
 <IfModule mod_headers.c>
+  # the service worker file is one fixed address: browsers must always ask for the current one
+  <Files "sw.js">
+    Header set Cache-Control "no-cache"
+  </Files>
   Header set X-Content-Type-Options "nosniff"
   Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
@@ -89,6 +97,8 @@ export function build(variant, out, root = resolve(dirname(fileURLToPath(import.
   rmSync(out, { recursive: true, force: true });
   mkdirSync(site, { recursive: true });
   for (const p of ['assets', 'media']) cpSync(resolve(root, p), resolve(site, p), { recursive: true });
+  // «add to the home screen»: the manifest and its (empty) service worker live beside index.html; both are brand-free
+  for (const p of ['manifest.webmanifest', 'sw.js']) cpSync(resolve(root, p), resolve(site, p));
   mkdirSync(resolve(site, 'data'), { recursive: true });
   const html = readFileSync(resolve(root, 'index.html'), 'utf8');
   const data = JSON.parse(readFileSync(resolve(root, 'data/office.json'), 'utf8'));

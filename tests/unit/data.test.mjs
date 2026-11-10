@@ -91,11 +91,14 @@ test('every room polygon projects inside the rendered image', () => {
   }
 });
 
-test('room perspective renders (where present) exist and only belong to modelled rooms', () => {
+test('every modelled room has its own 3D close-up: the details page never falls back to a crop of the 2D plan (owner, 2026-11-10)', () => {
   const rendered = data.rooms.filter((r) => r.render);
-  assert.ok(rendered.length >= 10, `expected the main rooms to carry a render, got ${rendered.length}`);
+  const modelled = data.rooms.filter((r) => r.status === 'ready' && r.hasModel);
+  assert.deepEqual(modelled.filter((r) => !r.render).map((r) => r.id), [], 'modelled rooms without a render');
+  // a list-only space with photos (the corridors) shows the whole office in the model instead: no page shows a 2D crop
+  for (const r of data.rooms.filter((x) => x.status === 'ready' && !x.hasModel)) assert.equal(r.render && r.render.scope, 'office', `${r.id}: the whole-office view`);
   for (const r of rendered) {
-    assert.notEqual(r.hasModel, false, `${r.id} has no model but carries a render`);
+    assert.equal(r.hasModel === false, r.render.scope === 'office', `${r.id}: a room's own close-up when it is modelled, the whole-office view when it is not`);
     // the host caches images for a month: the address carries the file's fingerprint, so a re-render is seen at once
     const m = r.render.image.match(/^(media\/twin\/rooms\/[a-z0-9-]+\.webp)\?v=([0-9a-f]{10})$/);
     assert.ok(m, `${r.id} render path with its fingerprint (${r.render.image})`);
@@ -132,6 +135,10 @@ test('footer: condensed Satr essentials — both phone numbers, general location
   const numbers = f.phones.map((p) => p.display);
   assert.deepEqual(numbers, ['+966 55 585 5057', '+966 54 417 1356'], 'Satr number first, the extra number beside it');
   for (const p of f.phones) assert.match(p.tel, /^\+9665\d{8}$/, `${p.display} tel link`);
+  // the number itself opens WhatsApp (owner, 2026-11-10): the address is the same number, digits only
+  for (const p of f.phones) assert.equal(p.whatsapp, `https://wa.me/${p.tel.slice(1)}`, `${p.display} WhatsApp link`);
+  const tiktok = f.social.find((x) => /tiktok\.com/.test(x.href));
+  assert.equal(tiktok && tiktok.href, 'https://www.tiktok.com/@satrksa1', 'the TikTok account the owner gave (satrksa1)');
   assert.match(f.location, /واجهة روشن للأعمال/);
   assert.ok(!/mailto:|[\w.]+@[\w-]+\.[a-z]{2,}/i.test(JSON.stringify(f)), 'no e-mail address is shown (the site hides it)');
   assert.ok(f.social.length >= 4 && f.social.every((s) => /^https:\/\//.test(s.href)));
@@ -272,11 +279,40 @@ test('gallery covers: every room in the gallery has a card-sized cover from its 
   }
 });
 
-test('room names carry no plan codes; offices are «مكتب», employee areas «مكاتب موظفين» (owner, 2026-11-10)', () => {
+test('rooms that share a name are numbered from the door: «مكتب 1…», «مكاتب موظفين 1…», «قاعة اجتماعات 1…» (owner, 2026-11-11)', () => {
+  const base = { office: 'مكتب', open: 'مكاتب موظفين', meeting: 'قاعة اجتماعات' };
+  // "from the door" is the walk the site draws for the employees: lift lobby, office door, once round the ring
+  // corridor. A room's place is the point of that walk nearest to its middle (tools/number_rooms.py)
+  const walk = data.scenes.paths.routes.find((r) => r.id === 'employees').points;
+  const centroid = (poly) => {
+    let area = 0; let cx = 0; let cy = 0;
+    poly.forEach(([x1, y1], i) => { const [x2, y2] = poly[(i + 1) % poly.length]; const c = x1 * y2 - x2 * y1; area += c; cx += (x1 + x2) * c; cy += (y1 + y2) * c; });
+    return [cx / (3 * area), cy / (3 * area)];
+  };
+  const along = (p) => {
+    let best = [Infinity, 0]; let walked = 0;
+    for (let i = 0; i + 1 < walk.length; i++) {
+      const [x1, y1] = walk[i]; const [x2, y2] = walk[i + 1];
+      const seg = Math.hypot(x2 - x1, y2 - y1);
+      const t = seg === 0 ? 0 : Math.max(0, Math.min(1, ((p[0] - x1) * (x2 - x1) + (p[1] - y1) * (y2 - y1)) / seg ** 2));
+      const d = Math.hypot(p[0] - (x1 + t * (x2 - x1)), p[1] - (y1 + t * (y2 - y1)));
+      if (d < best[0] - 1e-6) best = [d, walked + t * seg];
+      walked += seg;
+    }
+    return best[1];
+  };
+  for (const [kind, word] of Object.entries(base)) {
+    const rooms = data.rooms.filter((r) => r.kind === kind);
+    assert.deepEqual(rooms.map((r) => r.name), rooms.map((_, i) => `${word} ${i + 1}`), `${kind}: numbered 1..${rooms.length} without gaps, in that order in the list`);
+    const at = rooms.map((r) => along(centroid(r.polygon)));
+    assert.deepEqual([...at].sort((a, b) => a - b), at, `${kind}: the numbers grow along the walk from the door`);
+    const idx = rooms.map((r) => data.rooms.indexOf(r));
+    assert.equal(idx[idx.length - 1] - idx[0], rooms.length - 1, `${kind}: the rooms stand together in the data (the list and the gallery read 1, 2, 3)`);
+  }
+  // the numbers are these sequence numbers, never the key-plan codes; other rooms carry no digit at all
   for (const r of data.rooms) {
-    assert.doesNotMatch(r.name, /\b(0[1-9][a-f]?|1[0-4])\b|[0-9]/, `${r.id}: no code in «${r.name}»`);
-    if (r.kind === 'office') assert.equal(r.name, 'مكتب', r.id);
-    if (r.kind === 'open') assert.equal(r.name, 'مكاتب موظفين', r.id);
+    if (!base[r.kind]) assert.doesNotMatch(r.name, /[0-9]/, `${r.id}: no code in «${r.name}»`);
+    assert.doesNotMatch(r.name, /\b0[1-9][a-f]?\b|[0-9][a-f]\b/, `${r.id}: no key-plan code in «${r.name}»`);
   }
   // everything a visitor reads follows: route stops, captions and the «use» line
   const names = new Map(data.rooms.map((r) => [r.id, r.name]));
@@ -333,4 +369,107 @@ test('one page on screen: a hidden page hides its content by rule, and the 3D vi
   assert.match(frame, /if \(unseen\(\)\)/, 'frame() draws nothing while the stage is covered');
   assert.match(viewer, /function flyTo[\s\S]{0,400}reducedMotion \|\| unseen\(\)/, 'a flight nobody can see lands at once');
   assert.match(viewer, /function requestRender[\s\S]{0,400}if \(unseen\(\)\) return;/, 'no frame is queued while covered');
+});
+
+test('every space carries the icon of its kind, and the icon set has it (owner, 2026-11-10)', async () => {
+  const { ICONS } = await import(resolve(root, 'assets/js/icons.js'));
+  for (const [name, uri] of Object.entries(ICONS)) assert.match(uri, /^data:image\/svg\+xml,/, `${name} is an inline picture: no request, nothing to fail`);
+  const byKind = { office: 'desk', open: 'desks', meeting: 'meeting' };
+  for (const r of data.rooms.filter((x) => x.status === 'ready')) {
+    assert.ok(r.icon && ICONS[r.icon], `${r.id}: icon «${r.icon}» exists in assets/js/icons.js`);
+    if (byKind[r.kind]) assert.equal(r.icon, byKind[r.kind], `${r.id} (${r.kind})`);
+  }
+  // the generator is the source: the shipped file is what it writes
+  assert.match(readFileSync(resolve(root, 'tools/make_icons.py'), 'utf8'), /assets\/js\/icons\.js|icons\.js/);
+});
+
+test('on the plan a room is marked by the blinking white dot, not by an icon (owner, 2026-11-11)', () => {
+  // The icons replaced the dot on the plan for a day; the owner found them poor there and asked for the dot
+  // back. They stay where they are small labels beside a name: the room list, the room panel, the gallery.
+  const overlay = readFileSync(resolve(root, 'assets/js/overlay.js'), 'utf8');
+  assert.ok(!/icons\.js|ICONS|<img|createElement\('img'\)/.test(overlay), 'the plan overlay draws no icon');
+  assert.match(overlay, /dot\.className = 'dot dot-room'/, 'the marker is the dot');
+  const css = readFileSync(resolve(root, 'assets/css/app.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(css, /\.dot-room \{[^}]*rgba\(255, 255, 255, 0\.6\)[^}]*animation: dot-blink/, 'white at 60%, blinking');
+  assert.ok(!/(^|[\s,{}])\.pin\b/.test(css), 'no icon-marker styles left');
+  assert.match(readFileSync(resolve(root, 'index.html'), 'utf8'), /<i class="dot dot-room" aria-hidden="true"><\/i> تفاصيل الغرفة والصور/, 'the plan legend shows the dot');
+});
+
+test('one file holds every small picture, byte for byte, under an address with its fingerprint', async () => {
+  const { readPack } = await import(resolve(root, 'assets/js/media.js'));
+  const m = data.office.thumbPack.match(/^(media\/rooms\/thumbs\.bin)\?v=([0-9a-f]{10})$/);
+  assert.ok(m, `office.thumbPack with its fingerprint (${data.office.thumbPack})`);
+  const file = readFileSync(resolve(root, m[1]));
+  assert.equal(m[2], createHash('sha1').update(file).digest('hex').slice(0, 10), 'the fingerprint is the file\'s (run python3 tools/make_thumbpack.py)');
+  const packed = new Map(readPack(file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength)).map((f) => [f.path, f.bytes]));
+  const wanted = [...new Set(data.rooms.flatMap((r) => (r.photos || []).map((ph) => ph.thumb)))];
+  assert.deepEqual([...packed.keys()], wanted, 'the pack lists exactly the small pictures the data names, in order');
+  for (const path of wanted) assert.ok(Buffer.from(packed.get(path)).equals(readFileSync(resolve(root, path))), `${path}: the packed bytes are the file's`);
+  assert.throws(() => readPack(new ArrayBuffer(8)), /bad header/, 'a response that is not a pack is refused, not drawn');
+});
+
+test('pictures survive the host\'s verification page: detection, one renewal, and never a broken-picture mark', () => {
+  const media = readFileSync(resolve(root, 'assets/js/media.js'), 'utf8');
+  assert.match(media, /headers\.get\('cf-mitigated'\) === 'challenge'/, 'the verification page is recognised by its header');
+  assert.match(media, /RELOAD_EVERY_MS = 3 \* 60 \* 1000/, 'the page renews by itself at most once every three minutes (no reload loop)');
+  assert.match(media, /img\.dataset\.broken = '1'/, 'a failed picture is marked');
+  const css = readFileSync(resolve(root, 'assets/css/app.css'), 'utf8');
+  assert.match(css, /img\[data-broken\], img\[data-thumb\]:not\(\[src\]\) \{ visibility: hidden; \}/, 'and hidden until it loads');
+  for (const f of ['app.js', 'room.js', 'details.js']) {
+    const src = readFileSync(resolve(root, 'assets/js', f), 'utf8');
+    assert.ok(!/\.src = (ph|p|photo)\.thumb/.test(src), `${f}: small pictures go through setThumb (the pack), not their own request`);
+  }
+});
+
+test('navigation (owner, 2026-11-10): a path bar on every page, a bottom bar for phones, one room panel on a computer', () => {
+  const html = readFileSync(resolve(root, 'index.html'), 'utf8');
+  assert.match(html, /<nav class="crumbs" id="crumbs"[^>]*hidden>/, 'the path bar exists and starts hidden (the welcome page has none)');
+  const bar = html.slice(html.indexOf('<nav class="tabbar"'), html.indexOf('</nav>', html.indexOf('<nav class="tabbar"')));
+  assert.deepEqual([...bar.matchAll(/data-nav="([a-z0-9]+)"/g)].map((x) => x[1]), ['welcome', 'plan2d', 'plan3d', 'gallery'], 'home, plan, 3D, photos');
+  for (const id of ['btn-back-plan', 'btn-close-details', 'btn-focus-back', 'btn-focus-mode']) assert.ok(!html.includes(`id="${id}"`), `${id}: the scattered «back» buttons are gone; the path bar is the one way back`);
+  const css = readFileSync(resolve(root, 'assets/css/app.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(css, /@media \(min-width: 1024px\) \{\s*\.room-card \{ display: none !important; \}/, 'on a computer the right side stays the list of rooms; the room\'s panel is the drawer');
+  assert.match(css, /\.tabbar \{ display: none; \}/, 'the bottom bar is for phones only');
+});
+
+test('the tour can be kept on a phone\'s home screen and opened as an app (owner, 2026-11-11)', async () => {
+  const { BRAND_TERMS } = await import(resolve(root, 'tools/variant.mjs'));
+  const manifestText = readFileSync(resolve(root, 'manifest.webmanifest'), 'utf8');
+  const manifest = JSON.parse(manifestText);
+  // what Chromium asks of an installable site: a name, a start address, a display mode, a 192 and a 512 icon
+  assert.ok(manifest.name && manifest.short_name, 'a name for the home screen');
+  assert.equal(manifest.start_url, './', 'it opens on the welcome page, wherever the site is hosted');
+  assert.equal(manifest.scope, './');
+  assert.equal(manifest.display, 'standalone', 'no browser bars: the site has its own way back (the path bar)');
+  assert.ok(!manifest.prefer_related_applications);
+  const png = (rel) => { const b = readFileSync(resolve(root, rel)); assert.equal(b.toString('latin1', 1, 4), 'PNG', `${rel} is a PNG`); return `${b.readUInt32BE(16)}x${b.readUInt32BE(20)}`; };
+  for (const icon of manifest.icons) assert.equal(png(icon.src), icon.sizes, `${icon.src} has the size the manifest states`);
+  const any = manifest.icons.filter((i) => i.purpose === 'any').map((i) => i.sizes).sort();
+  assert.deepEqual(any, ['192x192', '512x512']);
+  assert.ok(manifest.icons.some((i) => i.purpose === 'maskable' && i.sizes === '512x512'), 'a maskable icon for Android\'s round and squircle shapes');
+  const html = readFileSync(resolve(root, 'index.html'), 'utf8');
+  assert.match(html, /<link rel="manifest" href="manifest\.webmanifest">/);
+  assert.match(html, /<link rel="apple-touch-icon" href="assets\/icons\/apple-touch-icon\.png">/, 'the iPhone takes its icon from here');
+  assert.equal(png('assets/icons/apple-touch-icon.png'), '180x180');
+  assert.match(html, /<meta name="apple-mobile-web-app-capable" content="yes">/);
+  // the same files ship in the build without a broker: no identity in any of them
+  const sw = readFileSync(resolve(root, 'sw.js'), 'utf8');
+  const bar = readFileSync(resolve(root, 'assets/js/install.js'), 'utf8');
+  for (const [name, text] of [['manifest.webmanifest', manifestText], ['sw.js', sw], ['install.js', bar]]) assert.ok(!BRAND_TERMS.test(text), `${name} carries no brand term`);
+  // the service worker exists only because Chrome asks for one: it must answer nothing and cache nothing
+  assert.match(sw, /addEventListener\('fetch', \(\) => \{\}\)/, 'a fetch listener that leaves every request to the network');
+  assert.ok(!/caches\.|respondWith|importScripts/.test(sw.replace(/^\s*\/\/.*$/gm, '')), 'no cache, no answers of its own');
+  // which bar a browser gets
+  const { installMode } = await import(resolve(root, 'assets/js/install.js'));
+  const iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+  const android = 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36';
+  assert.equal(installMode({ userAgent: iphone }), 'ios', 'iPhone: the hint for the Share button (a page cannot open the dialog there)');
+  assert.equal(installMode({ userAgent: android, signal: true }), 'prompt', 'Android with the browser\'s offer: the button');
+  assert.equal(installMode({ userAgent: android }), 'menu', 'Android without an offer: the hint for the browser menu');
+  assert.equal(installMode({ userAgent: `${iphone} Instagram 300.0` }), '', 'in-app browsers cannot add to the home screen: no bar');
+  assert.equal(installMode({ userAgent: iphone, standalone: true }), '', 'already opened as an app: no bar');
+  assert.equal(installMode({ userAgent: android, signal: true, phone: false }), '', 'not a phone: no bar');
+  // both ways of publishing carry the two files that live beside index.html
+  assert.match(readFileSync(resolve(root, 'tools/variant.mjs'), 'utf8'), /\['manifest\.webmanifest', 'sw\.js'\]/);
+  assert.match(readFileSync(resolve(root, 'tools/assemble_site.sh'), 'utf8'), /SITE_PATHS=\(index\.html manifest\.webmanifest sw\.js /);
 });

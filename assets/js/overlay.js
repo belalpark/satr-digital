@@ -17,8 +17,9 @@ export function createOverlay(stage, twin, data, opts = {}) {
     wrap.className = 'room-marker';
     wrap.dataset.id = room.id;
 
-    // one dot per room (owner, 2026-11-10): it opens the room details; a click on the room itself
-    // still opens its close-up view
+    // one dot per room: it opens the room details; a click on the room itself still opens its close-up
+    // view. (For a day the dot was an icon of the kind of space; the owner found the icons poor on the
+    // plan and asked for the blinking dot back, 2026-11-11. The icons stay in the list, panel and gallery.)
     const dot = document.createElement('button');
     dot.type = 'button';
     dot.className = 'dot dot-room';

@@ -6,6 +6,9 @@ import { createOverlay } from './overlay.js';
 import { createRoom } from './room.js';
 import { createDetails } from './details.js';
 import { seatsLabel, photosLabel } from './format.js';
+import { ICONS } from './icons.js';
+import { loadThumbPack, setThumb, progressive, watchImages, suspectGate } from './media.js';
+import { initInstall } from './install.js';
 
 const SCENE_ORDER = ['current', 'paths'];
 const VIEW_IN_MS = 220; // the new page's content eases in; the previous page is already gone
@@ -21,6 +24,18 @@ async function fetchJson(url, { optional = false } = {}) {
     throw err;
   }
 }
+
+function typeIcon(room, cls = 'type-icon') {
+  const img = document.createElement('img');
+  img.className = cls;
+  img.src = ICONS[room.icon] || ICONS.desk;
+  img.alt = '';
+  img.setAttribute('aria-hidden', 'true');
+  return img;
+}
+
+// failed pictures are hidden, retried and (when the host shows its verification page) the clearance is renewed
+watchImages();
 
 function el(tag, cls, text) {
   const n = document.createElement(tag);
@@ -117,12 +132,23 @@ export async function init() {
   const hero = document.getElementById('welcome-photo');
   hero.src = data.office.heroImage;
   hero.addEventListener('error', () => { if (data.office.heroFallback && hero.src.indexOf(data.office.heroFallback) < 0) hero.src = data.office.heroFallback; }, { once: true });
+  // every small picture in ONE file, drawn from memory afterwards. It is fetched when the visitor leaves the
+  // welcome page (or arrives on a deeper one), so the first screen stays as light as it was
+  const startPack = () => loadThumbPack(data.office.thumbPack);
 
   // ---------- header nav state ----------
   const navLinks = [...document.querySelectorAll('.site-nav a')];
+  const tabLinks = [...document.querySelectorAll('.tabbar a')];
   function setNav(key) {
     if (key === 'plan') key = mode === '3d' ? 'plan3d' : 'plan2d';
     for (const a of navLinks) a.classList.toggle('is-active', a.dataset.nav === key);
+    // the phone bar has no «routes» entry: the routes are a tab of the plan it came from
+    const tab = key === 'paths' ? (mode === '3d' ? 'plan3d' : 'plan2d') : key;
+    for (const a of tabLinks) { const on = a.dataset.nav === tab; a.classList.toggle('is-active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
+    // on a phone these two entries are the switch between the plan and the model: on the routes scene they keep it
+    for (const a of tabLinks) {
+      if (a.dataset.nav === 'plan2d' || a.dataset.nav === 'plan3d') a.href = buildHash({ view: 'plan', scene: key === 'paths' ? 'paths' : 'current', mode: a.dataset.nav === 'plan3d' ? '3d' : '2d' });
+    }
   }
 
   // ---------- view mode: the 2D plan (default) or the live 3D model ----------
@@ -211,6 +237,7 @@ export async function init() {
     } catch (err) {
       twinError = err;
       console.error(err);
+      suspectGate(); // a model that did not arrive may be the host's verification page, not the browser
       loading.textContent = 'تعذّر تشغيل النموذج ثلاثي الأبعاد في هذا المتصفح. جرّب متصفحًا حديثًا أو فعّل تسريع الرسوميات.';
     }
     })();
@@ -234,7 +261,6 @@ export async function init() {
       b.setAttribute('aria-selected', String(on));
     }
     lightingBtn.hidden = mode !== '3d';
-    document.getElementById('btn-focus-mode').textContent = mode === '3d' ? 'المخطط ثنائي الأبعاد' : 'العرض ثلاثي الأبعاد';
     if (twin) twin.setActive(currentView === 'plan' && mode === '3d');
     if (overlay2d) overlay2d.layout();
     if (overlay) overlay.layout();
@@ -260,7 +286,6 @@ export async function init() {
     if (replace && lastRoute && lastRoute.mode && current()) navigate({ ...lastRoute, mode }, { replace: true });
   }
   for (const b of viewTabs) b.addEventListener('click', () => switchMode(b.dataset.view));
-  document.getElementById('btn-focus-mode').addEventListener('click', () => switchMode(mode === '3d' ? '2d' : '3d'));
 
   const tip = document.getElementById('plan-tip');
   function showTip(text, x, y) {
@@ -399,7 +424,7 @@ export async function init() {
       const b = el('button', 'room-item-btn');
       b.type = 'button';
       b.dataset.id = r.id;
-      b.append(el('i', 'dot dot-room mini'), el('span', 'room-item-name', r.name));
+      b.append(typeIcon(r), el('span', 'room-item-name', r.name));
       b.addEventListener('click', () => toggleRoom(r.id));
       li.append(b);
       list.append(li);
@@ -417,7 +442,7 @@ export async function init() {
     card.hidden = !room;
     for (const [id, b] of listItems) b.classList.toggle('is-active', !!room && id === room.id);
     if (!room) return;
-    cardEls.title.textContent = room.name;
+    cardEls.title.replaceChildren(typeIcon(room), document.createTextNode(room.name));
     cardEls.summary.textContent = room.summary || '';
     const facts = [];
     if (room.capacity) facts.push(['السعة', seatsLabel(room.capacity.seats)]);
@@ -433,7 +458,7 @@ export async function init() {
       b.type = 'button';
       b.setAttribute('aria-label', `${ph.caption || room.name} — صورة ${i + 1}`);
       const img = document.createElement('img');
-      img.src = ph.thumb;
+      setThumb(img, ph.thumb);
       img.alt = '';
       img.loading = 'lazy';
       img.decoding = 'async';
@@ -465,15 +490,18 @@ export async function init() {
     photos: document.getElementById('drawer-photos'),
   };
   let drawerRoomId = null;
-  let drawerDismissed = null; // the room whose drawer the visitor closed (re-opens on another room)
+  // On a computer the drawer is the room's only panel (owner, 2026-11-10: the right side stays the list of
+  // rooms; everything about the chosen room is on the left). Closing it leaves the room: back to the plan.
+  const drawerPhotosBtn = document.getElementById('btn-drawer-photos');
   function showDrawer(room) {
-    const open = !!room && drawerDismissed !== room.id;
+    const open = !!room;
     drawer.hidden = !open;
     planLayout.classList.toggle('has-drawer', open);
-    if (!room) drawerDismissed = null;
     if (!open || drawerRoomId === room.id) { if (!open) drawerRoomId = null; return; }
     drawerRoomId = room.id;
-    dEls.title.textContent = room.name;
+    dEls.title.replaceChildren(typeIcon(room), document.createTextNode(room.name));
+    drawerPhotosBtn.hidden = !room.hasPhotos;
+    drawerPhotosBtn.textContent = room.hasPhotos ? `الصور الحقيقية (${room.photos.length})` : '';
     const render = room.render && room.render.image;
     const cover = render || (room.focus && room.focus.image) || (room.hasPhotos && room.photos[0] && room.photos[0].src);
     dEls.hero.hidden = !cover;
@@ -507,7 +535,7 @@ export async function init() {
       b.type = 'button';
       b.setAttribute('aria-label', `${ph.caption || room.name} — صورة ${i + 1}`);
       const img = document.createElement('img');
-      img.src = ph.thumb;
+      setThumb(img, ph.thumb);
       img.alt = '';
       img.loading = 'lazy';
       img.decoding = 'async';
@@ -517,12 +545,9 @@ export async function init() {
     }));
     drawer.querySelector('.drawer-scroll').scrollTop = 0;
   }
-  document.getElementById('btn-drawer-close').addEventListener('click', () => {
-    drawerDismissed = drawerRoomId;
-    showDrawer(roomsById.get(drawerRoomId));
-  });
+  document.getElementById('btn-drawer-close').addEventListener('click', () => navigate({ view: 'plan', scene: currentScene }));
   document.getElementById('btn-drawer-details').addEventListener('click', () => drawerRoomId && navigate({ view: 'details', roomId: drawerRoomId }));
-  document.getElementById('btn-focus-back').addEventListener('click', () => navigate({ view: 'plan', scene: currentScene }));
+  drawerPhotosBtn.addEventListener('click', () => { if (!drawerRoomId) return; pendingPhoto = 0; navigate({ view: 'photos', roomId: drawerRoomId }); });
   // the main button always opens the photos from the first one (a thumbnail opens at its own picture)
   cardEls.photos.addEventListener('click', () => { if (!focusRoomId) return; pendingPhoto = 0; navigate({ view: 'photos', roomId: focusRoomId }); });
   cardEls.details.addEventListener('click', () => focusRoomId && navigate({ view: 'details', roomId: focusRoomId }));
@@ -549,33 +574,57 @@ export async function init() {
     a.href = buildHash({ view: 'photos', roomId: r.id });
     a.dataset.id = r.id;
     const img = document.createElement('img');
-    img.src = r.cover || r.photos[0].src;
-    img.alt = r.photos[0].caption || r.name;
-    img.loading = 'lazy';
+    const coverSrc = r.cover || r.photos[0].src;
+    const coverPhoto = r.photos.find((ph) => ph.src === coverSrc) || r.photos[0];
+    img.alt = coverPhoto.caption || r.name;
     img.decoding = 'async';
+    progressive(img, coverPhoto.thumb, coverSrc, { lazy: true });
     const meta = el('span', 'gallery-meta');
     meta.append(el('strong', 'gallery-name', r.name), el('span', 'gallery-count', photosLabel(r.photos.length)));
-    a.append(img, meta);
+    const badge = el('span', 'gallery-icon');
+    badge.append(typeIcon(r));
+    a.append(img, badge, meta);
     return a;
   })); };
   let photosFromGallery = false;
-  const backBtn = document.getElementById('btn-back-plan');
-  const backLabel = (fromGallery) => { backBtn.lastChild.textContent = fromGallery ? ' العودة للمعرض ' : ' العودة للمنظور '; };
-  backBtn.addEventListener('click', () => {
-    if (photosFromGallery) { navigate({ view: 'gallery' }); return; }
-    const r = room.currentRoom();
-    navigate(r && r.hasModel !== false ? { view: 'room', roomId: r.id } : { view: 'plan', scene: currentScene });
-  });
   document.getElementById('btn-details').addEventListener('click', () => {
     const r = room.currentRoom();
     if (r) navigate({ view: 'details', roomId: r.id });
   });
-  document.getElementById('btn-close-details').addEventListener('click', () => {
+  const detailsPhotosBtn = document.getElementById('btn-details-photos');
+  detailsPhotosBtn.addEventListener('click', () => {
     const id = details.currentRoom();
-    const r = id ? roomsById.get(id) : null;
-    if (r && r.hasModel !== false) navigate({ view: 'room', roomId: id });
-    else navigate({ view: 'plan', scene: currentScene }); // list-only spaces have no close-up to return to
+    if (id) { pendingPhoto = 0; navigate({ view: 'photos', roomId: id }); }
   });
+
+  // ---------- the path bar: where the visitor is, each step a link, one fixed place on every page ----------
+  const crumbs = document.getElementById('crumbs');
+  const crumbList = document.getElementById('crumb-list');
+  const crumbBack = document.getElementById('crumb-back');
+  const crumbBackText = document.getElementById('crumb-back-text');
+  function setCrumbs(steps) {
+    // steps: [{ label, route | null }] from the plan down to this page; the last one is the page itself
+    crumbs.hidden = !steps.length;
+    app.dataset.crumbs = steps.length ? '1' : '0';
+    if (!steps.length) return;
+    crumbList.replaceChildren(...steps.map((st, i) => {
+      const li = el('li', 'crumb');
+      const last = i === steps.length - 1;
+      const node = last ? el('span', 'crumb-here', st.label) : el('a', 'crumb-link', st.label);
+      if (last) node.setAttribute('aria-current', 'page');
+      else node.href = buildHash(st.route);
+      if (st.key) li.dataset.crumb = st.key;
+      li.append(node);
+      return li;
+    }));
+    // «back» is one step up the path; from the plan itself it leads to the welcome page
+    const up = steps.length > 1 ? steps[steps.length - 2] : { label: 'الرئيسية', route: { view: 'welcome' } };
+    crumbBack.href = buildHash(up.route);
+    crumbBackText.textContent = up.label;
+    crumbBack.setAttribute('aria-label', `رجوع إلى ${up.label}`);
+  }
+  const planStep = () => ({ key: 'plan', label: 'المخطط', route: { view: 'plan', scene: currentScene } });
+  const roomStep = (r) => ({ key: 'room', label: r.name, route: r.hasModel !== false ? { view: 'room', roomId: r.id } : { view: 'details', roomId: r.id } });
 
   // ---------- view switching ----------
   let currentView = null;
@@ -631,6 +680,7 @@ export async function init() {
     const seq = ++routeSeq;
     const current = () => seq === routeSeq;
 
+    if (route.view !== 'welcome') startPack(); // before any page draws its small pictures
     if (route.view === 'plan' && !/^#\/plan(\?|$)/.test(location.hash)) {
       navigate({ view: 'plan', scene: route.scene }, { replace: true });
       return;
@@ -647,6 +697,7 @@ export async function init() {
 
     if (route.view === 'welcome') {
       showView('welcome');
+      setCrumbs([]);
       setNav('welcome');
       document.title = data.office.title;
       return;
@@ -655,6 +706,7 @@ export async function init() {
     if (route.view === 'gallery') {
       buildGallery();
       showView('gallery');
+      setCrumbs([planStep(), { key: 'gallery', label: 'معرض الصور', route: null }]);
       setNav('gallery');
       document.title = `معرض الصور — ${data.office.title}`;
       return;
@@ -667,6 +719,7 @@ export async function init() {
       showView('plan');
       setNav(sceneId === 'paths' ? 'paths' : 'plan');
       if (sceneId !== currentScene || !from) applyScene(sceneId);
+      setCrumbs([{ key: 'plan', label: sceneId === 'paths' ? 'المخطط · المسارات' : 'المخطط', route: null }]);
       showRoomCard(null);
       showDrawer(null);
       document.title = `${data.office.title} — المخطط ثلاثي الأبعاد`;
@@ -679,7 +732,9 @@ export async function init() {
       setNav('plan');
       showRoomCard(r);
       showDrawer(r);
-      cardEls.title.focus({ preventScroll: true });
+      setCrumbs([planStep(), { key: 'room', label: r.name, route: null }]);
+      // keyboard focus moves to the room's panel: the drawer on a computer, the card under the plan elsewhere
+      (getComputedStyle(card).display === 'none' ? dEls.title : cardEls.title).focus({ preventScroll: true });
       document.title = `${r.name} — ${data.office.title}`;
       ensureFocus(r, !!from && (from.view === 'plan' || from.view === 'room'), current);
       return;
@@ -688,7 +743,10 @@ export async function init() {
     if (route.view === 'photos') {
       // came from the gallery (or a gallery link): «back» returns there; from the plan it returns to the room
       if (from) photosFromGallery = from.view === 'gallery' || (photosFromGallery && from.view === 'photos' && from.roomId === r.id);
-      backLabel(photosFromGallery);
+      // opened from the gallery, the way back is the gallery; from the plan it is the room on the plan
+      setCrumbs(photosFromGallery
+        ? [planStep(), { key: 'gallery', label: 'معرض الصور', route: { view: 'gallery' } }, { key: 'photos', label: `صور ${r.name}`, route: null }]
+        : [planStep(), roomStep(r), { key: 'photos', label: 'الصور', route: null }]);
       if (room.currentRoom() !== r || pendingPhoto !== null) room.show(r.id, { photoIndex: pendingPhoto ?? 0 });
       pendingPhoto = null;
       showView('photos');
@@ -700,6 +758,9 @@ export async function init() {
 
     if (route.view === 'details') {
       if (room.currentRoom() !== r) room.show(r.id);
+      setCrumbs(r.hasModel !== false ? [planStep(), roomStep(r), { key: 'details', label: 'التفاصيل', route: null }] : [planStep(), { key: 'details', label: r.name, route: null }]);
+      detailsPhotosBtn.hidden = !r.hasPhotos;
+      detailsPhotosBtn.textContent = r.hasPhotos ? `الصور الحقيقية (${r.photos.length})` : '';
       showView('details');
       showRoomCard(r);
       if (r.hasModel === false) {
@@ -724,6 +785,7 @@ export async function init() {
   window.addEventListener('hashchange', () => { render(); });
   await render();
   app.classList.add('is-ready');
+  initInstall(app); // phones: the «add to the home screen» bar (it decides by itself whether to show)
   // warm the 3D model while the visitor reads the welcome — only when the 3D view is the chosen one
   if (mode === '3d') setTimeout(loadTwin, 600);
 }
@@ -790,11 +852,14 @@ function renderFooter(root, footer) {
     const li = document.createElement('li');
     li.className = 'footer-phone';
     if (p.label) li.append(el('span', 'footer-phone-label', p.label));
-    const a = link(`tel:${p.tel}`, p.display, false);
-    a.dir = 'ltr';
+    // the number itself opens WhatsApp (owner, 2026-11-10); without a WhatsApp address it dials
+    const a = link(p.whatsapp || `tel:${p.tel}`, '', !!p.whatsapp);
     a.className = 'footer-phone-number';
+    const num = el('span', 'footer-phone-digits', p.display);
+    num.dir = 'ltr';
+    a.append(num);
+    if (p.whatsapp) { a.append(el('span', 'footer-whatsapp', 'واتساب')); a.setAttribute('aria-label', `${p.label ? p.label + ' ' : ''}${p.display} — واتساب`); }
     li.append(a);
-    if (p.whatsapp) { const w = link(p.whatsapp, 'واتساب'); w.className = 'footer-whatsapp'; li.append(w); }
     ul.append(li);
   }
   if (footer.location) { const li = document.createElement('li'); li.className = 'footer-location'; li.textContent = footer.location; ul.append(li); }

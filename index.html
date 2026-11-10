@@ -7,6 +7,14 @@
   <meta name="description" content="فرصة استحواذ: مكتب مجهّز في واجهة روشن للأعمال بالرياض — جولة بمخطط ثنائي وثلاثي الأبعاد وصور حقيقية لكل غرفة.">
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#051b30">
+  <!-- a phone can keep the tour on its home screen and open it as an app -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app-192.png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="جولة المكتب">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <link rel="preload" href="assets/fonts/IBMPlexSansArabic-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/IBMPlexSansArabic-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/app.css">
@@ -19,6 +27,9 @@
   <link rel="modulepreload" href="assets/js/room.js">
   <link rel="modulepreload" href="assets/js/details.js">
   <link rel="modulepreload" href="assets/js/format.js">
+  <link rel="modulepreload" href="assets/js/icons.js">
+  <link rel="modulepreload" href="assets/js/media.js">
+  <link rel="modulepreload" href="assets/js/install.js">
 </head>
 <body>
   <div id="app" class="app" data-current-view="welcome">
@@ -44,6 +55,12 @@
       </a>
       <!-- brand:end -->
     </header>
+
+    <!-- مسار ثابت تحت الهيدر في كل الصفحات عدا الترحيب: المخطط ‹ المساحة ‹ الصور -->
+    <nav class="crumbs" id="crumbs" aria-label="مكانك في الجولة" hidden>
+      <a class="crumb-back" id="crumb-back" href="#/"><span class="crumb-back-icon" aria-hidden="true">→</span><span class="crumb-back-text" id="crumb-back-text">رجوع</span></a>
+      <ol class="crumb-list" id="crumb-list"></ol>
+    </nav>
 
     <!-- 1. الترحيب -->
     <section id="view-welcome" class="view view-welcome" data-view="welcome" aria-labelledby="welcome-location">
@@ -136,10 +153,6 @@
           </div>
           <ul class="room-list" id="room-list"></ul>
           <div class="room-card" id="room-card" hidden>
-            <button id="btn-focus-back" class="btn btn-ghost-light btn-sm" type="button">
-              <span class="btn-icon" aria-hidden="true">→</span>
-              العودة للمخطط
-            </button>
             <h3 id="focus-title" class="focus-title" tabindex="-1"></h3>
             <p id="focus-summary" class="focus-summary"></p>
             <ul class="focus-facts" id="focus-facts"></ul>
@@ -147,7 +160,6 @@
             <div class="focus-actions">
               <button id="btn-photos" class="btn btn-primary" type="button">الصور الحقيقية</button>
               <button id="btn-focus-details" class="btn btn-ghost-light" type="button">تفاصيل الغرفة</button>
-              <button id="btn-focus-mode" class="btn btn-ghost-light btn-mode" type="button">العرض ثلاثي الأبعاد</button>
             </div>
           </div>
         </aside>
@@ -155,8 +167,8 @@
         <!-- لوحة تفاصيل الغرفة على اليسار: تظهر مع اختيار الغرفة بضغطة واحدة -->
         <aside class="room-drawer" id="room-drawer" aria-label="تفاصيل الغرفة" aria-labelledby="drawer-title" hidden>
           <div class="drawer-head">
-            <h3 id="drawer-title" class="drawer-title"></h3>
-            <button id="btn-drawer-close" class="drawer-close" type="button" aria-label="إغلاق لوحة التفاصيل">×</button>
+            <h3 id="drawer-title" class="drawer-title" tabindex="-1"></h3>
+            <button id="btn-drawer-close" class="drawer-close" type="button" aria-label="إغلاق والعودة للمخطط" title="العودة للمخطط">×</button>
           </div>
           <div class="drawer-scroll">
             <figure class="drawer-hero" id="drawer-hero">
@@ -172,7 +184,8 @@
             </div>
           </div>
           <div class="drawer-actions">
-            <button id="btn-drawer-details" class="btn btn-primary" type="button">شاشة التفاصيل الكاملة</button>
+            <button id="btn-drawer-photos" class="btn btn-primary" type="button">الصور الحقيقية</button>
+            <button id="btn-drawer-details" class="btn btn-ghost-light" type="button">شاشة التفاصيل الكاملة</button>
           </div>
         </aside>
       </div>
@@ -193,12 +206,6 @@
     <!-- 3. صور الغرفة -->
     <section id="view-room" class="view view-room" data-view="photos" aria-labelledby="room-title">
       <header class="topbar topbar-dark">
-        <div class="topbar-title">
-          <button id="btn-back-plan" class="btn btn-ghost-light" type="button">
-            <span class="btn-icon" aria-hidden="true">→</span>
-            العودة للمنظور
-          </button>
-        </div>
         <h2 id="room-title" class="room-title"></h2>
         <div class="topbar-actions">
           <button id="btn-pano" class="btn btn-ghost-light" type="button" hidden>جولة 360°</button>
@@ -224,14 +231,8 @@
     <!-- 4. التفاصيل -->
     <section id="view-details" class="view view-details" data-view="details" aria-labelledby="details-title">
       <header class="topbar">
-        <div class="topbar-title">
-          <button id="btn-close-details" class="btn btn-ghost" type="button">
-            <span class="btn-icon" aria-hidden="true">→</span>
-            العودة للمنظور
-          </button>
-        </div>
         <h2 id="details-title" class="room-title room-title-dark"></h2>
-        <div class="topbar-actions"></div>
+        <div class="topbar-actions"><button id="btn-details-photos" class="btn btn-primary" type="button">الصور الحقيقية</button></div>
       </header>
       <div class="details-layout">
         <div class="details-tabs" role="tablist" aria-label="الصور أو المميزات">
@@ -246,6 +247,13 @@
         <aside class="details-features" id="details-features" role="tabpanel" aria-labelledby="tab-features"></aside>
       </div>
     </section>
+
+    <nav class="tabbar" id="tabbar" aria-label="التنقل السريع">
+      <a href="#/" data-nav="welcome"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4l8 7.2V20a1 1 0 0 1-1 1h-4.5v-5.5h-5V21H5a1 1 0 0 1-1-1z"/></svg><span>الرئيسية</span></a>
+      <a href="#/plan?view=2d" data-nav="plan2d"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 11h7M11 5v9M15 19v-6h5"/></svg><span>المخطط</span></a>
+      <a href="#/plan?view=3d" data-nav="plan3d"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9"/></svg><span>ثلاثي الأبعاد</span></a>
+      <a href="#/gallery" data-nav="gallery"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4zM4 15l4.5-4 3.5 3 2.5-2 5.5 4.5"/><circle cx="15.5" cy="9.5" r="1.3"/></svg><span>الصور</span></a>
+    </nav>
 
     <div class="plan-tip" id="plan-tip" hidden></div>
     <!-- brand:start -->

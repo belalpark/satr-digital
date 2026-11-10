@@ -3,6 +3,7 @@
 // evening Cycles render of the room when one exists, otherwise a snapshot of
 // the live model taken when the room was focused.
 import { seatsLabel } from './format.js';
+import { setThumb } from './media.js';
 
 export function createDetails(view, data, { onOpenPhoto, snapshot } = {}) {
   const el = {
@@ -88,7 +89,7 @@ export function createDetails(view, data, { onOpenPhoto, snapshot } = {}) {
         b.type = 'button';
         b.setAttribute('aria-label', `افتح الصورة: ${p.caption}`);
         const im = document.createElement('img');
-        im.src = p.thumb;
+        setThumb(im, p.thumb);
         im.alt = p.caption;
         im.loading = 'lazy';
         b.append(im);
@@ -112,9 +113,11 @@ export function createDetails(view, data, { onOpenPhoto, snapshot } = {}) {
     el.stage.classList.toggle('is-render', !!render);
     if (render) bg.src = render;
     bg.hidden = !render;
-    if (render) img.alt = `لقطة من النموذج ثلاثي الأبعاد: ${room.name}`;
+    // a space with no room of its own in the model (the corridors) shows the whole office in the model
+    const whole = !!render && room.render.scope === 'office';
+    if (render) img.alt = whole ? 'المكتب كاملًا في النموذج ثلاثي الأبعاد' : `لقطة من النموذج ثلاثي الأبعاد: ${room.name}`;
     else img.alt = '';
-    if (caption) caption.textContent = render ? 'لقطة من النموذج ثلاثي الأبعاد للغرفة بفرشها' : 'الغرفة وما حولها في المخطط';
+    if (caption) caption.textContent = whole ? 'المكتب كاملًا في النموذج ثلاثي الأبعاد' : render ? 'لقطة من النموذج ثلاثي الأبعاد للغرفة بفرشها' : 'الغرفة وما حولها في المخطط';
   }
 
   function show(id, { deferImage = false } = {}) {

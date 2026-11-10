@@ -1,6 +1,7 @@
 // Room view: the real photos of one room with a thumbnail strip, keyboard and
 // swipe navigation, and the summary/capacity chips.
 import { seatsLabel } from './format.js';
+import { setThumb, thumbSrc, progressive } from './media.js';
 
 export function createRoom(view, data) {
   const el = {
@@ -27,8 +28,10 @@ export function createRoom(view, data) {
     const photo = room.photos[index];
     el.photo.classList.remove('is-loaded');
     el.photo.alt = `${room.name} — ${photo.caption}`;
-    el.photo.src = photo.src;
-    el.backdrop.style.backgroundImage = `url("${photo.thumb}")`;
+    // the small copy is on screen at once (from memory); the sharp photo replaces it when it has arrived
+    el.photo.classList.add('is-soft');
+    progressive(el.photo, photo.thumb, photo.src, { onSharp: () => el.photo.classList.remove('is-soft') });
+    el.backdrop.style.backgroundImage = `url("${thumbSrc(photo.thumb)}")`;
     el.caption.textContent = photo.caption;
     for (const b of el.thumbs.children) {
       const active = Number(b.dataset.index) === index;
@@ -59,6 +62,9 @@ export function createRoom(view, data) {
     if (!photos.length) {
       // empty set (e.g. a details deep link for a room that has no real photos yet)
       index = 0;
+      el.photo.dataset.ticket = String((Number(el.photo.dataset.ticket) || 0) + 1); // drop a swap still on its way
+      delete el.photo.dataset.thumb;
+      delete el.photo.dataset.sharp;
       el.photo.removeAttribute('src');
       el.photo.alt = '';
       el.photo.classList.remove('is-loaded');
@@ -76,7 +82,7 @@ export function createRoom(view, data) {
         b.setAttribute('role', 'option');
         b.setAttribute('aria-label', p.caption);
         const im = document.createElement('img');
-        im.src = p.thumb;
+        setThumb(im, p.thumb);
         im.alt = '';
         im.loading = 'lazy';
         b.append(im);
