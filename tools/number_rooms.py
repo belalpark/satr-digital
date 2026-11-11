@@ -9,9 +9,15 @@ meeting rooms «قاعة اجتماعات 1، 2», numbered by default starting 
 
 The rule. "From the door" is the walk the site already draws for the employees (scenes.paths, route
 `employees`): it leaves the lift lobby through the office door, goes round the whole ring corridor once and
-comes back. A room's place in the order is the point of that walk nearest to the middle of the room, measured
-along the walk from the door. Each kind is numbered by itself in that order. So number 1 of every kind is the
-first one a person meets after the door, and neighbours have neighbouring numbers.
+comes back. A room's place in the order is where that walk first comes alongside it: the first point of the
+walk that is as close to the room's outline as the walk ever gets, give or take a metre. Each kind is numbered
+by itself in that order. So number 1 of every kind is the first one a person meets after the door, and
+neighbours have neighbouring numbers.
+
+(Until 2026-11-11 the place was the point of the walk nearest to the room's middle. A room on a corner of the
+walk is passed on two sides, and its middle can be nearer to the second: the two glass offices that stand side
+by side on the south corridor came out as 2 and 4 with another office between them. Where the walk first
+reaches a room is what a person walking from the door sees.)
 
 The numbers are part of the name, so the plan labels, the room list, the panel, the path bar, the gallery and
 the route stops all show them. Inside the data the rooms of a kind stand together in numbered order, so the
@@ -27,28 +33,37 @@ DATA = ROOT / "data" / "office.json"
 BASE = {"office": "مكتب", "open": "مكاتب موظفين", "meeting": "قاعة اجتماعات"}
 
 
-def centroid(poly):
-    area = cx = cy = 0.0
+REACH = 32.0  # plan px: one metre (tools/twin/layout.py SCALE)
+STEP = 1.0    # plan px between the points of the walk that are tried
+
+
+def to_segment(p, a, b):
+    (x1, y1), (x2, y2) = a, b
+    seg = math.hypot(x2 - x1, y2 - y1)
+    t = 0.0 if seg == 0 else max(0.0, min(1.0, ((p[0] - x1) * (x2 - x1) + (p[1] - y1) * (y2 - y1)) / seg ** 2))
+    return math.hypot(p[0] - (x1 + t * (x2 - x1)), p[1] - (y1 + t * (y2 - y1)))
+
+
+def to_room(p, poly):
+    """Distance from a point to a room: 0 inside it, else to its outline."""
+    inside = False
     for (x1, y1), (x2, y2) in zip(poly, poly[1:] + poly[:1]):
-        c = x1 * y2 - x2 * y1
-        area += c
-        cx += (x1 + x2) * c
-        cy += (y1 + y2) * c
-    return cx / (3 * area), cy / (3 * area)
+        if (y1 > p[1]) != (y2 > p[1]) and p[0] < (x2 - x1) * (p[1] - y1) / (y2 - y1) + x1:
+            inside = not inside
+    return 0.0 if inside else min(to_segment(p, a, b) for a, b in zip(poly, poly[1:] + poly[:1]))
 
 
-def along(route, p):
-    """Distance from the start of the walk to its point nearest to p (the first one, when two tie)."""
-    best = (float("inf"), 0.0)
-    walked = 0.0
+def first_reach(route, poly):
+    """Distance walked from the door to the first point that is within REACH of the walk's closest approach to the room."""
+    points, walked = [], 0.0
     for (x1, y1), (x2, y2) in zip(route, route[1:]):
         seg = math.hypot(x2 - x1, y2 - y1)
-        t = 0.0 if seg == 0 else max(0.0, min(1.0, ((p[0] - x1) * (x2 - x1) + (p[1] - y1) * (y2 - y1)) / seg ** 2))
-        d = math.hypot(p[0] - (x1 + t * (x2 - x1)), p[1] - (y1 + t * (y2 - y1)))
-        if d < best[0] - 1e-6:
-            best = (d, walked + t * seg)
+        n = max(1, round(seg / STEP))
+        points += [(walked + seg * i / n, (x1 + (x2 - x1) * i / n, y1 + (y2 - y1) * i / n)) for i in range(n + 1)]
         walked += seg
-    return best[1]
+    far = [(s, to_room(p, poly)) for s, p in points]
+    closest = min(d for _, d in far)
+    return next(s for s, d in far if d <= closest + REACH)
 
 
 def numbered(data):
@@ -57,7 +72,7 @@ def numbered(data):
     out = {}
     for kind in BASE:
         rooms = [r for r in data["rooms"] if r["kind"] == kind and r.get("polygon")]
-        rooms.sort(key=lambda r: along(walk, centroid(r["polygon"])))
+        rooms.sort(key=lambda r: first_reach(walk, r["polygon"]))
         for n, r in enumerate(rooms, 1):
             out[r["id"]] = (kind, n)
     return out

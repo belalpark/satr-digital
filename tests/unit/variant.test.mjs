@@ -39,3 +39,16 @@ test('shipped scripts and styles carry no brand term (they ship unchanged in bot
   assert.ok(files.length >= 8);
   for (const f of files) assert.doesNotMatch(read(f), BRAND_TERMS, `brand term in ${f}`);
 });
+
+test('each build ships its own brochure, linked from the welcome page (owner, 2026-11-11)', () => {
+  const html = readFileSync(resolve(root, 'index.html'), 'utf8');
+  assert.match(html, /id="btn-brochure"[^>]*href="brochure\.pdf"/, 'the welcome page offers the brochure');
+  for (const f of ['brochure.pdf', 'brochure-general.pdf']) {
+    const pdf = readFileSync(resolve(root, f));
+    assert.equal(pdf.subarray(0, 5).toString(), '%PDF-', `${f} is a PDF`);
+    // soft masks (CSS shadows, see-through gradients) are what an iPhone drew as a pale rectangle
+    assert.ok(!pdf.includes('/SMask'), `${f}: no soft mask`);
+  }
+  const variant = readFileSync(resolve(root, 'tools/variant.mjs'), 'utf8');
+  assert.match(variant, /variant === 'neutral' \? 'brochure-general\.pdf' : 'brochure\.pdf'/, 'the build without a broker ships the general edition');
+});

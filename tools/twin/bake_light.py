@@ -18,6 +18,17 @@ How the picture becomes irradiance: every opaque material answers camera rays wi
 diffuse surface while every other ray (bounces, shadows) still meets the real material, so each
 pixel is the light arriving at that spot (with coloured bounce), free of the surface's own colour.
 Stored through the sRGB curve at a fixed exposure; scene.json records the gain to undo it.
+
+When one room changes, only its part of the plan needs light again:
+
+    .blender/bin/python tools/twin/bake_light.py --out .twin-render/light --base <previous bake> \
+        --region 311,674,551,870 --res-night 1536
+
+renders that rectangle (plan px; take the room plus a metre and a half, so its shadows and its bounce stay
+inside) with the same camera and pastes it into copies of the maps in --base, its outer 0.4 m fading into
+the old map. The rest of every map is untouched, bit for bit, and the job takes two minutes instead of three
+quarters of an hour. Keep the light of the changed room what it was (layout.POOL_SCALE), or its spill over the
+cut walls changes the corridors beyond the rectangle.
 """
 import argparse
 import json
@@ -31,6 +42,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 
 import bpy  # noqa: E402
+from bpy_extras.object_utils import world_to_camera_view  # noqa: E402
 from mathutils import Vector  # noqa: E402
 
 import build_twin as B  # noqa: E402
@@ -178,6 +190,57 @@ def render(scene, path):
     print(f'  {os.path.basename(path)}: {scene.render.resolution_x}x{scene.render.resolution_y} in {time.time() - t:.0f}s', flush=True)
 
 
+def border(scene, region):
+    """Limit the render to a rectangle of the plan (plan px). Returns its pixel box in the full picture:
+    (left, top, right, bottom), top-left origin."""
+    rx, ry = scene.render.resolution_x, scene.render.resolution_y
+    x0, y0, x1, y1 = region
+    uv = [world_to_camera_view(scene, scene.camera, B.W(x, y)) for x, y in ((x0, y0), (x1, y1))]
+    left, right = math.floor(min(p.x for p in uv) * rx), math.ceil(max(p.x for p in uv) * rx)
+    low, high = math.floor(min(p.y for p in uv) * ry), math.ceil(max(p.y for p in uv) * ry)   # from the bottom
+    left, right, low, high = max(0, left), min(rx, right), max(0, low), min(ry, high)
+    r = scene.render
+    r.use_border, r.use_crop_to_border = True, True
+    # Blender cuts these fractions down to whole pixels: half a pixel inside keeps it on the pixel meant
+    r.border_min_x, r.border_max_x = (left + 0.5) / rx, (right + 0.5) / rx
+    r.border_min_y, r.border_max_y = (low + 0.5) / ry, (high + 0.5) / ry
+    return left, ry - high, right, ry - low
+
+
+def paste(patch_path, base_path, out_path, box, size, feather):
+    """Lay the freshly rendered rectangle into a copy of the previous map (8-bit files: nothing else changes).
+    Its outer `feather` pixels fade into the old map: two renders of the same floor differ by a little noise,
+    and a hard edge would draw the rectangle on the corridor."""
+    import numpy as np
+
+    def load(path):
+        im = bpy.data.images.load(path)
+        w, h = im.size
+        px = np.empty(w * h * 4, dtype=np.float32)
+        im.pixels.foreach_get(px)
+        return im, px.reshape(h, w, 4)   # rows run bottom-up
+
+    patch_im, patch = load(patch_path)
+    base_im, base = load(base_path)
+    if tuple(base_im.size) != tuple(size):
+        raise SystemExit(f'{base_path} is {tuple(base_im.size)}, this bake is {tuple(size)}: use the resolution of the previous bake')
+    if tuple(patch_im.size) != (box[2] - box[0], box[3] - box[1]):
+        raise SystemExit(f'the rendered rectangle is {tuple(patch_im.size)}, expected {(box[2] - box[0], box[3] - box[1])}')
+    h = base.shape[0]
+    ph, pw = patch.shape[:2]
+    ramp = lambda n: np.minimum(1.0, (np.minimum(np.arange(n), np.arange(n)[::-1]) + 0.5) / max(1, feather))
+    alpha = np.minimum.outer(ramp(ph), ramp(pw)).astype(np.float32)[:, :, None]
+    old = base[h - box[3]:h - box[1], box[0]:box[2], :3]
+    base[h - box[3]:h - box[1], box[0]:box[2], :3] = old * (1 - alpha) + patch[:, :, :3] * alpha
+    base_im.pixels.foreach_set(base.ravel())
+    base_im.filepath_raw = out_path
+    base_im.file_format = 'PNG'
+    base_im.save()
+    for im in (patch_im, base_im):
+        bpy.data.images.remove(im)
+    os.remove(patch_path)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', default=os.path.join(ROOT, '.twin-render', 'light'))
@@ -187,8 +250,13 @@ def main():
     ap.add_argument('--samples-night', type=int, default=56)
     ap.add_argument('--moods', default='day,night')
     ap.add_argument('--maps', default='a,b')
+    ap.add_argument('--region', default='', help='plan px x0,y0,x1,y1: render only this rectangle and paste it into the maps of --base')
+    ap.add_argument('--base', default='', help='folder of the previous full bake (PNG maps), needed with --region')
     args = ap.parse_args(sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:])
     os.makedirs(args.out, exist_ok=True)
+    region = [float(v) for v in args.region.split(',')] if args.region else None
+    if region and (len(region) != 4 or not args.base):
+        raise SystemExit('--region takes x0,y0,x1,y1 (plan px) and needs --base')
 
     with open(os.path.join(ROOT, 'data', 'office.json'), encoding='utf-8') as fh:
         office = json.load(fh)
@@ -216,10 +284,18 @@ def main():
         w, h = rect[2] - rect[0], rect[3] - rect[1]
         scene.render.resolution_x, scene.render.resolution_y = (res, max(4, round(res * h / w / 4) * 4)) if w >= h else (max(4, round(res * w / h / 4) * 4), res)
         sizes[mood] = [scene.render.resolution_x, scene.render.resolution_y]
+        box = border(scene, region) if region else None
         for which in [m for m in args.maps.split(',') if m]:
             for o in furniture:
                 o.visible_camera = which == 'b'
-            render(scene, os.path.join(args.out, f'light_{mood}_{which}.png'))
+            name = f'light_{mood}_{which}.png'
+            if region:
+                render(scene, os.path.join(args.out, 'patch-' + name))
+                feather = round(0.4 * scene.render.resolution_x / max(w, h))   # 0.4 m of the 1.5 m taken around the room
+                paste(os.path.join(args.out, 'patch-' + name), os.path.join(args.base, name), os.path.join(args.out, name), box, sizes[mood], feather)
+                print(f'  pasted into {name} at {box}', flush=True)
+            else:
+                render(scene, os.path.join(args.out, name))
         for o in added:
             bpy.data.objects.remove(o, do_unlink=True)
 

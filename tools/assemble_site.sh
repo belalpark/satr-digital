@@ -11,7 +11,7 @@ out=${1:-dist}
 rm -rf "$out"
 mkdir -p "$out"
 
-SITE_PATHS=(index.html manifest.webmanifest sw.js assets data media .nojekyll)
+SITE_PATHS=(index.html manifest.webmanifest sw.js brochure.pdf assets data media .nojekyll)
 
 copy_ref() {
   local ref=$1 dest=$2 branch=$3

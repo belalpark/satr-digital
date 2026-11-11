@@ -282,33 +282,49 @@ test('gallery covers: every room in the gallery has a card-sized cover from its 
 test('rooms that share a name are numbered from the door: «مكتب 1…», «مكاتب موظفين 1…», «قاعة اجتماعات 1…» (owner, 2026-11-11)', () => {
   const base = { office: 'مكتب', open: 'مكاتب موظفين', meeting: 'قاعة اجتماعات' };
   // "from the door" is the walk the site draws for the employees: lift lobby, office door, once round the ring
-  // corridor. A room's place is the point of that walk nearest to its middle (tools/number_rooms.py)
+  // corridor. A room's place is where that walk first comes alongside it: the first point of the walk within a
+  // metre of its closest approach to the room's outline (tools/number_rooms.py)
   const walk = data.scenes.paths.routes.find((r) => r.id === 'employees').points;
-  const centroid = (poly) => {
-    let area = 0; let cx = 0; let cy = 0;
-    poly.forEach(([x1, y1], i) => { const [x2, y2] = poly[(i + 1) % poly.length]; const c = x1 * y2 - x2 * y1; area += c; cx += (x1 + x2) * c; cy += (y1 + y2) * c; });
-    return [cx / (3 * area), cy / (3 * area)];
+  const REACH = 32;
+  const toSegment = (p, [x1, y1], [x2, y2]) => {
+    const seg = Math.hypot(x2 - x1, y2 - y1);
+    const t = seg === 0 ? 0 : Math.max(0, Math.min(1, ((p[0] - x1) * (x2 - x1) + (p[1] - y1) * (y2 - y1)) / seg ** 2));
+    return Math.hypot(p[0] - (x1 + t * (x2 - x1)), p[1] - (y1 + t * (y2 - y1)));
   };
-  const along = (p) => {
-    let best = [Infinity, 0]; let walked = 0;
+  const toRoom = (p, poly) => {
+    let inside = false; let best = Infinity;
+    poly.forEach(([x1, y1], i) => {
+      const [x2, y2] = poly[(i + 1) % poly.length];
+      if ((y1 > p[1]) !== (y2 > p[1]) && p[0] < ((x2 - x1) * (p[1] - y1)) / (y2 - y1) + x1) inside = !inside;
+      best = Math.min(best, toSegment(p, [x1, y1], [x2, y2]));
+    });
+    return inside ? 0 : best;
+  };
+  const firstReach = (poly) => {
+    const far = []; let walked = 0;
     for (let i = 0; i + 1 < walk.length; i++) {
       const [x1, y1] = walk[i]; const [x2, y2] = walk[i + 1];
-      const seg = Math.hypot(x2 - x1, y2 - y1);
-      const t = seg === 0 ? 0 : Math.max(0, Math.min(1, ((p[0] - x1) * (x2 - x1) + (p[1] - y1) * (y2 - y1)) / seg ** 2));
-      const d = Math.hypot(p[0] - (x1 + t * (x2 - x1)), p[1] - (y1 + t * (y2 - y1)));
-      if (d < best[0] - 1e-6) best = [d, walked + t * seg];
+      const seg = Math.hypot(x2 - x1, y2 - y1); const n = Math.max(1, Math.round(seg));
+      for (let k = 0; k <= n; k++) far.push([walked + (seg * k) / n, toRoom([x1 + ((x2 - x1) * k) / n, y1 + ((y2 - y1) * k) / n], poly)]);
       walked += seg;
     }
-    return best[1];
+    const closest = Math.min(...far.map((f) => f[1]));
+    return far.find((f) => f[1] <= closest + REACH)[0];
   };
   for (const [kind, word] of Object.entries(base)) {
     const rooms = data.rooms.filter((r) => r.kind === kind);
     assert.deepEqual(rooms.map((r) => r.name), rooms.map((_, i) => `${word} ${i + 1}`), `${kind}: numbered 1..${rooms.length} without gaps, in that order in the list`);
-    const at = rooms.map((r) => along(centroid(r.polygon)));
+    const at = rooms.map((r) => firstReach(r.polygon));
     assert.deepEqual([...at].sort((a, b) => a - b), at, `${kind}: the numbers grow along the walk from the door`);
     const idx = rooms.map((r) => data.rooms.indexOf(r));
     assert.equal(idx[idx.length - 1] - idx[0], rooms.length - 1, `${kind}: the rooms stand together in the data (the list and the gallery read 1, 2, 3)`);
   }
+  // owner (2026-11-11): the glass cube on the south corridor is two separate offices; side by side, they carry
+  // neighbouring numbers and share no floor
+  const [east, west] = ['inner-5', 'inner-4'].map((id) => data.rooms.find((r) => r.id === id));
+  assert.equal(Math.abs(parseInt(east.name.split(' ').pop(), 10) - parseInt(west.name.split(' ').pop(), 10)), 1, 'the two glass offices have neighbouring numbers');
+  assert.equal(Math.max(...west.polygon.map((p) => p[0])), Math.min(...east.polygon.map((p) => p[0])), 'they meet at the glass partition and do not overlap');
+  assert.equal(data.rooms.filter((r) => r.kind === 'office').length, 10, 'ten offices');
   // the numbers are these sequence numbers, never the key-plan codes; other rooms carry no digit at all
   for (const r of data.rooms) {
     if (!base[r.kind]) assert.doesNotMatch(r.name, /[0-9]/, `${r.id}: no code in «${r.name}»`);

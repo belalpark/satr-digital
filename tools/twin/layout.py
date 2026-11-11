@@ -64,11 +64,14 @@ WALLS = [
     ('solid', (768, 580), (938, 580), []),
     ('solid', (359, 722), (500, 722), []),                      # meeting room / inner office 4
     # south row of the inner ring
-    ('glass', (359, 722), (359, 822), [(20, 48)]),
+    # the glass cube is two separate offices (owner, 2026-11-11; photos 0362-0365): one sheet of glass on the
+    # west side, a glass partition down the middle, and a glass door for each office beside that partition
+    ('glass', (359, 722), (359, 822), []),
+    ('glass', (431, 722), (431, 822), []),
     ('solid', (503, 722), (503, 822), []),
     ('solid', (603, 722), (603, 822), []),
     ('solid', (666, 722), (666, 822), []),
-    ('glass', (359, 822), (503, 822), []),
+    ('glass', (359, 822), (503, 822), [(42, 70), (74, 102)]),
     ('solid', (503, 822), (666, 822), [(70, 98), (128, 156)]),
     # west wing
     ('glass', (303, 245), (303, 888), [(210, 240), (355, 383), (417, 445), (533, 561)]),
@@ -98,11 +101,16 @@ FLOOR_BY_ROOM = {
     'hr-pmo-ops': 'carpet_grey', 'research': 'carpet_grey', 'open-a': 'carpet_grey',
     'field-qc': 'carpet_grey', 'finance': 'carpet_grey',
     'inner-1': 'carpet_grey',
+    'inner-4': 'wood_deck', 'inner-5': 'wood_deck',                     # photos 0362-0365: pale oak-look floor in the two glass offices
     'women-area': 'stone_light',                                        # photos 0331-0332: large grey-beige tiles
     'ceo': 'wood_deck',                                                 # photos 0203-0210, 0216-0218: pale oak floor
 }
 FLOOR_BY_KIND = {'office': 'carpet_blue', 'meeting': 'carpet_grey', 'open': 'carpet_grey',
                  'service': 'stone', 'social': None, 'circulation': None}
+
+# Ceiling light per room, as a share of the usual pool. The two glass offices are 7 m2 each and were one room
+# with one pool until 2026-11-11: half a pool each keeps the light of that corner what it was.
+POOL_SCALE = {'inner-4': 0.5, 'inner-5': 0.5}
 
 # Lounge platform (raised oak deck the sofas sit on).
 PLATFORM = [(997, 828), (1116, 828), (1116, 1041), (965, 1041), (965, 912), (997, 862)]
@@ -230,8 +238,16 @@ FURNITURE = [
     {'t': 'whiteboard', 'x': 474, 'y': 456, 'rot': 0},
     {'t': 'plant', 'x': 372, 'y': 482, 's': 0.8},
     # inner ring south row
-    bench(434, 770, 1, 'y'),
-    {'t': 'credenza', 'x': 432, 'y': 812, 'rot': 0, 'len': 2.4},       # CAD: low storage along the south wall
+    # the two glass offices (photos 0362-0365): a white desk each, parallel to the glass front and beside the
+    # partition, the user's back to the meeting-room wall, a visitor's chair on the outer side. The furniture
+    # plan draws one room with two facing desks and a low cabinet along the south side; the photos show neither.
+    {'t': 'desk_exec', 'x': 403, 'y': 770, 'rot': 0, 'len': 1.5},
+    {'t': 'chair_exec', 'x': 403, 'y': 746, 'rot': 0},
+    {'t': 'chair_guest', 'x': 374, 'y': 796, 'rot': 90},
+    {'t': 'plant', 'x': 370, 'y': 738, 's': 0.7},
+    {'t': 'desk_exec', 'x': 459, 'y': 770, 'rot': 0, 'len': 1.5},
+    {'t': 'chair_exec', 'x': 459, 'y': 746, 'rot': 0},
+    {'t': 'chair_guest', 'x': 490, 'y': 796, 'rot': 270},
     {'t': 'shelving', 'x': 553, 'y': 734, 'rot': 0, 'len': 2.6},
     {'t': 'shelving', 'x': 513, 'y': 778, 'rot': 90, 'len': 2.0},
     {'t': 'rack', 'x': 634, 'y': 743, 'rot': 0},

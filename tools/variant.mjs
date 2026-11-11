@@ -99,6 +99,8 @@ export function build(variant, out, root = resolve(dirname(fileURLToPath(import.
   for (const p of ['assets', 'media']) cpSync(resolve(root, p), resolve(site, p), { recursive: true });
   // «add to the home screen»: the manifest and its (empty) service worker live beside index.html; both are brand-free
   for (const p of ['manifest.webmanifest', 'sw.js']) cpSync(resolve(root, p), resolve(site, p));
+  // the brochure of this build (owner, 2026-11-11): the company's edition, or the general one with no company on it
+  cpSync(resolve(root, variant === 'neutral' ? 'brochure-general.pdf' : 'brochure.pdf'), resolve(site, 'brochure.pdf'));
   mkdirSync(resolve(site, 'data'), { recursive: true });
   const html = readFileSync(resolve(root, 'index.html'), 'utf8');
   const data = JSON.parse(readFileSync(resolve(root, 'data/office.json'), 'utf8'));

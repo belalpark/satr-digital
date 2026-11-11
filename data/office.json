@@ -212,7 +212,7 @@
       },
       "_source": "الاسم والشعار اللفظي والهاتف والروابط من satr-ksa.com (2026-11-07)؛ الألوان مأخوذة من عرض سطر التقديمي في Canva (غلاف دراسة جدوى المصيف) لا من دليل هوية رسمي"
     },
-    "thumbPack": "media/rooms/thumbs.bin?v=645629297d"
+    "thumbPack": "media/rooms/thumbs.bin?v=776a8bd01b"
   },
   "rooms": [
     {
@@ -297,8 +297,59 @@
       "cover": "media/rooms/coo/cover.webp"
     },
     {
-      "id": "inner-4",
+      "id": "inner-5",
       "name": "مكتب 2",
+      "short": "05a",
+      "kind": "office",
+      "icon": "desk",
+      "status": "ready",
+      "polygon": [
+        [
+          431,
+          722
+        ],
+        [
+          503,
+          722
+        ],
+        [
+          503,
+          822
+        ],
+        [
+          431,
+          822
+        ]
+      ],
+      "label": {
+        "x": 467,
+        "y": 772
+      },
+      "use": {
+        "current": "مكتب صغير مغلق"
+      },
+      "photos": [
+        {
+          "src": "media/rooms/inner-5/01.webp",
+          "thumb": "media/rooms/inner-5/thumbs/01.webp",
+          "caption": "المكتب من الأمام بجوار المكتب المماثل، ولكلٍّ منهما بابه الزجاجي",
+          "source": "IMG_0365"
+        }
+      ],
+      "photosConfidence": "key",
+      "hasModel": true,
+      "hasPhotos": true,
+      "key": "05a",
+      "cover": "media/rooms/inner-5/cover.webp",
+      "render": {
+        "image": "media/twin/rooms/inner-5.webp?v=2afd3a9347",
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "id": "inner-4",
+      "name": "مكتب 3",
       "short": "05a",
       "kind": "office",
       "icon": "desk",
@@ -309,11 +360,11 @@
           722
         ],
         [
-          503,
+          431,
           722
         ],
         [
-          503,
+          431,
           822
         ],
         [
@@ -322,7 +373,7 @@
         ]
       ],
       "label": {
-        "x": 431,
+        "x": 395,
         "y": 772
       },
       "use": {
@@ -332,18 +383,12 @@
         {
           "src": "media/rooms/inner-4/01.webp",
           "thumb": "media/rooms/inner-4/thumbs/01.webp",
-          "caption": "مكتب زجاجي بإطارات داكنة لموظفين",
+          "caption": "مكتب زجاجي بإطارات داكنة، يجاوره مكتب مماثل خلف قاطع زجاجي",
           "source": "IMG_0362"
         },
         {
           "src": "media/rooms/inner-4/02.webp",
           "thumb": "media/rooms/inner-4/thumbs/02.webp",
-          "caption": "المكتب الزجاجي من الجهة الأمامية",
-          "source": "IMG_0365"
-        },
-        {
-          "src": "media/rooms/inner-4/03.webp",
-          "thumb": "media/rooms/inner-4/thumbs/03.webp",
           "caption": "المكتب الزجاجي وسط المكاتب المفتوحة",
           "source": "IMG_0363"
         }
@@ -354,14 +399,14 @@
       "key": "05a",
       "cover": "media/rooms/inner-4/cover.webp",
       "render": {
-        "image": "media/twin/rooms/inner-4.webp?v=35f84727f5",
+        "image": "media/twin/rooms/inner-4.webp?v=e5d5b7ed70",
         "width": 1600,
         "height": 1000
       }
     },
     {
       "id": "office-l2",
-      "name": "مكتب 3",
+      "name": "مكتب 4",
       "short": "02d",
       "kind": "office",
       "icon": "desk",
@@ -418,7 +463,7 @@
     },
     {
       "id": "office-l1",
-      "name": "مكتب 4",
+      "name": "مكتب 5",
       "short": "02c",
       "kind": "office",
       "icon": "desk",
@@ -493,7 +538,7 @@
     },
     {
       "id": "ceo",
-      "name": "مكتب 5",
+      "name": "مكتب 6",
       "short": "01",
       "kind": "office",
       "icon": "desk",
@@ -596,7 +641,7 @@
     },
     {
       "id": "inner-2",
-      "name": "مكتب 6",
+      "name": "مكتب 7",
       "short": "04b",
       "kind": "office",
       "icon": "desk",
@@ -665,7 +710,7 @@
     },
     {
       "id": "inner-3",
-      "name": "مكتب 7",
+      "name": "مكتب 8",
       "short": "04a",
       "kind": "office",
       "icon": "desk",
@@ -740,7 +785,7 @@
     },
     {
       "id": "cfo",
-      "name": "مكتب 8",
+      "name": "مكتب 9",
       "short": "02a",
       "kind": "office",
       "icon": "desk",
@@ -821,7 +866,7 @@
     },
     {
       "id": "office-r2",
-      "name": "مكتب 9",
+      "name": "مكتب 10",
       "short": "02b",
       "kind": "office",
       "icon": "desk",
@@ -2234,7 +2279,7 @@
       "photosConfidence": "key",
       "cover": "media/rooms/corridors/cover.webp",
       "render": {
-        "image": "media/twin/rooms/corridors.webp?v=009961e861",
+        "image": "media/twin/rooms/corridors.webp?v=81bfeb7668",
         "width": 1600,
         "height": 1000,
         "scope": "office"
@@ -2414,7 +2459,7 @@
                 420,
                 190
               ],
-              "label": "مكتب 5"
+              "label": "مكتب 6"
             }
           ]
         },

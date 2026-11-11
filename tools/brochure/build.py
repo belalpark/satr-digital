@@ -7,7 +7,7 @@ details and advantages of each part (nothing obvious such as screens, phones or 
 "a picture from the plan, zoomed in on it, then its advantages and its photos".
 
 So every page of a space opens with the plan itself: the high-resolution 2D plan cropped to the space, the space
-lit and outlined, the rest of the office dimmed (`spot()`); groups of rooms (the nine offices, the six employee
+lit and outlined, the rest of the office dimmed (`spot()`); groups of rooms (the ten offices, the six employee
 areas, the service rooms) are lit on the whole plan with their numbers from the door.
 
 What is said about the office comes from the site's data (data/office.json): names and numbers, the two owner
@@ -26,6 +26,12 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = sys.argv[1]
 MODEL = sys.argv[2]
+# Two editions (owner, 2026-11-11): `satr` carries the company; `general` carries no company name, logo or site and
+# one number only, "for contact and viewing". Each links to its own site: «ابدأ الجولة الافتراضية».
+EDITION = sys.argv[3] if len(sys.argv) > 3 else 'satr'
+assert EDITION in ('satr', 'general'), EDITION
+TOUR = {'satr': 'https://satr.maspro4it.com/', 'general': 'https://roshen.maspro4it.com/'}[EDITION]
+SATR = EDITION == 'satr'
 ASSETS = os.path.join(OUT, 'assets')
 os.makedirs(ASSETS, exist_ok=True)
 
@@ -142,6 +148,51 @@ def shot(src, tag='', cls=''):
     return f'<figure class="shot {cls}"><img src="{src}" alt="">{f"<figcaption>{e(tag)}</figcaption>" if tag else ""}</figure>'
 
 
+def lerp(stops, v):
+    for (a, x), (b, y) in zip(stops, stops[1:]):
+        if a <= v <= b:
+            return x + (y - x) * (v - a) / (b - a)
+    return stops[-1][1]
+
+
+def cover_picture():
+    """The cover's photo with its navy fade painted in. A PDF made from CSS shadows and see-through gradients
+    carries soft masks; the iPhone's viewer draws some of them as a pale rectangle (owner, 2026-11-11). So
+    every fade in this brochure is part of a picture, and nothing has a shadow."""
+    W2, H2, top = 1080, 1920, 1160
+    hero = Image.open(os.path.join(REPO, 'media/hero/perspective.webp')).convert('RGB')
+    s = max(W2 / hero.width, top / hero.height)
+    hero = hero.resize((round(hero.width * s), round(hero.height * s)), Image.LANCZOS)
+    x = round((hero.width - W2) * 0.42)
+    y = round((hero.height - top) * 0.5)
+    page_ = Image.new('RGB', (W2, H2), NAVY)
+    page_.paste(hero.crop((x, y, x + W2, y + top)), (0, 0))
+    stops = [(0, .62), (.16, .08), (.32, .1), (.52, .88), (.60, 1), (1, 1)]
+    alpha = Image.new('L', (1, H2))
+    alpha.putdata([round(255 * lerp(stops, i / (H2 - 1))) for i in range(H2)])
+    page_ = Image.composite(Image.new('RGB', (W2, H2), NAVY), page_, alpha.resize((W2, H2)))
+    page_.save(os.path.join(ASSETS, 'cover.jpg'), 'JPEG', quality=88, optimize=True, progressive=True)
+    return 'assets/cover.jpg'
+
+
+def model_picture():
+    """The 3D model picture with its four edges faded into the page colour (painted in, as on the cover)."""
+    W2, H2 = 1080, 660
+    im = Image.open(MODEL).convert('RGB')
+    s = max(W2 / im.width, H2 / im.height)
+    im = im.resize((round(im.width * s), round(im.height * s)), Image.LANCZOS)
+    x, y = round((im.width - W2) * 0.5), round((im.height - H2) * 0.46)
+    im = im.crop((x, y, x + W2, y + H2))
+    edge = lambda v, w: max(0.0, 1 - min(v, 1 - v) / w)
+    ax = Image.new('L', (W2, 1)); ax.putdata([round(255 * edge(i / (W2 - 1), .12)) for i in range(W2)])
+    ay = Image.new('L', (1, H2)); ay.putdata([round(255 * edge(i / (H2 - 1), .16)) for i in range(H2)])
+    from PIL import ImageChops
+    alpha = ImageChops.lighter(ax.resize((W2, H2)), ay.resize((W2, H2)))
+    im = Image.composite(Image.new('RGB', (W2, H2), NAVY), im, alpha)
+    im.save(os.path.join(ASSETS, 'model3d.jpg'), 'JPEG', quality=88, optimize=True, progressive=True)
+    return 'assets/model3d.jpg'
+
+
 OFFICES = [r['id'] for r in office['rooms'] if r['kind'] == 'office']
 OPEN = [r['id'] for r in office['rooms'] if r['kind'] == 'open']
 MEETING = [r['id'] for r in office['rooms'] if r['kind'] == 'meeting']
@@ -156,20 +207,24 @@ def page(cls, body):
     pages.append((cls, body))
 
 
-# ---- 1. cover: the offer in one word
+# ---- 1. cover: the owner's own two lines (the site's welcome), what is inside in one sentence, the offer in a small tag
+# Owner (2026-11-11): "the huge «للإيجار» disfigured the report; use «مساحة تليق بأعمالك» and «مقر إداري مفروش
+# ومجهّز يجمع فريقك في مكان واحد», with a little more, better content".
+NUM = {6: 'ست', 9: 'تسعة', 10: 'عشرة'}
+head1, head2 = w['subtitle'].rsplit(' ', 1)
 page('cover dark', f'''
-  <img class="bg" src="{jpg(os.path.join(REPO, 'media/hero/perspective.webp'), 'hero.jpg', 1300, 86)}" alt="">
-  <div class="shade"></div>
-  <div class="brandline"><strong>{e(brand["name"])}</strong><span dir="ltr">{e(brand["nameEn"])}</span></div>
+  <img class="bg" src="{cover_picture()}" alt="">
+  {f'<div class="brandline"><strong>{e(brand["name"])}</strong><span dir="ltr">{e(brand["nameEn"])}</span></div>' if SATR else ''}
   <div class="cover-in">
     <p class="place">{e(w["location"].split("·")[0].strip())}<span>{e(w["location"].split("·")[1].strip())}</span></p>
-    <h1 class="kufi">للإيجار</h1>
-    <p class="what">مكتب كامل، مفروش ومجهّز</p>
+    <h1 class="display">{e(head1)}<br>{e(head2)}</h1>
+    <p class="what">{e(w["atmosphere"])}</p>
     <div class="figs">
       <div><b dir="ltr">{e(AREA["value"])}</b><small>{e(AREA["unit"])}</small><span>{e(AREA["label"])}</span></div>
       <div><b dir="ltr">{e(COUNT["value"])}</b><small>{e(COUNT["label"])}</small><span>{e(COUNT["note"])}</span></div>
     </div>
-    <p class="whole">يُؤجَّر كاملًا لشركة واحدة</p>
+    <p class="has">استقبال ولاونج ومدرّج داخلي، قاعتا اجتماعات، {NUM.get(len(OFFICES), len(OFFICES))} مكاتب مغلقة و{NUM.get(len(OPEN), len(OPEN))} مناطق لفرق العمل</p>
+    <p class="acts"><span class="whole">{e(WHOLE)}</span><a class="tour" href="{TOUR}">ابدأ الجولة الافتراضية</a></p>
   </div>''')
 
 # ---- 2. the offer: a whole headquarters
@@ -185,10 +240,10 @@ inside = [
 ]
 page('offer dark', f'''
   <header class="head">
-    <h2 class="kufi">مقرّ كامل،<br>لا مكتب في مقرّ</h2>
-    <p class="lead">المكتب معروض للإيجار كاملًا، وحدةً واحدة. {e(w["atmosphere"])}.</p>
+    <h2 class="display">مقرّ كامل،<br>لا مكتب في مقرّ</h2>
+    <p class="lead">المكتب معروض للإيجار كاملًا، وحدةً واحدة: استقبالك وقاعات اجتماعاتك ومكاتب فريقك خلف باب واحد.</p>
   </header>
-  <figure class="model"><img src="{jpg(MODEL, 'model3d.jpg', 1400, 88)}" alt=""></figure>
+  <figure class="model"><img src="{model_picture()}" alt=""></figure>
   <div class="in">
     <h3>في المكتب</h3>
     {feats(inside)}
@@ -207,7 +262,7 @@ def zoom_page(title, hook, ids, features, shots, note='', pad=70):
     main, a, b = shots
     page('space light', f'''
   <header class="head">
-    <div class="t"><h2 class="kufi">{e(title)}</h2><p class="hook">{e(hook)}</p></div>
+    <div class="t"><h2 class="display">{e(title)}</h2><p class="hook">{e(hook)}</p></div>
     <figure class="locator"><img src="{locator}" alt=""></figure>
   </header>
   <figure class="zoom"><img src="{zoom}" alt="">{f'<figcaption>{e(note)}</figcaption>' if note else ''}</figure>
@@ -241,7 +296,7 @@ z2, _ = spot('zoom-meeting-2.jpg', ['meeting-medium'], 196, 250, pad=45)
 loc_m, _ = spot('loc-meeting.jpg', MEETING, 92, 92, whole=True, outline=2, dim=0.72)
 page('space light meet', f'''
   <header class="head">
-    <div class="t"><h2 class="kufi">قاعتا الاجتماعات</h2><p class="hook">كبرى لـ{SEATS} شخصًا، وثانية بإطلالة</p></div>
+    <div class="t"><h2 class="display">قاعتا الاجتماعات</h2><p class="hook">كبرى لـ{SEATS} شخصًا، وثانية بإطلالة</p></div>
     <figure class="locator"><img src="{loc_m}" alt=""></figure>
   </header>
   <div class="zooms">
@@ -261,7 +316,7 @@ page('space light meet', f'''
 def group_page(title, hook, ids, features, shots, numbered=True, cls=''):
     m, place = spot(f'map-{ids[0]}.jpg', ids, 268, 270, whole=True, outline=3, dim=0.66)
     page(f'group dark {cls}', f'''
-  <header class="head"><h2 class="kufi">{e(title)}</h2><p class="hook">{e(hook)}</p></header>
+  <header class="head"><h2 class="display">{e(title)}</h2><p class="hook">{e(hook)}</p></header>
   <div class="row">
     {feats(features)}
     <figure class="map"><img src="{m}" alt="">{badges(ids, place) if numbered else ''}</figure>
@@ -269,15 +324,17 @@ def group_page(title, hook, ids, features, shots, numbered=True, cls=''):
   <div class="grid">{''.join(shot(*s) for s in shots)}</div>''')
 
 
-group_page('المكاتب الإدارية', 'تسعة مكاتب مغلقة لقيادات فريقك', OFFICES, [
+group_page('المكاتب الإدارية', f'{NUM.get(len(OFFICES), len(OFFICES))} مكاتب مغلقة لقيادات فريقك', OFFICES, [
     'مكاتب على الواجهة بإضاءة طبيعية',
     'مكاتب داخلية بواجهات زجاجية على الممر',
     'بعضها بطاولة اجتماع خاصة',
     f'مرقّمة من 1 إلى {len(OFFICES)} بدءًا من الباب',
-], [(photo('coo', 1, 700), rooms['coo']['name']), (photo('inner-4', 1, 700), rooms['inner-4']['name']),
+], [(photo('coo', 1, 700), rooms['coo']['name']),
+    # the two glass offices stand side by side (owner, 2026-11-11: "they are two separate offices"): the photo shows both
+    (photo('inner-5', 1, 700), f'{rooms["inner-5"]["name"]} و{rooms["inner-4"]["name"]}'),
     (photo('cfo', 5, 700), rooms['cfo']['name']), (photo('office-r2', 1, 700), rooms['office-r2']['name'])])
 
-group_page('مكاتب الموظفين', 'ست مناطق عمل تتسع لفرقك', OPEN, [
+group_page('مكاتب الموظفين', f'{NUM.get(len(OPEN), len(OPEN))} مناطق عمل تتسع لفرقك', OPEN, [
     'أكبرها على طول الواجهات الزجاجية بإضاءة طبيعية',
     'صفوف وتجمعات تناسب فرقًا مختلفة الأحجام',
     'إحداها بـ14 محطة عمل',
@@ -300,17 +357,20 @@ def phone(p):
     return f'<a class="phone" href="{e(href)}"><small>{e(label)}</small><b dir="ltr">{e(p["display"])}</b></a>'
 
 
+phones = list(reversed(footer['phones'])) if SATR else footer['phones'][1:2]  # general: the second number only (owner)
+company = f'''<i class="rule"></i>
+    <p class="brand">{e(brand["name"])}<span dir="ltr">{e(brand["nameEn"])}</span></p>
+    <p class="slogan">{e(brand["slogan"])}</p>
+    <a class="web" href="{e(footer["website"]["href"])}" dir="ltr">{e(footer["website"]["label"])}</a>''' if SATR else '<i class="rule"></i>'
 page('contact dark', f'''
   <div class="frame"></div>
   <div class="contact-in">
     <p class="tag">{e(WHOLE)}</p>
-    <h2 class="kufi">عاين المكتب<br>بنفسك</h2>
+    <h2 class="display">عاين المكتب<br>بنفسك</h2>
     <p class="ask">للمعاينة وتفاصيل الإيجار راسلنا على واتساب</p>
-    <div class="phones">{''.join(phone(p) for p in reversed(footer['phones']))}</div>
-    <i class="rule"></i>
-    <p class="brand">{e(brand["name"])}<span dir="ltr">{e(brand["nameEn"])}</span></p>
-    <p class="slogan">{e(brand["slogan"])}</p>
-    <a class="web" href="{e(footer["website"]["href"])}" dir="ltr">{e(footer["website"]["label"])}</a>
+    <div class="phones">{''.join(phone(p) for p in phones)}</div>
+    <a class="tour" href="{TOUR}">ابدأ الجولة الافتراضية</a>
+    {company}
     <p class="loc">{e(footer["location"])}</p>
     <p class="fine">الصور للمكتب بوضعه الحالي. المخطط والنموذج ثلاثي الأبعاد توضيحيان.</p>
   </div>''')
@@ -318,87 +378,93 @@ page('contact dark', f'''
 total = len(pages)
 body = ''.join(
     f'<section class="page {cls}">{inner}'
-    + ('' if 'cover' in cls or 'contact' in cls else f'<footer class="foot"><span class="w">{e(WHOLE)}</span><span class="b">{e(brand["name"])}<i dir="ltr">{n} / {total}</i></span></footer>')
+    + ('' if 'cover' in cls or 'contact' in cls else f'<footer class="foot"><span class="w">{e(WHOLE)}</span><span class="b">{e(brand["name"]) if SATR else ''}<i dir="ltr">{n} / {total}</i></span></footer>')
     + '</section>'
     for n, (cls, inner) in enumerate(pages, 1))
 
-PLEX = 'file://' + os.path.join(REPO, 'assets/fonts/IBMPlexSansArabic-%s.woff2')
-KUFI = 'file://' + os.path.join(REPO, 'tools/brochure/fonts/NotoKufiArabic-%s.woff2')
+# The typeface: Alexandria (SIL Open Font License, tools/brochure/fonts), one family for the whole brochure:
+# semibold for the headings, light and regular for the text. Owner (2026-11-11): "a better font, one that really
+# suits it"; the heavy Kufi headings went with the huge word on the cover. Each weight is two files, Arabic and
+# Latin (digits, the company's English name), told apart by unicode-range.
+FONT_DIR = os.path.join(REPO, 'tools/brochure/fonts')
+FONTS = {'Head': [500, 600, 700], 'Body': [300, 400, 500, 600, 700]}
+ARABIC = 'U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC'
+LATIN = 'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2212,U+2215'
+faces = ''.join(
+    f'@font-face{{font-family:{family};font-weight:{weight};src:url("file://{FONT_DIR}/alexandria-{script}-{weight}-normal.woff2") format("woff2");unicode-range:{rng}}}\n'
+    for family, weights in FONTS.items() for weight in weights for script, rng in (('arabic', ARABIC), ('latin', LATIN)))
 css = '''
-@font-face{font-family:Plex;font-weight:400;src:url("PLEX_R") format("woff2")}
-@font-face{font-family:Plex;font-weight:500;src:url("PLEX_M") format("woff2")}
-@font-face{font-family:Plex;font-weight:600;src:url("PLEX_S") format("woff2")}
-@font-face{font-family:Plex;font-weight:700;src:url("PLEX_B") format("woff2")}
-@font-face{font-family:Kufi;font-weight:700;src:url("KUFI_B") format("woff2")}
-@font-face{font-family:Kufi;font-weight:800;src:url("KUFI_X") format("woff2")}
+/* solid colours only: see cover_picture() */
 @page{size:540px 960px;margin:0}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:#051b30}
-body{font-family:Plex,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:Body,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 img{display:block}
-.kufi{font-family:Kufi,Plex,sans-serif}
+.display{font-family:Head,Body,sans-serif}
 .page{width:540px;height:960px;position:relative;overflow:hidden;break-after:page}
 .page:last-child{break-after:auto}
 .dark{background:#051b30;color:#fff}
 .light{background:#f6f1ea;color:#0e2034}
-.foot{position:absolute;inset:auto 0 0 0;height:40px;padding:0 26px;display:flex;align-items:center;justify-content:space-between;font-size:12px}
-.foot .w{font-weight:700}
-.foot .b{display:flex;gap:12px;align-items:center;font-weight:500}
-.foot .b i{font-style:normal;font-variant-numeric:tabular-nums;opacity:.7}
-.dark .foot{color:rgba(244,236,228,.78);border-top:1px solid rgba(216,180,102,.22)}
+.foot{position:absolute;inset:auto 0 0 0;height:40px;padding:0 26px;display:flex;align-items:center;justify-content:space-between;font-size:11.5px}
+.foot .w{font-weight:600}
+.foot .b{display:flex;gap:12px;align-items:center;font-weight:400}
+.foot .b i{font-style:normal;font-variant-numeric:tabular-nums}
+.dark .foot{color:#bfbebc;border-top:1px solid #333d3c}
 .dark .foot .w{color:#e3c47c}
-.light .foot{color:#6b5a45;border-top:1px solid rgba(150,108,60,.22)}
+.light .foot{color:#6b5a45;border-top:1px solid #e1d4c4}
 .light .foot .w{color:#966c3c}
 /* the advantages: one short line each, marked with the site's own diamond */
 .feat{list-style:none;display:grid;gap:9px}
-.feat li{position:relative;padding-inline-start:22px;font-size:16.5px;font-weight:600;line-height:1.5}
+.feat li{position:relative;padding-inline-start:22px;font-size:15.5px;font-weight:500;line-height:1.6;text-wrap:balance}
 .feat li::before{content:"";position:absolute;inset-inline-start:2px;top:.52em;width:9px;height:9px;border-radius:2px;background:linear-gradient(135deg,#e3c47c,#966c3c);transform:rotate(45deg)}
 .shot{position:relative;overflow:hidden;border-radius:14px;background:#0b1622}
 .shot img{width:100%;height:100%;object-fit:cover}
-.shot figcaption{position:absolute;inset:auto 10px 9px auto;padding:3px 11px;border-radius:999px;background:rgba(5,27,48,.8);color:#f4ece4;font-size:12px;font-weight:600}
+.shot figcaption{position:absolute;inset:auto 10px 9px auto;padding:3px 11px;border-radius:999px;background:#051b30;color:#f4ece4;font-size:11.5px;font-weight:500}
 
 /* 1. cover */
-.cover .bg{position:absolute;inset:0 0 auto 0;width:100%;height:600px;object-fit:cover;object-position:42% 50%}
-.cover .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,27,48,.62) 0%,rgba(5,27,48,.08) 16%,rgba(5,27,48,.12) 36%,rgba(5,27,48,.9) 56%,#051b30 64%)}
+.cover .bg{position:absolute;inset:0;width:100%;height:100%}
 .brandline{position:absolute;inset:30px 34px auto auto;display:flex;flex-direction:column;gap:1px}
-.brandline strong{font-size:21px;font-weight:700}
-.brandline span{font-size:9.5px;letter-spacing:.4em;color:#e3c47c;font-weight:500}
-.cover-in{position:absolute;inset:auto 34px 44px 34px}
-.place{font-size:19px;font-weight:600;color:#fff;display:flex;align-items:baseline;gap:12px}
-.place span{font-size:15px;font-weight:500;color:#e3c47c}
-.cover h1{font-size:132px;font-weight:800;line-height:1.28;margin:-8px 0 -4px;color:#dfbd72;text-shadow:0 6px 30px rgba(5,27,48,.55)}
-.what{font-size:27px;font-weight:700}
-.figs{display:grid;grid-template-columns:auto auto;justify-content:start;gap:0 34px;margin:20px 0 22px;padding-top:18px;border-top:1px solid rgba(216,180,102,.4)}
+.brandline strong{font-size:20px;font-weight:600}
+.brandline span{font-size:9px;letter-spacing:.4em;color:#e3c47c;font-weight:500}
+.cover-in{position:absolute;inset:auto 36px 46px 36px}
+.place{font-size:15px;font-weight:500;color:#e3c47c;display:flex;align-items:baseline;gap:10px}
+.place span{font-size:13px;font-weight:400;color:#d3cfcb}
+.cover h1{font-size:60px;font-weight:600;line-height:1.36;margin:8px 0 10px;color:#fff}
+.what{font-size:16.5px;font-weight:300;line-height:1.8;color:#f4ece4;white-space:nowrap}
+.figs{display:grid;grid-template-columns:auto auto;justify-content:start;gap:0 36px;margin:20px 0 14px;padding-top:18px;border-top:1px solid #595846}
 .figs div{display:grid;grid-template-columns:auto auto;justify-content:start;align-items:baseline;column-gap:7px}
-.figs b{font-size:42px;font-weight:700;line-height:1.1;color:#e3c47c}
-.figs small{font-size:17px;font-weight:600;color:#e3c47c}
-.figs span{grid-column:1/-1;font-size:13px;color:rgba(244,236,228,.82)}
-.whole{display:inline-block;padding:9px 20px;border-radius:999px;background:linear-gradient(180deg,#e3c47c,#c9a14f);color:#051b30;font-size:16px;font-weight:700}
+.figs b{font-size:40px;font-weight:600;line-height:1.15;color:#e3c47c}
+.figs small{font-size:16px;font-weight:500;color:#e3c47c}
+.figs span{grid-column:1/-1;font-size:12.5px;color:#c9c6c4}
+.has{font-size:12.5px;font-weight:300;line-height:1.9;color:#dcd6d0;margin-bottom:20px;text-wrap:balance}
+.acts{display:flex;gap:10px;align-items:center}
+.tour{display:inline-block;padding:8px 20px;border-radius:999px;border:1px solid #d8b466;color:#e3c47c;font-size:14px;font-weight:600;text-decoration:none}
+.contact .tour{margin-top:26px;font-size:15px;padding:10px 26px}
+.whole{display:inline-block;padding:8px 20px;border-radius:999px;background:linear-gradient(180deg,#e3c47c,#c9a14f);color:#051b30;font-size:14px;font-weight:600}
 
 /* 2. the offer */
 .offer .head{padding:38px 32px 0}
-.offer h2{font-size:41px;line-height:1.42;font-weight:800;color:#e3c47c}
-.offer .lead{font-size:16.5px;line-height:1.75;color:#f4ece4;margin-top:10px}
+.offer h2{font-size:36px;line-height:1.45;font-weight:600;color:#e3c47c}
+.offer .lead{font-size:15px;font-weight:300;line-height:1.85;color:#f4ece4;margin-top:10px}
 .offer .model{height:330px;margin-top:6px;position:relative}
-.offer .model img{width:100%;height:100%;object-fit:cover;object-position:50% 46%}
-.offer .model::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#051b30 0%,rgba(5,27,48,0) 16%,rgba(5,27,48,0) 84%,#051b30 100%),linear-gradient(90deg,#051b30 0%,rgba(5,27,48,0) 12%,rgba(5,27,48,0) 88%,#051b30 100%)}
-.offer h3{font-size:14px;font-weight:700;color:#e3c47c;margin-bottom:10px}
+.offer .model img{width:100%;height:100%}
+.offer h3{font-size:13.5px;font-weight:600;color:#e3c47c;margin-bottom:10px}
 .offer .in{padding:4px 32px 0}
 .offer .in .feat{grid-template-columns:1fr 1fr;gap:9px 18px}
-.offer .in .feat li{font-size:14.5px;font-weight:600}
-.offer .where{position:absolute;inset:auto 0 40px 0;padding:14px 32px 16px;background:#0b2743;border-top:1px solid rgba(216,180,102,.3)}
+.offer .in .feat li{font-size:13.5px;font-weight:400}
+.offer .where{position:absolute;inset:auto 0 40px 0;padding:14px 32px 16px;background:#0b2743;border-top:1px solid #444940}
 .offer .where h3{margin-bottom:5px}
-.offer .where p{font-size:14.5px;line-height:1.7;color:#f4ece4}
+.offer .where p{font-size:13.5px;font-weight:300;line-height:1.8;color:#f4ece4}
 
 /* a space: the plan zoomed on it, then its advantages, then its photos */
 .space .head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:30px 28px 0 20px}
-.space h2{font-size:38px;font-weight:800;line-height:1.5;color:#051b30}
-.space .hook{font-size:17px;font-weight:600;color:#966c3c;margin-top:-2px}
-.locator{flex:0 0 auto;width:92px;height:92px;border-radius:16px;overflow:hidden;box-shadow:0 6px 18px rgba(5,27,48,.25)}
+.space h2{font-size:33px;font-weight:600;line-height:1.5;color:#051b30}
+.space .hook{font-size:15px;font-weight:400;color:#966c3c;margin-top:0}
+.locator{flex:0 0 auto;width:92px;height:92px;border-radius:16px;overflow:hidden}
 .locator img{width:100%;height:100%}
-.zoom{position:relative;margin:16px 20px 0;height:270px;border-radius:20px;overflow:hidden;box-shadow:0 10px 28px rgba(5,27,48,.22)}
+.zoom{position:relative;margin:16px 20px 0;height:270px;border-radius:20px;overflow:hidden}
 .zoom img{width:100%;height:100%;object-fit:cover}
-.zoom figcaption{position:absolute;inset:12px 12px auto auto;padding:4px 13px;border-radius:999px;background:#d8b466;color:#051b30;font-size:12.5px;font-weight:700}
+.zoom figcaption{position:absolute;inset:12px 12px auto auto;padding:4px 13px;border-radius:999px;background:#d8b466;color:#051b30;font-size:12px;font-weight:600}
 .space .feat{padding:18px 30px 0}
 .space .feat li{color:#0e2034}
 .shots{position:absolute;inset:auto 20px 54px 20px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -411,13 +477,13 @@ img{display:block}
 
 /* a group of rooms, lit on the whole plan */
 .group .head{padding:34px 30px 0}
-.group h2{font-size:40px;font-weight:800;line-height:1.5;color:#e3c47c}
-.group .hook{font-size:17.5px;font-weight:600;color:#f4ece4;margin-top:-2px}
+.group h2{font-size:34px;font-weight:600;line-height:1.5;color:#e3c47c}
+.group .hook{font-size:15.5px;font-weight:300;color:#f4ece4;margin-top:0}
 .group .row{display:grid;grid-template-columns:1fr 268px;gap:14px;align-items:center;padding:18px 20px 0 30px}
-.group .feat li{font-size:15.5px}
-.map{position:relative;height:270px;border-radius:18px;overflow:hidden;border:1px solid rgba(216,180,102,.4)}
+.group .feat li{font-size:14px;font-weight:400}
+.map{position:relative;height:270px;border-radius:18px;overflow:hidden;border:1px solid #595846}
 .map img{width:100%;height:100%}
-.map .n{position:absolute;transform:translate(-50%,-50%);min-width:21px;height:21px;padding:0 4px;border-radius:999px;background:#d8b466;color:#051b30;font-style:normal;font-size:12.5px;font-weight:700;line-height:21px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+.map .n{position:absolute;transform:translate(-50%,-50%);min-width:21px;height:21px;padding:0 4px;border-radius:999px;background:#d8b466;color:#051b30;font-style:normal;font-size:12px;font-weight:600;line-height:21px;text-align:center;border:1px solid #051b30}
 .grid{position:absolute;inset:auto 20px 54px 20px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .grid .shot{height:234px}
 .two .grid{grid-template-columns:1fr}
@@ -425,26 +491,24 @@ img{display:block}
 
 /* last page */
 .contact{background:linear-gradient(180deg,#051b30,#0b2a47 46%,#051b30)}
-.contact .frame{position:absolute;inset:22px;border:1px solid rgba(216,180,102,.45);border-radius:22px}
+.contact .frame{position:absolute;inset:22px;border:1px solid #646048;border-radius:22px}
 .contact-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 50px}
-.contact .tag{padding:7px 18px;border-radius:999px;background:linear-gradient(180deg,#e3c47c,#c9a14f);color:#051b30;font-size:14.5px;font-weight:700;margin-bottom:20px}
-.contact h2{font-size:58px;font-weight:800;line-height:1.38;color:#fff}
-.contact .ask{font-size:17px;color:#f4ece4;margin:12px 0 30px}
+.contact .tag{padding:7px 18px;border-radius:999px;background:linear-gradient(180deg,#e3c47c,#c9a14f);color:#051b30;font-size:13.5px;font-weight:600;margin-bottom:22px}
+.contact h2{font-size:48px;font-weight:600;line-height:1.42;color:#fff}
+.contact .ask{font-size:15px;font-weight:300;color:#f4ece4;margin:14px 0 30px}
 .phones{display:grid;gap:16px}
 .phone{display:grid;gap:1px;color:#fff;text-decoration:none}
-.phone small{font-size:13.5px;color:#e3c47c;font-weight:600}
-.phone b{font-size:32px;font-weight:700;letter-spacing:.01em}
-.contact .rule{display:block;width:64px;height:2px;background:#d8b466;margin:30px 0 22px}
-.contact .brand{font-size:22px;font-weight:700;display:flex;flex-direction:column;gap:2px}
+.phone small{font-size:12.5px;color:#e3c47c;font-weight:500}
+.phone b{font-size:28px;font-weight:500;letter-spacing:.02em}
+.contact .rule{display:block;width:64px;height:2px;background:#d8b466;margin:26px 0 20px}
+.contact .brand{font-size:20px;font-weight:600;display:flex;flex-direction:column;gap:3px}
 .contact .brand span{font-size:10px;letter-spacing:.42em;color:#e3c47c;font-weight:500}
-.slogan{font-size:14.5px;color:#f4ece4;margin-top:10px}
-.web{color:#e3c47c;font-size:18px;font-weight:600;text-decoration:none;margin-top:10px}
-.loc{font-size:13px;color:rgba(244,236,228,.85);margin-top:22px}
-.fine{font-size:11px;color:rgba(244,236,228,.55);margin-top:8px}
+.slogan{font-size:13px;font-weight:300;color:#f4ece4;margin-top:10px}
+.web{color:#e3c47c;font-size:16px;font-weight:500;text-decoration:none;margin-top:10px}
+.loc{font-size:12px;font-weight:300;color:#d0cdc9;margin-top:22px}
+.fine{font-size:10.5px;font-weight:300;color:#94989c;margin-top:8px}
 '''
-for key, val in {'PLEX_R': PLEX % 'Regular', 'PLEX_M': PLEX % 'Medium', 'PLEX_S': PLEX % 'SemiBold', 'PLEX_B': PLEX % 'Bold',
-                 'KUFI_B': KUFI % 'Bold', 'KUFI_X': KUFI % 'ExtraBold'}.items():
-    css = css.replace(key, val)
+css = faces + css
 
 doc = f'<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>للإيجار: مكتب كامل في {e(w["location"].split("·")[0].strip())}</title><style>{css}</style></head><body>{body}</body></html>'
 with open(os.path.join(OUT, 'brochure.html'), 'w', encoding='utf-8') as fh:

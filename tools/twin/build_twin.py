@@ -1141,6 +1141,7 @@ def build_lights(col, office, energy):
             continue
         if r['kind'] == 'service' or r['id'] == 'core':
             k = 0.5
+        k *= L.POOL_SCALE.get(r['id'], 1.0)
         for i in range(nx):
             for j in range(ny):
                 x = x0 + (i + 0.5) * (x1 - x0) / nx

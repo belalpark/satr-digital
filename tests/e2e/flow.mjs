@@ -205,12 +205,12 @@ async function flow(name, contextOptions, { mobile, team }) {
     assert.equal(dotStyle.anim, 'dot-blink', '2D: the dot blinks');
     assert.ok(await page.$eval('#room-list .room-item-btn[data-id="meeting-large"] img.type-icon', (i) => i.complete && i.naturalWidth > 0), 'the room list shows the icon of the kind of space');
     const listed = await page.$$eval('#room-list .room-item-name', (els) => els.map((e) => e.textContent.trim()));
-    assert.deepEqual(listed.filter((t) => /^مكتب \d/.test(t)), [1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => `مكتب ${k}`), 'the room list: offices 1 to 9 in order');
+    assert.deepEqual(listed.filter((t) => /^مكتب \d/.test(t)), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((k) => `مكتب ${k}`), 'the room list: offices 1 to 10 in order (the glass cube is two offices: owner, 2026-11-11)');
     assert.deepEqual(listed.filter((t) => /^مكاتب موظفين/.test(t)), [1, 2, 3, 4, 5, 6].map((k) => `مكاتب موظفين ${k}`), 'the room list: employee areas 1 to 6 in order');
     assert.deepEqual(listed.filter((t) => /اجتماعات/.test(t)), ['قاعة اجتماعات 1', 'قاعة اجتماعات 2'], 'the room list: meeting rooms 1 and 2');
     const tags2d = await page.$$eval('#plan2d-stage .room-tag:not(.is-outside)', (els) => els.map((e) => e.textContent));
-    assert.ok(tags2d.includes('مكاتب موظفين 1') && tags2d.includes('قاعة اجتماعات 1') && tags2d.includes('مكتب 9'), '2D: labels are room names with their numbers from the door');
-    assert.ok(tags2d.every((t) => !/[0-9]/.test(t) || /^(مكتب|مكاتب موظفين|قاعة اجتماعات) [1-9]$/.test(t)), `2D: the only digits on the labels are the numbers from the door, never plan codes (${tags2d.filter((t) => /[0-9]/.test(t) && !/^(مكتب|مكاتب موظفين|قاعة اجتماعات) [1-9]$/.test(t))})`);
+    assert.ok(tags2d.includes('مكاتب موظفين 1') && tags2d.includes('قاعة اجتماعات 1') && tags2d.includes('مكتب 2') && tags2d.includes('مكتب 3') && tags2d.includes('مكتب 10'), '2D: labels are room names with their numbers from the door');
+    assert.ok(tags2d.every((t) => !/[0-9]/.test(t) || /^(مكتب|مكاتب موظفين|قاعة اجتماعات) [1-9][0-9]?$/.test(t)), `2D: the only digits on the labels are the numbers from the door, never plan codes (${tags2d.filter((t) => /[0-9]/.test(t) && !/^(مكتب|مكاتب موظفين|قاعة اجتماعات) [1-9][0-9]?$/.test(t))})`);
     const vis2d = await page.$$eval('#plan2d-stage .dot-room', (els) => els.filter((e) => { const r = e.getBoundingClientRect(); return r.width > 4 && r.left >= 0 && r.right <= innerWidth; }).length);
     assert.ok(vis2d >= 20, `2D dots on screen (${vis2d})`);
     await shot('plan-2d');

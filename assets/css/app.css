@@ -826,3 +826,18 @@ img[data-broken], img[data-thumb]:not([src]) { visibility: hidden; } /* failed, 
   /* these rules come after the general reduced-motion block above, so they are switched off here */
   .room-photo { transition: none; }
 }
+
+/* the brochure beside the two welcome actions (owner, 2026-11-11): on a phone the three stay on one row */
+@media (max-width: 720px) {
+  .welcome-actions { gap: 8px; flex-wrap: nowrap; }
+  .welcome-actions .btn-lg { padding: 12px 16px; font-size: 15px; white-space: nowrap; }
+  .welcome-actions .btn-primary::after { margin-inline-start: 6px; }
+  .welcome-actions .btn-ghost { padding: 10px 12px; font-size: 13px; white-space: nowrap; }
+  .welcome-actions .wide-only { display: none; }
+}
+@media (max-width: 350px) {
+  .welcome-actions { gap: 6px; }
+  .welcome-actions .btn-lg { padding: 11px 12px; font-size: 14px; }
+  .welcome-actions .btn-primary::after { content: none; }
+  .welcome-actions .btn-ghost { padding: 9px 9px; font-size: 12px; }
+}
