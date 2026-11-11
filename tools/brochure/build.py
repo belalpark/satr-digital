@@ -30,7 +30,8 @@ MODEL = sys.argv[2]
 # one number only, "for contact and viewing". Each links to its own site: «ابدأ الجولة الافتراضية».
 EDITION = sys.argv[3] if len(sys.argv) > 3 else 'satr'
 assert EDITION in ('satr', 'general'), EDITION
-TOUR = {'satr': 'https://satr.maspro4it.com/', 'general': 'https://roshen.maspro4it.com/'}[EDITION]
+# owner (2026-11-11): satr.maspro4it.com does not open; both editions lead to the tour at roshen.maspro4it.com
+TOUR = 'https://roshen.maspro4it.com/#/'
 SATR = EDITION == 'satr'
 ASSETS = os.path.join(OUT, 'assets')
 os.makedirs(ASSETS, exist_ok=True)
