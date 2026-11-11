@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>مكتب مجهّز للاستحواذ — واجهة روشن للأعمال</title>
+  <meta name="description" content="فرصة استحواذ: مكتب مجهّز في واجهة روشن للأعمال بالرياض — جولة بمخطط ثنائي وثلاثي الأبعاد وصور حقيقية لكل غرفة.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#051b30">
+  <!-- a phone can keep the tour on its home screen and open it as an app -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app-192.png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="جولة المكتب">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <link rel="preload" href="assets/fonts/IBMPlexSansArabic-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/IBMPlexSansArabic-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/app.css">
+  <!-- the page's modules in one round trip instead of a chain (app.js → plan2d.js → geometry.js …) -->
+  <link rel="modulepreload" href="assets/js/app.js">
+  <link rel="modulepreload" href="assets/js/router.js">
+  <link rel="modulepreload" href="assets/js/plan2d.js">
+  <link rel="modulepreload" href="assets/js/geometry.js">
+  <link rel="modulepreload" href="assets/js/overlay.js">
+  <link rel="modulepreload" href="assets/js/room.js">
+  <link rel="modulepreload" href="assets/js/details.js">
+  <link rel="modulepreload" href="assets/js/format.js">
+  <link rel="modulepreload" href="assets/js/icons.js">
+  <link rel="modulepreload" href="assets/js/media.js">
+  <link rel="modulepreload" href="assets/js/install.js">
+</head>
+<body>
+  <div id="app" class="app" data-current-view="welcome">
+
+    <!-- هيدر ثابت في كل الصفحات -->
+    <header class="site-header" id="site-header">
+      <a class="brand" href="#/" id="nav-home" aria-label="الرئيسية">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text">جولة المكتب</span>
+      </a>
+      <nav class="site-nav" aria-label="التنقل">
+        <a href="#/" data-nav="welcome">الرئيسية</a>
+        <a href="#/plan?view=2d" data-nav="plan2d">مخطط المكتب</a>
+        <a href="#/plan?view=3d" data-nav="plan3d">المخطط ثلاثي الأبعاد</a>
+        <a href="#/plan?scene=paths" data-nav="paths">المسارات</a>
+        <a href="#/gallery" data-nav="gallery">الصور</a>
+      </nav>
+      <span class="team-chip" id="plan-team-chip" hidden></span>
+      <!-- brand:start -->
+      <a class="header-owner" id="header-owner" href="https://www.satr-ksa.com" target="_blank" rel="noopener" aria-label="شركة سطر العقارية — الموقع الرسمي">
+        <span class="owner-mark" aria-hidden="true"></span>
+        <span class="owner-name">شركة سطر العقارية</span>
+      </a>
+      <!-- brand:end -->
+    </header>
+
+    <!-- مسار ثابت تحت الهيدر في كل الصفحات عدا الترحيب: المخطط ‹ المساحة ‹ الصور -->
+    <nav class="crumbs" id="crumbs" aria-label="مكانك في الجولة" hidden>
+      <a class="crumb-back" id="crumb-back" href="#/"><span class="crumb-back-icon" aria-hidden="true">→</span><span class="crumb-back-text" id="crumb-back-text">رجوع</span></a>
+      <ol class="crumb-list" id="crumb-list"></ol>
+    </nav>
+
+    <!-- 1. الترحيب -->
+    <section id="view-welcome" class="view view-welcome" data-view="welcome" aria-labelledby="welcome-location">
+      <div class="welcome-media" aria-hidden="true"><img id="welcome-photo" class="welcome-photo" alt="" src="media/hero/perspective.webp" fetchpriority="high"></div>
+      <div class="welcome-shade" aria-hidden="true"></div>
+      <div class="welcome-panel" aria-hidden="true"></div>
+      <div class="welcome-frame" aria-hidden="true"></div>
+      <div class="welcome-content">
+        <!-- brand:start -->
+        <div class="welcome-brand" id="welcome-brand">
+          <span class="welcome-brand-mark" aria-hidden="true"></span>
+          <span class="welcome-brand-text">
+            <strong id="welcome-brand-name">سطر العقارية</strong>
+            <small id="welcome-brand-en">SATR REAL ESTATE</small>
+          </span>
+        </div>
+        <!-- brand:end -->
+        <p id="welcome-title" class="welcome-title">فرصة استحواذ</p>
+        <h1 id="welcome-location" class="welcome-location"></h1>
+        <dl id="welcome-facts" class="welcome-facts" hidden></dl>
+        <p id="welcome-subtitle" class="welcome-subtitle"></p>
+        <p id="welcome-atmosphere" class="welcome-atmosphere"></p>
+        <div class="welcome-actions">
+          <a id="btn-start" class="btn btn-primary btn-lg" href="#/plan">ابدأ الجولة</a>
+          <a id="btn-gallery" class="btn-ghost" href="#/gallery">معرض الصور</a>
+          <a id="btn-brochure" class="btn-ghost" href="brochure.pdf" download="office-brochure.pdf"><span class="wide-only">تحميل </span>الكتيّب PDF</a>
+        </div>
+        <!-- brand:start -->
+        <p id="welcome-slogan" class="welcome-slogan"></p>
+        <!-- brand:end -->
+      </div>
+      <!-- brand:start -->
+      <footer id="app-footer" class="app-footer"></footer>
+      <!-- brand:end -->
+    </section>
+
+    <!-- 2. النموذج ثلاثي الأبعاد الحي -->
+    <section id="view-plan" class="view view-plan" data-view="plan" aria-label="النموذج ثلاثي الأبعاد">
+      <div class="scenebar" role="toolbar" aria-label="المشاهد">
+        <div class="scene-tabs view-tabs" role="tablist" aria-label="طريقة العرض" id="view-tabs">
+          <button type="button" class="scene-tab" role="tab" data-view="2d" aria-selected="true">المخطط ثنائي الأبعاد</button>
+          <button type="button" class="scene-tab" role="tab" data-view="3d" aria-selected="false">المخطط ثلاثي الأبعاد</button>
+        </div>
+        <div class="scene-tabs" role="tablist" aria-label="اختر مشهدًا" id="scene-tabs"></div>
+        <ul class="route-legend" id="route-legend" aria-label="مفتاح المسارات" hidden></ul>
+        <div class="scene-tools">
+          <button type="button" class="tool-btn" id="btn-lighting" aria-pressed="false" title="تشغيل الإضاءة المسائية">
+            <span class="tool-icon" aria-hidden="true">☾</span><span class="tool-text">إضاءة مسائية</span>
+          </button>
+          <button type="button" class="tool-btn" id="btn-labels" aria-pressed="false" title="المسميات خارج المخطط">
+            <span class="tool-icon" aria-hidden="true">⇱</span><span class="tool-text">مسميات خارجية</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="plan-layout">
+        <div class="plan-stage-wrap" id="plan-stage-wrap" data-mode="2d">
+          <div id="plan2d-stage" class="plan-stage plan-stage-2d" aria-label="مخطط المكتب">
+            <svg class="overlay-svg" aria-hidden="true"></svg>
+            <div class="overlay-dots"></div>
+          </div>
+          <div id="plan-stage" class="plan-stage plan-stage-3d" aria-label="النموذج ثلاثي الأبعاد للمكتب" hidden>
+            <div class="twin-loading" id="twin-loading"><span class="spinner" aria-hidden="true"></span>يُحمَّل النموذج ثلاثي الأبعاد…</div>
+            <svg class="overlay-svg" id="overlay-svg" aria-hidden="true"></svg>
+            <div class="overlay-dots" id="overlay-dots"></div>
+          </div>
+          <div class="plan-badge" id="plan-badge">توزيعات المكاتب</div>
+          <div class="dots-legend" id="dots-legend">
+            <span><i class="dot dot-room" aria-hidden="true"></i> تفاصيل الغرفة والصور</span>
+          </div>
+          <div class="zoom-controls" aria-label="التحكم بالعرض">
+            <button type="button" class="zoom-btn" data-zoom="in" aria-label="تكبير">+</button>
+            <button type="button" class="zoom-btn" data-zoom="out" aria-label="تصغير">−</button>
+            <button type="button" class="zoom-btn zoom-reset" data-zoom="fit" aria-label="إعادة الوضع الافتراضي" title="إعادة الوضع الافتراضي">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                <ellipse cx="12" cy="12" rx="3.4" ry="8.2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M3.9 12h16.2M5.3 8.3h13.4M5.3 15.7h13.4" fill="none" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M15.2 15.6l1.2 3.1c.3.8-.3 1.5-1.1 1.5h-3.6c-.6 0-1-.3-1.3-.8l-1.5-2.4c-.3-.5.1-1.1.7-1l1.4.4v-3.6c0-.5.4-.9.9-.9s.9.4.9.9v2.1l2.4.7z" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
+          <p class="plan-help" id="plan-help"><span class="help-2d">اسحب للتحريك، العجلة للتكبير — انقر الغرفة لعرضها</span><span class="help-3d help-desktop">اسحب للتدوير حول المكتب، العجلة للتكبير — انقر الغرفة لعرضها</span><span class="help-3d help-mobile">اسحب للتدوير، اقرص للتكبير — اضغط الغرفة لعرضها</span></p>
+        </div>
+
+        <!-- القائمة العمودية الثابتة على اليمين -->
+        <aside class="room-sidebar" id="room-sidebar" aria-label="الغرف">
+          <div class="sidebar-head">
+            <h2 class="sidebar-title">الغرف</h2>
+            <span class="sidebar-count" id="sidebar-count"></span>
+          </div>
+          <ul class="room-list" id="room-list"></ul>
+          <div class="room-card" id="room-card" hidden>
+            <h3 id="focus-title" class="focus-title" tabindex="-1"></h3>
+            <p id="focus-summary" class="focus-summary"></p>
+            <ul class="focus-facts" id="focus-facts"></ul>
+            <div class="focus-thumbs" id="focus-thumbs" hidden></div>
+            <div class="focus-actions">
+              <button id="btn-photos" class="btn btn-primary" type="button">الصور الحقيقية</button>
+              <button id="btn-focus-details" class="btn btn-ghost-light" type="button">تفاصيل الغرفة</button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- لوحة تفاصيل الغرفة على اليسار: تظهر مع اختيار الغرفة بضغطة واحدة -->
+        <aside class="room-drawer" id="room-drawer" aria-label="تفاصيل الغرفة" aria-labelledby="drawer-title" hidden>
+          <div class="drawer-head">
+            <h3 id="drawer-title" class="drawer-title" tabindex="-1"></h3>
+            <button id="btn-drawer-close" class="drawer-close" type="button" aria-label="إغلاق والعودة للمخطط" title="العودة للمخطط">×</button>
+          </div>
+          <div class="drawer-scroll">
+            <figure class="drawer-hero" id="drawer-hero">
+              <img id="drawer-image" alt="" decoding="async">
+              <figcaption id="drawer-caption"></figcaption>
+            </figure>
+            <p id="drawer-summary" class="drawer-summary"></p>
+            <ul id="drawer-facts" class="drawer-facts"></ul>
+            <div id="drawer-fixtures" class="drawer-fixtures" hidden></div>
+            <div class="drawer-photos-block" id="drawer-photos-block" hidden>
+              <h4 class="drawer-sub" id="drawer-photos-title">الصور الحقيقية</h4>
+              <div id="drawer-photos" class="drawer-photos"></div>
+            </div>
+          </div>
+          <div class="drawer-actions">
+            <button id="btn-drawer-photos" class="btn btn-primary" type="button">الصور الحقيقية</button>
+            <button id="btn-drawer-details" class="btn btn-ghost-light" type="button">شاشة التفاصيل الكاملة</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- معرض الصور: بطاقة لكل غرفة لها صور -->
+    <section id="view-gallery" class="view view-gallery" data-view="gallery" aria-labelledby="gallery-title">
+      <div class="gallery-inner">
+        <header class="gallery-head">
+          <p class="gallery-kicker">صور حقيقية من المكتب</p>
+          <h2 id="gallery-title" class="gallery-title">معرض الصور</h2>
+          <p class="gallery-sub" id="gallery-sub"></p>
+        </header>
+        <div class="gallery-grid" id="gallery-grid"></div>
+      </div>
+    </section>
+
+    <!-- 3. صور الغرفة -->
+    <section id="view-room" class="view view-room" data-view="photos" aria-labelledby="room-title">
+      <header class="topbar topbar-dark">
+        <h2 id="room-title" class="room-title"></h2>
+        <div class="topbar-actions">
+          <button id="btn-pano" class="btn btn-ghost-light" type="button" hidden>جولة 360°</button>
+          <button id="btn-details" class="btn btn-primary" type="button">تفاصيل الغرفة</button>
+        </div>
+      </header>
+      <div class="room-stage" id="room-stage">
+        <div class="room-backdrop" id="room-backdrop" aria-hidden="true"></div>
+        <img id="room-photo" class="room-photo" alt="" decoding="async">
+        <button class="gallery-arrow gallery-prev" id="gallery-prev" type="button" aria-label="الصورة السابقة">‹</button>
+        <button class="gallery-arrow gallery-next" id="gallery-next" type="button" aria-label="الصورة التالية">›</button>
+        <div class="room-meta">
+          <p class="room-summary" id="room-summary"></p>
+          <span class="chip chip-light" id="room-capacity"></span>
+        </div>
+      </div>
+      <div class="gallery-bar">
+        <p class="gallery-caption" id="gallery-caption"></p>
+        <div class="thumbs" id="gallery-thumbs" role="listbox" aria-label="صور الغرفة"></div>
+      </div>
+    </section>
+
+    <!-- 4. التفاصيل -->
+    <section id="view-details" class="view view-details" data-view="details" aria-labelledby="details-title">
+      <header class="topbar">
+        <h2 id="details-title" class="room-title room-title-dark"></h2>
+        <div class="topbar-actions"><button id="btn-details-photos" class="btn btn-primary" type="button">الصور الحقيقية</button></div>
+      </header>
+      <div class="details-layout">
+        <div class="details-tabs" role="tablist" aria-label="الصور أو المميزات">
+          <button type="button" role="tab" class="tab is-active" data-tab="photos" aria-selected="true" id="tab-photos">الصور</button>
+          <button type="button" role="tab" class="tab" data-tab="features" aria-selected="false" id="tab-features">المميزات</button>
+        </div>
+        <aside class="details-photos" id="details-photos" role="tabpanel" aria-labelledby="tab-photos"></aside>
+        <div class="details-plan">
+          <div id="details-stage" class="plan-stage plan-stage-static" aria-label="الغرفة في النموذج ثلاثي الأبعاد"></div>
+          <p class="details-plan-caption">الغرفة وما حولها في النموذج ثلاثي الأبعاد</p>
+        </div>
+        <aside class="details-features" id="details-features" role="tabpanel" aria-labelledby="tab-features"></aside>
+      </div>
+    </section>
+
+    <nav class="tabbar" id="tabbar" aria-label="التنقل السريع">
+      <a href="#/" data-nav="welcome"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4l8 7.2V20a1 1 0 0 1-1 1h-4.5v-5.5h-5V21H5a1 1 0 0 1-1-1z"/></svg><span>الرئيسية</span></a>
+      <a href="#/plan?view=2d" data-nav="plan2d"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 11h7M11 5v9M15 19v-6h5"/></svg><span>المخطط</span></a>
+      <a href="#/plan?view=3d" data-nav="plan3d"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9"/></svg><span>ثلاثي الأبعاد</span></a>
+      <a href="#/gallery" data-nav="gallery"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4zM4 15l4.5-4 3.5 3 2.5-2 5.5 4.5"/><circle cx="15.5" cy="9.5" r="1.3"/></svg><span>الصور</span></a>
+    </nav>
+
+    <div class="plan-tip" id="plan-tip" hidden></div>
+    <!-- brand:start -->
+    <div class="build-sha" id="build-sha" title="رقم النسخة المنشورة">dev</div>
+    <!-- brand:end -->
+  </div>
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

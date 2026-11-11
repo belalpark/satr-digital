@@ -6,3 +6,8 @@ Thumbs.db
 # الأصول عالية الدقة ونماذج الإزالة لا تُرفع إلى المستودع
 originals/
 models/
+__pycache__/
+*.pyc
+.twin-render/
+.blender/
+.film/

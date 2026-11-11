@@ -1,0 +1,17 @@
+{
+  "_note": "The 12 spaces of the film and the brochure, in tour order. Names are the site's own (data/office.json). Every feature phrase is taken from that room's photo captions, its use line or its documented capacity on the site: nothing is added.",
+  "spaces": [
+    {"id": "reception", "photos": [2, 5], "features": ["كاونتر ترحيب خشبي", "إضاءة سقفية مميزة", "رفوف خلفية"]},
+    {"id": "bleachers", "photos": [1, 3], "features": ["مدرّج خشبي للفعاليات", "سقف هندسي معلّق", "بجوار اللاونج"]},
+    {"id": "coo", "photos": [1, 5], "features": ["طاولة اجتماع مستديرة", "تلفاز متحرك", "جلسة جانبية"]},
+    {"id": "inner-4", "photos": [1, 2], "features": ["مكتب زجاجي", "إطارات داكنة", "وسط المكاتب المفتوحة"]},
+    {"id": "office-l1", "photos": [1, 4], "features": ["مقاعد زوار", "نباتات داخلية", "شاشة عمل"]},
+    {"id": "meeting-large", "photos": [1, 2], "features": ["16 مقعدًا", "شاشة عرض كبيرة", "سبورة وهاتف مؤتمرات"]},
+    {"id": "inner-2", "photos": [1, 4], "features": ["مكتب مغلق", "طاولة على شكل L", "طابعة وكرسي زائر"]},
+    {"id": "inner-3", "photos": [1, 5], "features": ["مكتب مغلق", "وحدة أدراج", "هاتف وشاشة"]},
+    {"id": "cfo", "photos": [2, 6], "features": ["واجهة زجاجية", "خزانة ملفات", "إضاءة طبيعية"]},
+    {"id": "office-r2", "photos": [2, 6], "features": ["شاشة عرض على حامل", "واجهة زجاجية", "طاولة جانبية"]},
+    {"id": "open-a", "photos": [1, 5], "features": ["14 محطة عمل", "شاشات مزدوجة", "أحواض نباتات"]},
+    {"id": "ceo", "photos": [1, 4], "features": ["طاولة اجتماعات", "ركن جلوس وشاشة عرض", "سقف خشبي وإطلالة"]}
+  ]
+}

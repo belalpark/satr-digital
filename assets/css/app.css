@@ -1,0 +1,843 @@
+/* ===== الخط ===== */
+@font-face { font-family: "IBM Plex Sans Arabic"; src: url("../fonts/IBMPlexSansArabic-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans Arabic"; src: url("../fonts/IBMPlexSansArabic-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans Arabic"; src: url("../fonts/IBMPlexSansArabic-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans Arabic"; src: url("../fonts/IBMPlexSansArabic-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+/* ===== الرموز ===== */
+:root {
+  --bg: #f4f1ec;
+  --surface: #ffffff;
+  --surface-2: #faf8f4;
+  --ink: #1b1a17;
+  --ink-2: #4a463f;
+  --muted: #7a7368;
+  --line: #e3ddd3;
+  /* هوية الواجهة: كحلي عميق، ذهبي، برونزي، رملي */
+  --brand-navy: #051b30;
+  --brand-navy-2: #0b2a47;
+  --brand-navy-3: #123a5e;
+  --brand-gold: #d8b466;
+  --brand-gold-2: #c9a24f;
+  --brand-bronze: #966c3c;
+  --brand-sand: #f4ece4;
+  --accent: #966c3c;          /* أزرار الدعوة والتمييز — برونزي */
+  --accent-strong: #7d5830;
+  --accent-soft: #f3e9d9;
+  --gold: #d8b466;
+  --ready: #3fd0b0;           /* الغرفة الجاهزة للعرض */
+  --night: #071d33;
+  --night-2: #0d2742;
+  --night-line: rgba(255, 255, 255, 0.1);
+  --night-ink: #f3efe8;
+  --night-muted: rgba(243, 239, 232, 0.62);
+  --dark: #051b30;
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 10px 30px rgba(27, 26, 23, 0.12);
+  --shadow-sm: 0 2px 10px rgba(27, 26, 23, 0.08);
+  --topbar-h: 60px;
+  --header-h: 56px;
+  --scenebar-h: 54px;
+  --sidebar-w: 300px;
+  --drawer-w: 340px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { height: 100%; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; min-height: 100%;
+  background: var(--night); color: var(--ink);
+  font-family: var(--font); font-size: 16px; line-height: 1.6;
+  overflow: hidden;
+}
+button, input { font: inherit; color: inherit; }
+img { display: block; }
+h1, h2, h3 { margin: 0; font-weight: 600; line-height: 1.25; }
+p { margin: 0; }
+ul { margin: 0; padding: 0; list-style: none; }
+[hidden] { display: none !important; }
+
+.app { position: relative; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; }
+
+/* ===== المشاهد (views) ===== */
+/* One page on screen at a time: every page has an opaque background and replaces the previous one in
+   the same frame; only the new page's own content eases in (app.js, a short opacity animation). No
+   cross-fade, so two pages never show through each other. */
+.view {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  visibility: hidden; pointer-events: none;
+}
+.view.is-active { visibility: visible; pointer-events: auto; }
+/* A hidden page hides everything inside it by rule, not by inheritance alone. Leaving a page while its
+   content was still fading in (within a fifth of a second of arriving) left that content visible and
+   clickable on top of the next page in Chrome: the element that had been animating kept the "visible" it
+   had inherited earlier. A rule that names every element does not depend on inheritance. */
+.view:not(.is-active) *, .view:not(.is-active) *::before, .view:not(.is-active) *::after { visibility: hidden !important; pointer-events: none !important; }
+.view-room { z-index: 3; }
+.view-details { z-index: 4; }
+.view-gallery { z-index: 2; }
+
+/* ===== الأزرار ===== */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 18px; border-radius: 999px; border: 1px solid transparent;
+  font-weight: 600; font-size: 15px; line-height: 1.2; cursor: pointer;
+  text-decoration: none; white-space: nowrap;
+  transition: transform 160ms var(--ease), background-color 160ms, border-color 160ms, box-shadow 160ms;
+}
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 3px solid rgba(216, 180, 102, 0.6); outline-offset: 2px; }
+.btn-lg { padding: 14px 30px; font-size: 17px; }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn-primary { background: linear-gradient(180deg, #e3c47c, var(--brand-gold-2)); color: var(--brand-navy); box-shadow: 0 8px 22px rgba(216, 180, 102, 0.3); }
+.btn-primary:hover { background: var(--brand-gold); }
+.btn-ghost { background: rgba(255, 255, 255, 0.75); color: var(--ink); border-color: var(--line); backdrop-filter: blur(8px); }
+.btn-ghost:hover { background: #fff; }
+.btn-ghost-light { background: rgba(255, 255, 255, 0.1); color: #fff; border-color: rgba(255, 255, 255, 0.24); backdrop-filter: blur(8px); }
+.btn-ghost-light:hover { background: rgba(255, 255, 255, 0.2); }
+.btn-icon { font-size: 18px; line-height: 1; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  background: var(--accent-soft); color: var(--accent-strong);
+}
+.chip-light { background: rgba(255, 255, 255, 0.12); color: #fff; backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.22); }
+
+/* ===== الترحيب: صورة المكتب تذوب في لوح كحلي يحمل الفرصة والهوية ===== */
+.view-welcome { background: var(--brand-navy); color: #fff; justify-content: space-between; }
+/* the slow zoom is clipped by its own box: a scaled image would otherwise make the page scrollable */
+.welcome-media { position: absolute; inset: 0; overflow: hidden; }
+.welcome-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; transform: scale(1.08); animation: welcome-zoom 24s var(--ease) forwards; filter: saturate(1.05); }
+@keyframes welcome-zoom { to { transform: scale(1); } }
+.welcome-shade {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(5, 27, 48, 0.35) 0%, rgba(5, 27, 48, 0) 30%, rgba(5, 27, 48, 0.55) 100%), radial-gradient(120% 90% at 50% 50%, rgba(5, 27, 48, 0) 55%, rgba(5, 27, 48, 0.45) 100%);
+}
+/* اللوح الكحلي على جهة البداية (اليمين في العربية) بحافة مائلة كغلاف عرض */
+.welcome-panel {
+  position: absolute; inset-block: 0; inset-inline-start: 0; width: min(62%, 860px);
+  background: linear-gradient(90deg, rgba(5, 27, 48, 0) 0%, rgba(5, 27, 48, 0.86) 26%, rgba(5, 27, 48, 0.97) 100%);
+}
+/* gradients ignore the writing direction: in RTL the panel sits on the right, so its solid side is the
+   right edge and it fades out toward the photo on the left (no hard vertical edge) */
+[dir="rtl"] .welcome-panel { background: linear-gradient(90deg, rgba(5, 27, 48, 0) 0%, rgba(5, 27, 48, 0.86) 26%, rgba(5, 27, 48, 0.97) 100%); }
+.welcome-content {
+  position: relative; z-index: 1; flex: 1 1 auto;
+  width: min(640px, 100% - 2 * clamp(20px, 6vw, 96px));
+  margin: calc(var(--header-h) + clamp(16px, 4vh, 40px)) clamp(20px, 6vw, 96px) clamp(20px, 4vh, 40px) auto;
+  display: flex; flex-direction: column; justify-content: center; gap: 14px;
+  animation: rise 900ms var(--ease) both;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.welcome-brand { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; margin-bottom: 4px; border-bottom: 1px solid rgba(216, 180, 102, 0.35); }
+.welcome-brand-mark { display: none; flex: 0 0 auto; height: 56px; }
+.welcome-brand-mark.has-logo { display: block; }
+.welcome-brand-mark img { height: 100%; width: auto; }
+.welcome-brand-text { display: grid; gap: 2px; }
+.welcome-brand-text strong { font-size: 20px; font-weight: 700; letter-spacing: 0.01em; color: #fff; }
+.welcome-brand-text small { font-size: 11px; letter-spacing: 0.32em; color: var(--brand-gold); font-weight: 600; }
+/* «فرصة استحواذ» عنوان تمهيدي صغير بخط ذهبي، والموقع هو العنوان البطل */
+.welcome-title { display: flex; align-items: center; gap: 12px; font-size: clamp(15px, 1.3vw, 18px); font-weight: 600; letter-spacing: 0.08em; color: var(--brand-gold); margin-top: 6px; }
+.welcome-title::before { content: ""; width: 34px; height: 2px; background: linear-gradient(90deg, var(--brand-gold), rgba(216, 180, 102, 0)); border-radius: 2px; }
+[dir="rtl"] .welcome-title::before { background: linear-gradient(270deg, var(--brand-gold), rgba(216, 180, 102, 0)); }
+.welcome-title span { color: #fff; }
+.welcome-location { display: grid; gap: 6px; width: fit-content; padding: 0; border: 0; color: #fff; }
+.welcome-location .loc-city { display: inline-flex; align-items: center; gap: 8px; font-size: clamp(14px, 1.35vw, 17px); font-weight: 600; letter-spacing: 0.14em; color: var(--brand-sand); opacity: 0.92; }
+.welcome-location .loc-city::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--brand-gold); box-shadow: 0 0 0 4px rgba(216, 180, 102, 0.18), 0 0 14px rgba(216, 180, 102, 0.9); animation: loc-pulse 2.6s ease-in-out infinite; }
+@keyframes loc-pulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(216, 180, 102, 0.18), 0 0 14px rgba(216, 180, 102, 0.9); } 50% { box-shadow: 0 0 0 9px rgba(216, 180, 102, 0.06), 0 0 22px rgba(216, 180, 102, 1); } }
+.welcome-location .loc-main {
+  font-size: clamp(42px, 6.2vw, 84px); font-weight: 700; line-height: 1.12; letter-spacing: -0.015em;
+  background: linear-gradient(100deg, #fff6dc 0%, var(--brand-gold) 35%, #f3dca2 55%, var(--brand-gold-2) 100%);
+  background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: none; animation: gold-sheen 9s ease-in-out infinite;
+}
+@keyframes gold-sheen { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+/* «مساحة تليق بأعمالك» بالذهبي، وتحته الوعد في جملة واحدة بالأبيض */
+.welcome-subtitle { font-size: clamp(24px, 2.6vw, 36px); font-weight: 700; color: var(--brand-gold); line-height: 1.25; margin-top: 4px; }
+.welcome-atmosphere { font-size: clamp(15px, 1.4vw, 19px); color: rgba(255, 255, 255, 0.9); line-height: 1.6; max-width: 46ch; }
+.welcome-location .loc-lead { font-size: clamp(22px, 2.3vw, 32px); font-weight: 600; color: #fff; line-height: 1.25; margin-top: 4px; }
+/* الأرقام الرئيسية للفرصة: رقم ذهبي كبير + وحدة + وصف */
+.welcome-facts { display: flex; flex-wrap: wrap; gap: 0; margin: 6px 0 2px; width: fit-content; border: 1px solid rgba(216, 180, 102, 0.3); border-radius: 18px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)); backdrop-filter: blur(8px); overflow: hidden; }
+.welcome-facts .fact { display: grid; align-content: center; gap: 2px; padding: 14px 26px; min-width: 150px; }
+.welcome-facts .fact + .fact { border-inline-start: 1px solid rgba(216, 180, 102, 0.25); }
+.welcome-facts .fact-value { display: flex; align-items: baseline; gap: 6px; margin: 0; }
+.welcome-facts .fact-num { font-size: clamp(34px, 3.6vw, 48px); font-weight: 700; line-height: 1; color: var(--brand-gold); font-variant-numeric: lining-nums; letter-spacing: -0.01em; }
+.welcome-facts .fact-unit { font-size: clamp(16px, 1.4vw, 20px); font-weight: 700; color: var(--brand-gold); }
+.welcome-facts .fact-label { font-size: 14.5px; font-weight: 600; color: #fff; }
+.welcome-facts .fact-note { font-size: 12px; color: var(--brand-sand); opacity: 0.75; }
+.welcome-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 14px; }
+.welcome-actions .btn-primary { position: relative; padding: 15px 34px; font-size: 18px; box-shadow: 0 10px 30px rgba(216, 180, 102, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12) inset; animation: cta-glow 3.2s ease-in-out infinite; }
+.welcome-actions .btn-primary::after { content: "←"; margin-inline-start: 10px; font-weight: 700; transition: transform 200ms var(--ease); }
+[dir="ltr"] .welcome-actions .btn-primary::after { content: "→"; }
+.welcome-actions .btn-primary:hover::after { transform: translateX(-4px); }
+[dir="ltr"] .welcome-actions .btn-primary:hover::after { transform: translateX(4px); }
+@keyframes cta-glow { 0%, 100% { box-shadow: 0 10px 30px rgba(216, 180, 102, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.12) inset; } 50% { box-shadow: 0 12px 40px rgba(216, 180, 102, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.18) inset; } }
+.welcome-actions .btn-ghost { padding: 13px 20px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.28); color: #fff; font-weight: 600; font-size: 15px; text-decoration: none; background: rgba(255, 255, 255, 0.04); transition: background-color 160ms, border-color 160ms; }
+.welcome-actions .btn-ghost:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(216, 180, 102, 0.6); }
+.welcome-slogan { margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.12); font-size: 14px; color: var(--brand-gold); letter-spacing: 0.02em; }
+/* ظهور متدرّج لعناصر الترحيب */
+.welcome-content > * { animation: rise 900ms var(--ease) both; }
+.welcome-content > :nth-child(2) { animation-delay: 90ms; }
+.welcome-content > :nth-child(3) { animation-delay: 180ms; }
+.welcome-content > :nth-child(4) { animation-delay: 270ms; }
+.welcome-content > :nth-child(5) { animation-delay: 360ms; }
+.welcome-content > :nth-child(6) { animation-delay: 450ms; }
+.welcome-content > :nth-child(7) { animation-delay: 540ms; }
+.welcome-content > :nth-child(8) { animation-delay: 630ms; }
+/* إطار ذهبي رفيع يؤطّر اللوح كغلاف عرض */
+.welcome-frame { position: absolute; z-index: 1; inset: calc(var(--header-h) + 14px) 14px 14px 14px; pointer-events: none; border: 1px solid rgba(216, 180, 102, 0.22); border-radius: 18px; mask: linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%); -webkit-mask: linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%); }
+[dir="rtl"] .welcome-frame { mask: linear-gradient(270deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%); -webkit-mask: linear-gradient(270deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%); }
+
+/* الترحيب على الكمبيوتر: المحتوى والأزرار والفوتر في شاشة واحدة؛ الأحجام تتبع ارتفاع الشاشة أيضًا،
+   وإن لم يتسع الارتفاع (نافذة قصيرة) تُمرَّر الصفحة بدل أن يُقص أسفلها */
+@media (min-width: 721px) {
+  .view-welcome { overflow-y: auto; overflow-x: hidden; justify-content: flex-start; overscroll-behavior: contain; }
+  .welcome-content { flex: 1 0 auto; margin-top: calc(var(--header-h) + clamp(10px, 3.2vh, 40px)); margin-bottom: clamp(10px, 2.6vh, 32px); gap: clamp(5px, 1.35vh, 14px); }
+  .welcome-brand { padding-bottom: clamp(6px, 1.3vh, 14px); margin-bottom: 0; }
+  .welcome-brand-text strong { font-size: clamp(17px, 2.3vh, 20px); }
+  .welcome-title { margin-top: 0; font-size: clamp(14px, min(1.3vw, 2vh), 18px); }
+  .welcome-location { gap: clamp(2px, 0.6vh, 6px); }
+  .welcome-location .loc-lead { font-size: clamp(20px, min(2.3vw, 3.6vh), 32px); margin-top: 0; }
+  .welcome-location .loc-main { font-size: clamp(36px, min(6.2vw, 8.6vh), 84px); line-height: 1.1; }
+  .welcome-facts { margin: clamp(2px, 0.6vh, 6px) 0 0; }
+  .welcome-facts .fact { padding: clamp(7px, 1.4vh, 14px) clamp(18px, 1.8vw, 26px); }
+  .welcome-facts .fact-num { font-size: clamp(28px, min(3.6vw, 5.4vh), 48px); }
+  .welcome-subtitle { font-size: clamp(21px, min(2.6vw, 3.9vh), 36px); margin-top: clamp(0px, 0.6vh, 4px); }
+  .welcome-atmosphere { font-size: clamp(14.5px, min(1.4vw, 2.2vh), 19px); line-height: 1.5; }
+  .welcome-actions { margin-top: clamp(2px, 1.2vh, 14px); }
+  .welcome-actions .btn-primary { padding: clamp(11px, 1.7vh, 15px) 34px; font-size: clamp(16px, 2.2vh, 18px); }
+  .welcome-actions .btn-ghost { padding: clamp(9px, 1.5vh, 13px) 20px; }
+  .welcome-slogan { margin-top: clamp(2px, 1.2vh, 18px); padding-top: clamp(6px, 1.2vh, 14px); }
+  /* the gold frame stops above the footer band */
+  .welcome-frame { bottom: calc(var(--welcome-footer-h, 0px) + 14px); }
+  /* the footer as one compact band at the bottom of the same screen */
+  .view-welcome .app-footer {
+    flex: 0 0 auto; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px clamp(20px, 3vw, 48px);
+    padding: clamp(8px, 1.3vh, 14px) clamp(20px, 6vw, 96px) clamp(6px, 1vh, 10px); background: rgba(5, 27, 48, 0.97); backdrop-filter: none;
+  }
+  .view-welcome .footer-tagline, .view-welcome .footer-about, .view-welcome .footer-heading { display: none; } /* the tagline is the slogan right above */
+  .view-welcome .footer-block { gap: 2px; }
+  .view-welcome .footer-contacts { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px 20px; }
+  .view-welcome .footer-more { justify-items: end; }
+  .view-welcome .footer-copy { padding-top: clamp(4px, 0.7vh, 8px); font-size: 11.5px; text-align: center; }
+}
+@media (min-width: 721px) and (max-height: 760px) {
+  .view-welcome .footer-website { display: none; }
+  /* short laptop screens: the wordmark on one line, the copyright beside the links */
+  .welcome-brand-text { display: flex; align-items: baseline; gap: 14px; }
+  .view-welcome .app-footer { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+  .view-welcome .footer-copy { grid-column: auto; border-top: 0; padding-top: 0; }
+  .welcome-facts .fact-note { font-size: 11px; }
+}
+@media (min-width: 721px) and (max-height: 680px) {
+  .welcome-facts .fact-note { display: none; }
+  .welcome-location .loc-main { font-size: clamp(34px, min(6.2vw, 8vh), 84px); }
+}
+
+/* ===== الهيدر الثابت ===== */
+.site-header {
+  position: absolute; inset-inline: 0; top: 0; z-index: 20; height: var(--header-h);
+  display: flex; align-items: center; gap: 18px; padding: 0 clamp(12px, 2.5vw, 28px);
+  color: var(--night-ink);
+  background: linear-gradient(180deg, rgba(5, 27, 48, 0.8), rgba(5, 27, 48, 0.5));
+  backdrop-filter: blur(14px); border-bottom: 1px solid rgba(216, 180, 102, 0.22);
+}
+[data-current-view="details"] .site-header { background: rgba(244, 241, 236, 0.9); color: var(--ink); border-bottom-color: var(--line); }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; font-weight: 700; letter-spacing: 0.01em; }
+.brand-mark { width: 11px; height: 11px; border-radius: 3px; background: linear-gradient(135deg, var(--gold), var(--accent)); transform: rotate(45deg); box-shadow: 0 0 14px rgba(226, 178, 100, 0.6); }
+.site-nav { display: flex; gap: 4px; margin-inline-start: 6px; }
+.site-nav a { padding: 6px 12px; border-radius: 999px; color: inherit; opacity: 0.78; text-decoration: none; font-size: 14px; font-weight: 600; transition: background-color 160ms, opacity 160ms; }
+.site-nav a:hover { opacity: 1; background: rgba(255, 255, 255, 0.08); }
+.site-nav a.is-active { opacity: 1; background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); }
+[data-current-view="details"] .site-nav a:hover, [data-current-view="details"] .site-nav a.is-active { background: rgba(27, 26, 23, 0.08); box-shadow: none; }
+.team-chip { margin-inline-start: auto; padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--night-line); font-size: 13px; max-width: 28ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.view { padding-top: var(--top-h, var(--header-h)); }
+.view-welcome { padding-top: 0; }
+
+/* ===== الشريط العلوي للصور والتفاصيل ===== */
+.topbar {
+  flex: 0 0 auto; height: var(--topbar-h);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 0 clamp(12px, 2.5vw, 28px);
+  background: rgba(244, 241, 236, 0.86); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+  z-index: 2;
+}
+.topbar-dark { background: rgba(20, 19, 17, 0.72); border-bottom-color: rgba(255, 255, 255, 0.08); color: #fff; }
+.topbar-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.topbar-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.room-title { font-size: 18px; font-weight: 600; text-align: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ===== النموذج ثلاثي الأبعاد ===== */
+.view-plan {
+  color: var(--night-ink);
+  background:
+    radial-gradient(70% 60% at 42% 55%, #272c34 0%, rgba(39, 44, 52, 0) 70%),
+    linear-gradient(180deg, #15171b 0%, #0d0f12 100%);
+}
+.scenebar {
+  flex: 0 0 auto; min-height: var(--scenebar-h);
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px;
+  padding: 8px clamp(12px, 2.5vw, 28px);
+  border-bottom: 1px solid var(--night-line);
+}
+.scene-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--night-line); }
+.scene-tab { padding: 7px 18px; border-radius: 999px; border: 0; background: transparent; color: var(--night-muted); font-weight: 600; font-size: 14px; cursor: pointer; transition: background-color 160ms, color 160ms; }
+.scene-tab:hover { color: var(--night-ink); }
+.scene-tab.is-active { background: rgba(255, 255, 255, 0.14); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
+.scene-tab:focus-visible { outline: 3px solid rgba(226, 178, 100, 0.55); }
+.route-legend { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.route-chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--night-line); background: rgba(255, 255, 255, 0.05); color: var(--night-ink); font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 160ms, background-color 160ms; }
+.route-chip .swatch { width: 18px; height: 4px; border-radius: 2px; background: var(--route); box-shadow: 0 0 8px var(--route); }
+.route-chip[aria-pressed="false"] { opacity: 0.42; }
+.route-chip:hover { background: rgba(255, 255, 255, 0.1); }
+.scene-tools { display: flex; gap: 6px; margin-inline-start: auto; }
+.tool-btn { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--night-line); background: rgba(255, 255, 255, 0.05); color: var(--night-ink); font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color 160ms; }
+.tool-btn:hover { background: rgba(255, 255, 255, 0.1); }
+.tool-btn[aria-pressed="true"] { background: rgba(226, 178, 100, 0.18); border-color: rgba(226, 178, 100, 0.5); color: #ffe3b0; }
+.tool-icon { font-size: 15px; line-height: 1; }
+
+.plan-layout { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); }
+.plan-layout.has-drawer { grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--drawer-w); }
+/* لوحة تفاصيل الغرفة على اليسار */
+.room-drawer { order: 3; min-height: 0; display: flex; flex-direction: column; color: var(--night-ink); background: linear-gradient(180deg, rgba(22, 25, 31, 0.98), rgba(12, 14, 18, 0.98)); border-inline-start: 1px solid var(--night-line); animation: drawer-in 360ms var(--ease) both; }
+.room-drawer[hidden] { display: none; }
+@keyframes drawer-in { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px 10px; border-bottom: 1px solid var(--night-line); }
+.drawer-title { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 17px; font-weight: 700; outline: none; }
+.drawer-close { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--night-line); background: rgba(255, 255, 255, 0.06); color: inherit; font-size: 20px; line-height: 1; cursor: pointer; }
+.drawer-close:hover { background: rgba(255, 255, 255, 0.14); }
+.drawer-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; scrollbar-width: thin; }
+.drawer-scroll > * { flex: 0 0 auto; }
+.drawer-hero { margin: 0; border-radius: 12px; overflow: hidden; background: #0d1015; border: 1px solid var(--night-line); }
+.drawer-hero[hidden] { display: none; }
+.drawer-hero img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
+.drawer-hero figcaption { padding: 7px 10px; font-size: 12px; color: var(--night-muted); }
+.drawer-summary { font-size: 13.5px; line-height: 1.7; color: var(--night-ink); opacity: 0.9; }
+.drawer-facts { display: grid; gap: 6px; }
+.drawer-facts li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.06); font-size: 13px; }
+.drawer-facts .k { color: var(--night-muted); }
+.drawer-facts .v { font-weight: 600; text-align: end; }
+.drawer-sub { font-size: 13.5px; font-weight: 700; color: var(--brand-gold); margin-bottom: 8px; }
+.drawer-fixtures ul { display: grid; gap: 4px; padding-inline-start: 18px; font-size: 13px; list-style: disc; }
+.drawer-photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.drawer-photo { padding: 0; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 8px; overflow: hidden; aspect-ratio: 3 / 2; background: #111; cursor: pointer; transition: transform 160ms var(--ease), border-color 160ms; }
+.drawer-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.drawer-photo:hover, .drawer-photo:focus-visible { transform: translateY(-2px); border-color: var(--brand-gold); }
+.drawer-actions { display: grid; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid var(--night-line); }
+.drawer-actions .btn { width: 100%; }
+.plan-stage-wrap { order: 2; }
+.room-sidebar { order: 1; }
+.plan-stage-wrap { position: relative; min-height: 0; }
+.plan-stage { position: absolute; inset: 0; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+.twin-canvas { display: block; width: 100%; height: 100%; }
+.twin-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--night-muted); font-size: 14px; pointer-events: none; z-index: 3; }
+.plan-stage.is-ready .twin-loading { display: none; }
+.spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.2); border-top-color: var(--gold); animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.overlay-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+.leader { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.overlay-dots { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+
+/* النقطتان الوامضتان والمسمّى */
+.room-marker { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; transition: opacity 220ms; }
+.room-marker > * { pointer-events: auto; position: absolute; }
+.room-marker .dot-room { left: 0; top: 0; width: calc(13px * var(--s, 1)); height: calc(13px * var(--s, 1)); transform: translate(-50%, -50%); }
+.room-marker .room-tag { left: 0; top: 0; transform: translate(-50%, calc(-100% - 10px * var(--s, 1))); }
+.room-marker.is-dim { opacity: 0.25; }
+.room-marker.is-focus .room-tag { display: none; }
+.dot { position: relative; width: calc(11px * var(--s, 1)); height: calc(11px * var(--s, 1)); border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.9); padding: 0; cursor: pointer; flex: 0 0 auto; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35); }
+.dot::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid currentColor; opacity: 0; animation: ping 1.8s var(--ease) infinite; }
+.dot::before { content: ""; position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; transform: translate(-50%, -50%); border-radius: 50%; } /* 28px hit area */
+/* one dot per room (owner, 2026-11-10; restored 2026-11-11 in place of the icons): white at 60% opacity,
+   blinking; a thin dark ring keeps it visible on the light 2D plan as well as on the dark 3D model */
+.dot-room { background: rgba(255, 255, 255, 0.6); color: rgba(255, 255, 255, 0.85); border-color: rgba(255, 255, 255, 0.85); box-shadow: 0 0 0 1.5px rgba(10, 12, 15, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3); animation: dot-blink 1.8s ease-in-out infinite; }
+@keyframes dot-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.dot.mini { width: 9px; height: 9px; border-width: 1.5px; box-shadow: none; }
+.dot.mini::after { display: none; }
+@keyframes ping { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(1.9); opacity: 0; } }
+.room-tag { font-size: calc(10.5px * var(--s, 1)); font-weight: 600; color: #fff; white-space: nowrap; padding: 2px 7px; border-radius: 6px; background: rgba(10, 12, 15, 0.74); border: 1px solid rgba(255, 255, 255, 0.1); pointer-events: none; }
+.room-tag.is-minor { font-size: calc(9.5px * var(--s, 1)); opacity: 0.85; }
+.room-tag.is-outside { position: absolute; left: 0; top: 0; transform: translate(-100%, -50%); pointer-events: auto; cursor: pointer; font-size: 12px; opacity: 1; }
+.room-tag.is-outside.is-left { transform: translate(0, -50%); }
+.room-tag.is-outside:focus-visible { outline: 2px solid var(--gold); }
+.plan-stage.labels-outside .room-tag:not(.is-outside) { display: none; }
+.dots-legend { position: absolute; top: 14px; inset-inline-start: 14px; z-index: 3; display: flex; flex-direction: column; gap: 4px; margin-top: 36px; font-size: 12px; color: var(--night-ink); }
+.dots-legend span { display: inline-flex; align-items: center; gap: 8px; padding: 3px 10px; border-radius: 999px; background: rgba(18, 20, 24, 0.86); border: 1px solid var(--night-line); }
+.dots-legend .dot { width: 10px; height: 10px; border-width: 1.5px; box-shadow: none; }
+.dots-legend .dot::after { display: none; }
+
+.plan-badge {
+  position: absolute; top: 14px; inset-inline-start: 14px; z-index: 3;
+  padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700;
+  background: rgba(18, 20, 24, 0.86); color: var(--night-ink); border: 1px solid var(--night-line);
+}
+.plan-badge.is-path { color: var(--gold); border-color: rgba(226, 178, 100, 0.4); }
+.help-mobile { display: none; }
+.zoom-controls { position: absolute; bottom: 18px; inset-inline-end: 14px; z-index: 3; display: flex; flex-direction: column; gap: 6px; }
+.zoom-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--night-line); background: rgba(18, 20, 24, 0.88); color: var(--night-ink); font-size: 20px; cursor: pointer; }
+.zoom-btn:hover { background: rgba(40, 44, 52, 0.9); }
+.plan-help { position: absolute; bottom: 18px; inset-inline-start: 14px; z-index: 3; font-size: 13px; color: var(--night-muted); padding: 6px 12px; background: rgba(18, 20, 24, 0.6); border: 1px solid var(--night-line); border-radius: 999px; max-width: calc(100% - 90px); }
+.plan-stage.is-orbiting ~ .plan-help { opacity: 0.4; }
+
+/* القائمة العمودية الثابتة على اليمين */
+.room-sidebar { display: flex; flex-direction: column; min-height: 0; min-width: 0; border-inline-end: 1px solid var(--night-line); background: rgba(12, 14, 17, 0.55); backdrop-filter: blur(10px); }
+.sidebar-head { display: flex; align-items: baseline; justify-content: space-between; padding: 14px 16px 10px; border-bottom: 1px solid var(--night-line); }
+.sidebar-title { font-size: 15px; font-weight: 700; }
+.sidebar-count { font-size: 12px; color: var(--night-muted); }
+.room-list { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 8px 10px 14px; scrollbar-width: thin; }
+.room-group { padding: 10px 8px 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: var(--night-muted); }
+.room-item-btn { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 10px; border: 0; border-radius: 9px; background: transparent; color: var(--night-ink); font-size: 13.5px; text-align: start; cursor: pointer; transition: background-color 140ms; }
+.room-item-btn:hover { background: rgba(255, 255, 255, 0.07); }
+.room-item-btn.is-active { background: rgba(95, 211, 255, 0.14); box-shadow: inset 0 0 0 1px rgba(95, 211, 255, 0.35); }
+.room-item-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.room-sidebar.is-focus .room-list { flex: 0 1 34%; }
+/* title / summary / facts (the only part that scrolls) / photo strip / actions: the buttons always stay in view.
+   Tablets and phones only: on a computer the drawer on the other side is the room's panel (see the end of the file) */
+.room-card { flex: 1 1 auto; min-height: 0; overflow: hidden; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; gap: 10px; align-content: start; padding: 14px 16px 18px; border-top: 1px solid var(--night-line); background: linear-gradient(180deg, rgba(30, 33, 39, 0.9), rgba(16, 18, 22, 0.9)); animation: rise 420ms var(--ease) both; }
+.focus-title { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; outline: none; }
+.focus-summary { font-size: 13.5px; color: rgba(255, 255, 255, 0.8); }
+.focus-facts { display: grid; gap: 6px; align-content: start; min-height: 0; overflow: auto; scrollbar-width: thin; }
+.focus-facts li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.06); font-size: 13px; }
+.focus-facts .k { color: var(--night-muted); }
+.focus-facts .v { font-weight: 600; text-align: end; }
+/* أول صور الغرفة مباشرة في البطاقة */
+.focus-thumbs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.focus-thumb { position: relative; padding: 0; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 9px; overflow: hidden; aspect-ratio: 3 / 2; background: #111; cursor: pointer; transition: transform 160ms var(--ease), border-color 160ms; }
+.focus-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.focus-thumb:hover, .focus-thumb:focus-visible { transform: translateY(-2px); border-color: var(--brand-gold); }
+.focus-thumb-more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(5, 27, 48, 0.62); color: #fff; font-weight: 700; font-size: 15px; }
+/* ===== معرض الصور ===== */
+.view-gallery { background: radial-gradient(120% 80% at 50% 0%, var(--brand-navy-2, #0b2a47) 0%, var(--brand-navy) 60%); color: #fff; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.gallery-inner { width: min(1240px, 100% - 2 * clamp(16px, 4vw, 48px)); margin: 0 auto; padding: clamp(18px, 4vh, 40px) 0 48px; }
+.gallery-head { display: grid; gap: 6px; margin-bottom: 22px; }
+.gallery-kicker { color: var(--brand-gold); font-weight: 600; font-size: 14px; letter-spacing: 0.06em; }
+.gallery-title { font-size: clamp(28px, 3vw, 40px); font-weight: 700; }
+.gallery-sub { color: var(--brand-sand); opacity: 0.85; font-size: 15px; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.gallery-card { position: relative; display: block; aspect-ratio: 3 / 2; border-radius: 16px; overflow: hidden; background: #0d1520; border: 1px solid rgba(216, 180, 102, 0.18); color: #fff; text-decoration: none; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28); transition: transform 220ms var(--ease), border-color 220ms, box-shadow 220ms; }
+.gallery-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 600ms var(--ease); }
+.gallery-card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5, 27, 48, 0) 45%, rgba(5, 27, 48, 0.92) 100%); }
+.gallery-card:hover, .gallery-card:focus-visible { transform: translateY(-3px); border-color: rgba(216, 180, 102, 0.7); box-shadow: 0 16px 36px rgba(0, 0, 0, 0.36); }
+.gallery-card:hover img { transform: scale(1.05); }
+.gallery-meta { position: absolute; z-index: 1; inset-inline: 14px; bottom: 12px; display: flex; align-items: end; justify-content: space-between; gap: 10px; }
+.gallery-name { font-size: 16px; font-weight: 700; }
+.gallery-count { flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: rgba(216, 180, 102, 0.9); color: var(--brand-navy); font-size: 12.5px; font-weight: 700; }
+.focus-actions { display: grid; gap: 8px; margin-top: 4px; }
+
+.plan-tip {
+  position: fixed; z-index: 50; pointer-events: none;
+  padding: 6px 12px; border-radius: 8px; background: #0b0c0e; color: #fff; font-size: 13px; font-weight: 600;
+  transform: translate(-50%, -140%); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.plan-tip::after { content: ""; position: absolute; left: 50%; bottom: -6px; width: 10px; height: 10px; background: #0b0c0e; transform: translateX(-50%) rotate(45deg); }
+
+/* ===== صور الغرفة ===== */
+.view-room { background: var(--dark); color: #fff; }
+.room-stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; touch-action: pan-y; }
+.room-backdrop { position: absolute; left: 0; top: 0; width: 25%; height: 25%; background-size: cover; background-position: center; transform-origin: 0 0; transform: scale(4.4) translate(-4.55%, -4.55%); filter: blur(7px) brightness(0.55); } /* a small copy blurred then scaled up: the look of a 30px blur over the whole stage at a fraction of the paint cost */
+.room-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; opacity: 0; transition: opacity 320ms var(--ease), filter 260ms var(--ease); }
+.room-photo.is-soft { filter: blur(4px); } /* its small copy, until the sharp photo has arrived */
+.room-photo.is-loaded { opacity: 1; }
+.gallery-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(20, 19, 17, 0.5); color: #fff; font-size: 30px; line-height: 1; cursor: pointer; backdrop-filter: blur(6px);
+}
+.gallery-arrow:hover { background: rgba(20, 19, 17, 0.75); }
+.gallery-prev { right: 14px; }
+.gallery-next { left: 14px; }
+.room-meta { position: absolute; bottom: 14px; inset-inline-start: 16px; inset-inline-end: 16px; z-index: 2; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.room-summary { max-width: 62ch; font-size: 15px; color: rgba(255, 255, 255, 0.95); text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6); }
+.gallery-bar { flex: 0 0 auto; padding: 10px clamp(12px, 2.5vw, 28px) 12px; background: #0f0e0d; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.gallery-caption { font-size: 13px; color: rgba(255, 255, 255, 0.7); margin-bottom: 8px; min-height: 20px; }
+.thumbs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 4px; }
+.thumb { flex: 0 0 auto; width: 96px; height: 64px; border-radius: 8px; overflow: hidden; border: 2px solid transparent; padding: 0; background: #222; cursor: pointer; opacity: 0.7; transition: opacity 160ms, border-color 160ms; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.thumb.is-active, .thumb:hover { opacity: 1; border-color: #fff; }
+
+/* ===== التفاصيل ===== */
+.view-details { background: var(--bg); }
+.room-title-dark { color: var(--ink); }
+.details-layout {
+  flex: 1 1 auto; min-height: 0;
+  display: grid; gap: 16px; padding: 16px clamp(12px, 2.5vw, 28px);
+  grid-template-columns: minmax(260px, 1fr) minmax(360px, 1.5fr) minmax(260px, 1fr);
+  grid-template-areas: "features plan photos";
+}
+.details-tabs { display: none; }
+/* max-content rows: inside a scrolling panel of fixed height, `auto` rows would share the panel's
+   height and squash the thumbnails (the buttons clip overflow, so their minimum is 0) */
+.details-photos { grid-area: photos; overflow: auto; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: max-content; gap: 10px; align-content: start; }
+.details-photos button { display: block; width: 100%; padding: 0; border: 0; border-radius: var(--radius-sm); overflow: hidden; background: #ddd; cursor: pointer; box-shadow: var(--shadow-sm); }
+.details-photos img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; transition: transform 300ms var(--ease); }
+.details-photos button:hover img { transform: scale(1.04); }
+.details-plan { grid-area: plan; display: flex; flex-direction: column; min-height: 0; }
+.details-plan .plan-stage { position: relative; flex: 1 1 auto; min-height: 320px; border-radius: var(--radius); box-shadow: var(--shadow); background: radial-gradient(80% 70% at 50% 50%, #262a31, #111316); overflow: hidden; }
+.details-render { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+/* a Cycles render is landscape: show it whole, with its own blurred copy filling the stage behind */
+.details-plan .plan-stage.is-render .details-render { object-fit: contain; }
+.details-render-bg { position: absolute; left: 0; top: 0; width: 31%; height: 31%; object-fit: cover; transform-origin: 0 0; transform: scale(4) translate(-9.68%, -9.68%); filter: blur(6.5px) saturate(1.15) brightness(0.8); opacity: 0.9; } /* same trick: blur a small copy, scale it to 124% */
+.details-plan-caption { text-align: center; font-size: 13px; color: var(--muted); padding-top: 8px; }
+.details-features { grid-area: features; overflow: auto; display: grid; gap: 12px; align-content: start; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-sm); }
+.card h3 { font-size: 15px; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+.card .big { font-size: 34px; font-weight: 700; line-height: 1.1; }
+.card .basis { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.card ul { display: grid; gap: 6px; }
+.card li { position: relative; padding-inline-start: 18px; font-size: 15px; }
+.card li::before { content: ""; position: absolute; inset-inline-start: 0; top: 11px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.card .source { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.use-item { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--radius-sm); background: #eef0f2; border: 1px solid #dde1e6; }
+.use-item .tag { font-size: 12px; font-weight: 700; color: #5b6472; }
+
+
+/* ===== المخطط ثنائي الأبعاد ===== */
+.plan-stage-2d { background: #e7e1d9; touch-action: none; cursor: grab; }
+.plan-stage-2d.is-panning { cursor: grabbing; }
+.plan2d-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.plan2d-world.is-moving { will-change: transform; }
+.plan2d-tiles { position: absolute; inset: 0; pointer-events: none; }
+.plan2d-tile { position: absolute; display: block; max-width: none; opacity: 0; transition: opacity 240ms ease; user-select: none; -webkit-user-drag: none; }
+.plan2d-tile.is-loaded { opacity: 1; }
+.plan2d-image { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; }
+.plan2d-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.room2d { fill: rgba(95, 211, 255, 0); stroke: rgba(95, 211, 255, 0); stroke-width: 3; pointer-events: fill; transition: fill 160ms, stroke 160ms; vector-effect: non-scaling-stroke; }
+.room2d:not(.is-off):hover { fill: rgba(95, 211, 255, 0.16); stroke: rgba(95, 211, 255, 0.7); }
+.room2d.is-focus { fill: rgba(95, 211, 255, 0.1); stroke: #2fb6ea; }
+.room2d.is-off { pointer-events: none; }
+.plan2d-veil { fill: rgba(12, 14, 18, 0.42); pointer-events: none; }
+.plan2d-routes { pointer-events: none; }
+.route2d-outline { fill: none; stroke: rgba(12, 14, 18, 0.55); stroke-width: 15; stroke-linecap: round; stroke-linejoin: round; }
+.route2d-line { fill: none; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 20 14; animation: route-dash 1.4s linear infinite; }
+@keyframes route-dash { to { stroke-dashoffset: -34; } }
+.route2d-stop { fill: #fff; stroke-width: 4; }
+.route2d-stop.is-start { fill: #fff; stroke: #fff; }
+.route2d-label { font-size: 15px; font-weight: 700; fill: #fff; text-anchor: middle; paint-order: stroke; stroke: rgba(12, 14, 18, 0.85); stroke-width: 4px; stroke-linejoin: round; }
+/* the room tags carry the names now (they were codes): the stop text would repeat them on top of the lines */
+.route2d-label { display: none; }
+.plan-stage-2d .room-tag { background: rgba(255, 255, 255, 0.88); color: var(--ink); border-color: rgba(27, 26, 23, 0.1); }
+.plan-stage-2d .leader { stroke: rgba(27, 26, 23, 0.5); }
+.plan-stage-2d .room-tag.is-outside { background: rgba(255, 255, 255, 0.92); }
+.plan-stage-wrap[data-mode="2d"] .help-3d { display: none; }
+.plan-stage-wrap[data-mode="3d"] .help-2d { display: none; }
+.view-tabs .scene-tab { padding-inline: 12px; }
+.zoom-reset svg { display: block; margin: auto; }
+.header-owner { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: inherit; text-decoration: none; opacity: 0.9; white-space: nowrap; }
+.header-owner:hover { opacity: 1; }
+.owner-mark { display: none; height: 26px; }
+.owner-mark.has-logo { display: block; }
+.owner-mark img { height: 100%; width: auto; }
+.team-chip + .header-owner { margin-inline-start: 12px; }
+.btn-mode { grid-column: 1 / -1; }
+
+/* ===== الفوتر المختصر (بيانات office.footer) ===== */
+.app-footer {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 14px 32px; align-items: start;
+  padding: 18px clamp(20px, 6vw, 96px) 14px; font-size: 13px; color: rgba(255, 255, 255, 0.78);
+  border-top: 1px solid rgba(216, 180, 102, 0.28); background: rgba(5, 27, 48, 0.92); backdrop-filter: blur(10px);
+}
+.footer-block { display: grid; gap: 6px; align-content: start; }
+.footer-heading { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; color: var(--brand-gold); text-transform: uppercase; }
+.footer-name { font-size: 15px; color: #fff; }
+.footer-name-en { font-size: 10.5px; letter-spacing: 0.3em; color: var(--brand-gold); font-weight: 600; }
+.footer-tagline { color: rgba(255, 255, 255, 0.9); }
+.footer-about { color: rgba(255, 255, 255, 0.62); font-size: 12.5px; line-height: 1.6; max-width: 46ch; }
+.footer-contacts { display: grid; gap: 5px; }
+.footer-phone { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.footer-phone-label { color: rgba(255, 255, 255, 0.62); font-size: 12.5px; }
+.footer-phone-number { display: inline-flex; align-items: baseline; gap: 8px; color: #fff; font-weight: 600; text-decoration: none; }
+.footer-phone-digits { font-variant-numeric: tabular-nums; }
+.footer-whatsapp { font-size: 12px; font-weight: 600; color: var(--brand-gold); }
+.footer-location, .footer-website { color: rgba(255, 255, 255, 0.78); }
+.footer-social, .footer-links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.footer-links { font-size: 12px; opacity: 0.75; }
+.footer-social a, .footer-links a, .footer-website a { color: inherit; text-decoration: none; }
+.footer-social a { color: #fff; font-weight: 600; }
+.footer-social a:hover, .footer-links a:hover, .footer-website a:hover, .footer-phone-number:hover .footer-phone-digits { color: var(--brand-gold); text-decoration: underline; }
+.footer-copy { grid-column: 1 / -1; margin: 0; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.1); font-size: 12px; color: rgba(255, 255, 255, 0.55); }
+
+/* ===== عناصر عامة ===== */
+.build-sha { position: fixed; bottom: 6px; left: 50%; transform: translateX(-50%); z-index: 60; font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: rgba(255, 255, 255, 0.55); background: rgba(0, 0, 0, 0.35); padding: 2px 8px; border-radius: 6px; pointer-events: none; }
+[data-current-view="welcome"] .build-sha { display: none; } /* the welcome footer sits there */
+[data-current-view="details"] .build-sha { color: rgba(27, 26, 23, 0.45); background: rgba(255, 255, 255, 0.5); }
+
+/* ===== الجوال ===== */
+@media (max-width: 1023px) {
+  /* tablets and phones: the room card carries the details; no third column */
+  .room-drawer { display: none !important; }
+  .plan-layout.has-drawer { grid-template-columns: var(--sidebar-w) minmax(0, 1fr); }
+  .details-layout { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; grid-template-areas: "plan" "tabs" "panel"; gap: 12px; padding: 12px; }
+  .details-plan { height: 44vh; min-height: 260px; }
+  .details-plan .plan-stage { min-height: 0; }
+  .details-tabs { grid-area: tabs; display: flex; gap: 6px; padding: 4px; border-radius: 999px; background: #eee9e1; }
+  .tab { flex: 1; padding: 8px; border: 0; border-radius: 999px; background: transparent; font-weight: 600; cursor: pointer; color: var(--ink-2); }
+  .tab.is-active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+  .details-photos, .details-features { grid-area: panel; }
+  .details-photos:not(.is-active), .details-features:not(.is-active) { display: none; }
+}
+
+@media (max-width: 720px) {
+  :root { --topbar-h: 54px; }
+  .topbar { gap: 6px 8px; padding: 6px 12px; height: auto; min-height: var(--topbar-h); }
+  .topbar .room-title { font-size: 16px; white-space: normal; }
+  .team-chip { max-width: 46vw; }
+  .btn { padding: 8px 12px; font-size: 14px; }
+  .btn .btn-icon { display: none; }
+  .scenebar { padding: 8px 12px; gap: 8px; }
+  .scene-tabs { width: 100%; }
+  .scene-tab { flex: 1; padding: 7px 8px; font-size: 13px; text-align: center; }
+  .route-legend { width: 100%; justify-content: center; }
+  .route-chip { padding: 4px 10px; font-size: 12px; }
+  .scene-hint { display: none; }
+  .plan-help { bottom: 12px; inset-inline-start: 12px; max-width: calc(100% - 80px); font-size: 12px; }
+  .help-desktop { display: none; }
+  .help-mobile { display: inline; }
+  .plan-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .plan-layout.has-drawer { grid-template-columns: minmax(0, 1fr); }
+  .plan-stage-wrap { order: 1; }
+  .room-sidebar { order: 2; width: 100%; max-width: 100vw; border-inline-end: 0; border-top: 1px solid var(--night-line); max-height: none; }
+  .room-sidebar:not(.is-focus) .room-list { width: 100%; flex: 0 0 auto; height: 52px; }
+  .sidebar-head { padding: 8px 12px 6px; }
+  .room-sidebar:not(.is-focus) .room-list { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; padding: 4px 10px 10px; scrollbar-width: none; }
+  .room-sidebar:not(.is-focus) .room-group { display: none; }
+  .room-sidebar:not(.is-focus) .room-item { flex: 0 0 auto; }
+  .room-sidebar:not(.is-focus) .room-item-btn { padding: 6px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); font-size: 12.5px; white-space: nowrap; }
+  .room-sidebar.is-focus .room-list { display: none; }
+  .room-sidebar.is-focus { position: relative; }
+  .room-card { max-height: 38dvh; padding: 10px 12px 12px; gap: 8px; border-top: 0; animation: none; grid-template-rows: auto auto auto; }
+  .focus-title { font-size: 16px; }
+  .focus-summary { display: none; }
+  .focus-facts { grid-template-columns: 1fr 1fr; gap: 4px; overflow: auto; min-height: 0; }
+  .focus-facts li { padding: 5px 8px; font-size: 12px; }
+  .focus-actions { grid-template-columns: 1fr 1fr; gap: 6px; position: sticky; bottom: 0; }
+  .focus-actions .btn { padding: 8px 10px; font-size: 13px; }
+  .plan-stage:not(.is-close) .room-tag:not(.is-outside) { display: none; }
+  .plan-stage.labels-outside .room-tag.is-outside { display: block; font-size: 11px; }
+  .room-marker .dot { --s: 0.9; }
+  .dots-legend { display: none; }
+  .scenebar { flex-wrap: nowrap; gap: 6px; padding: 6px 10px; }
+  .scene-tabs { flex: 1 1 auto; width: auto; }
+  .scene-tab { padding: 6px 6px; font-size: 12.5px; }
+  .route-legend { position: absolute; top: calc(var(--top-h, var(--header-h)) + var(--scenebar-h) + 6px); inset-inline: 10px; z-index: 4; justify-content: center; }
+  .route-chip { padding: 3px 9px; font-size: 11.5px; }
+  .scene-tools { margin-inline-start: 0; flex: 0 0 auto; }
+  .tool-btn { padding: 6px 9px; }
+  .tool-text { display: none; }
+  .plan-badge { display: none; }
+  .plan-help { display: none; }
+  .zoom-controls { bottom: 12px; }
+  /* the card on a phone: name, the photo strip, the actions (the facts live on the details page) */
+  .room-card .focus-facts { display: none; }
+  .gallery-meta { flex-direction: column; align-items: flex-start; gap: 4px; inset-inline: 10px; bottom: 9px; }
+  .view-tabs .scene-tab { font-size: 11.5px; padding-inline: 6px; }
+  .scenebar { flex-wrap: wrap; }
+  .scene-tabs { flex: 1 1 46%; }
+  /* الترحيب على الجوال: الشاشة الأولى للصورة واللوح الكحلي، والفوتر المختصر تحتها بالتمرير */
+  .view-welcome { overflow-y: auto; -webkit-overflow-scrolling: touch; justify-content: flex-start; }
+  .welcome-photo { height: 100vh; height: 100dvh; animation: none; transform: none; }
+  .welcome-shade { height: 100vh; height: 100dvh; }
+  .welcome-panel { inset-inline: 0; width: auto; top: 14%; height: calc(100vh - 14%); height: calc(100dvh - 14%); background: linear-gradient(180deg, rgba(5, 27, 48, 0) 0%, rgba(5, 27, 48, 0.9) 30%, rgba(5, 27, 48, 1) 100%); }
+  [dir="rtl"] .welcome-panel { background: linear-gradient(180deg, rgba(5, 27, 48, 0) 0%, rgba(5, 27, 48, 0.9) 30%, rgba(5, 27, 48, 1) 100%); }
+  .welcome-content { flex: 0 0 auto; min-height: calc(100vh - var(--header-h) - clamp(16px, 4vh, 40px)); min-height: calc(100dvh - var(--header-h) - clamp(16px, 4vh, 40px)); justify-content: flex-end; gap: 10px; margin-bottom: 0; padding-bottom: 14px; }
+  .welcome-brand { padding-bottom: 10px; }
+  .welcome-brand-text strong { font-size: 18px; }
+  .welcome-location .loc-main { font-size: clamp(34px, 10vw, 46px); }
+  .welcome-location .loc-city { font-size: 13px; }
+  .welcome-subtitle { font-size: 22px; }
+  .welcome-atmosphere { font-size: 15px; }
+  .welcome-location .loc-lead { font-size: 20px; }
+  .welcome-facts .fact { padding: 10px 16px; min-width: 0; }
+  .welcome-facts .fact-num { font-size: 30px; }
+  .welcome-facts .fact-label { font-size: 13px; }
+  .focus-thumbs { gap: 4px; }
+  .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .gallery-name { font-size: 13.5px; }
+  .gallery-count { font-size: 11px; padding: 2px 8px; }
+  .welcome-frame { display: none; }
+  .welcome-actions .btn-lg { padding: 13px 26px; font-size: 16px; }
+  .welcome-actions .btn-ghost { padding: 11px 16px; font-size: 14px; }
+  .welcome-slogan { margin-top: 8px; padding-top: 10px; font-size: 13px; }
+  .app-footer { grid-template-columns: 1fr; gap: 10px; padding: 14px 16px 12px; font-size: 12.5px; background: var(--brand-navy); backdrop-filter: none; }
+  .footer-name-en, .footer-tagline, .footer-about, .footer-heading { display: none; }
+  .footer-copy { padding-top: 6px; }
+  .zoom-controls { bottom: 12px; }
+  .room-meta { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .room-summary { font-size: 14px; }
+  .thumb { width: 72px; height: 48px; }
+  .gallery-arrow { width: 40px; height: 40px; font-size: 26px; }
+  .welcome-content { margin-inline: 20px; }
+  }
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-world.is-animating { transition-duration: 1ms; }
+  .dot::after { animation: none; }
+  .dot-room { animation: none; }
+  .welcome-photo { animation: none; }
+  .welcome-location .loc-main, .welcome-location .loc-city::before, .welcome-actions .btn-primary { animation: none; }
+  .view, .view.is-active { transition-duration: 1ms; }
+}
+
+/* ===== v11 (owner, 2026-11-10): المسار الثابت، شريط الجوال، أيقونات المساحات، لوحة الغرفة، الصور ===== */
+:root { --crumb-h: 40px; --tabbar-h: 0px; }
+.app { --top-h: var(--header-h); }
+.app[data-crumbs="1"] { --top-h: calc(var(--header-h) + var(--crumb-h)); }
+.view-welcome { padding-top: 0; }
+
+/* -- the path: where you are and one tap back, in the same place on every page -- */
+.crumbs {
+  position: absolute; inset-inline: 0; top: var(--header-h); z-index: 19; height: var(--crumb-h);
+  display: flex; align-items: center; gap: 12px; padding: 0 clamp(10px, 2.5vw, 28px);
+  color: var(--night-ink); background: rgba(5, 27, 48, 0.94); border-bottom: 1px solid var(--night-line); font-size: 13.5px;
+}
+[data-current-view="details"] .crumbs { background: rgba(244, 241, 236, 0.97); color: var(--ink); border-bottom-color: var(--line); }
+.crumb-back { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: inherit; text-decoration: none; font-size: 13px; font-weight: 700; transition: background-color 140ms; }
+.crumb-back:hover { background: rgba(255, 255, 255, 0.2); }
+.crumb-back:focus-visible, .crumb-link:focus-visible { outline: 2px solid var(--brand-gold); outline-offset: 2px; }
+[data-current-view="details"] .crumb-back { border-color: var(--line); background: rgba(27, 26, 23, 0.06); }
+[data-current-view="details"] .crumb-back:hover { background: rgba(27, 26, 23, 0.12); }
+.crumb-back-icon { font-size: 16px; line-height: 1; }
+.crumb-list { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; margin: 0; padding: 0; list-style: none; }
+.crumb { display: inline-flex; align-items: center; min-width: 0; flex: 0 1 auto; }
+.crumb:first-child { flex: 0 0 auto; }
+/* the separator is drawn, not typed: a typed angle bracket is mirrored by right-to-left text */
+.crumb + .crumb::before { content: ""; flex: 0 0 auto; width: 6px; height: 6px; margin: 0 10px 0 8px; border-left: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; opacity: 0.55; transform: rotate(45deg); } /* points left: the way the page reads */
+.crumb-link, .crumb-here { min-width: 0; padding: 6px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crumb-link { color: inherit; opacity: 0.76; text-decoration: none; border-radius: 6px; }
+.crumb-link:hover { opacity: 1; text-decoration: underline; }
+.crumb-here { font-weight: 700; color: var(--brand-gold); }
+[data-current-view="details"] .crumb-here { color: var(--ink); }
+
+/* -- the icon of the kind of space: in the room list, the room panel and on the gallery cards (not on the plan) -- */
+.type-icon { display: block; flex: 0 0 auto; width: 22px; height: 22px; }
+.focus-title .type-icon, .drawer-title .type-icon { width: 28px; height: 28px; }
+.gallery-icon { position: absolute; z-index: 1; top: 10px; inset-inline-start: 10px; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: rgba(5, 27, 48, 0.74); border: 1px solid rgba(255, 255, 255, 0.24); backdrop-filter: blur(6px); }
+.gallery-icon .type-icon { width: 26px; height: 26px; }
+
+/* -- a picture that failed is hidden until it loads: never the broken-picture mark -- */
+img[data-broken], img[data-thumb]:not([src]) { visibility: hidden; } /* failed, or waiting for the one-file pack */
+.gate-bar { position: fixed; z-index: 70; inset-inline: 12px; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 12px); max-width: 520px; margin-inline: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-radius: 12px; background: #0b0c0e; color: #fff; font-size: 13.5px; border: 1px solid rgba(216, 180, 102, 0.4); box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4); }
+
+/* -- quick navigation for phones (shown at 720px and below) -- */
+.tabbar { display: none; }
+/* -- «add to the home screen» (phones; assets/js/install.js decides when) -- */
+.install-bar { display: none; }
+
+@media (min-width: 1024px) {
+  /* a computer: the list of rooms keeps its side; the drawer on the other side is the room's only panel */
+  .room-card { display: none !important; }
+  .room-sidebar.is-focus .room-list { flex: 1 1 auto; }
+}
+
+@media (max-width: 720px) {
+  :root { --crumb-h: 48px; --tabbar-h: 58px; }
+  /* the path bar takes the header's place on every page but the welcome page; the bar below replaces the header links */
+  .app[data-crumbs="1"] { --top-h: var(--crumb-h); }
+  .app[data-crumbs="1"] .site-header { display: none; }
+  .site-nav { display: none; }
+  .crumbs { top: 0; gap: 8px; padding: 0 8px; font-size: 14px; }
+  .crumb-back { width: 38px; height: 38px; padding: 0; justify-content: center; }
+  .crumb-back-text { display: none; }
+  .crumb-back-icon { font-size: 19px; }
+  .crumb + .crumb::before { margin: 0 8px 0 6px; }
+  .crumb-link, .crumb-here { padding: 12px 2px; }
+  .app { --dock-h: calc(var(--tabbar-h) + var(--install-h, 0px)); }
+  .app.has-install { --install-h: 58px; }
+  .view { bottom: calc(var(--dock-h) + env(safe-area-inset-bottom, 0px)); }
+  .tabbar {
+    position: absolute; inset-inline: 0; bottom: 0; z-index: 21;
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px);
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    background: rgba(4, 19, 34, 0.98); border-top: 1px solid rgba(216, 180, 102, 0.26);
+  }
+  .tabbar a { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; color: rgba(243, 239, 232, 0.64); text-decoration: none; font-size: 11px; font-weight: 600; -webkit-tap-highlight-color: transparent; }
+  .tabbar svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .tabbar a.is-active { color: var(--brand-gold); }
+  .tabbar a.is-active::before { content: ""; position: absolute; top: 0; left: 50%; width: 34px; height: 3px; border-radius: 0 0 3px 3px; background: var(--brand-gold); transform: translateX(-50%); }
+  .tabbar a:focus-visible { outline: 2px solid var(--brand-gold); outline-offset: -3px; }
+  /* the install bar sits on the bottom bar; the pages end above both (see --dock-h), so it covers nothing */
+  .install-bar {
+    position: absolute; inset-inline: 0; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); z-index: 21; height: var(--install-h, 58px);
+    display: flex; align-items: center; gap: 10px; padding: 0 12px;
+    color: #fff; background: #0d2742; border-top: 1px solid rgba(216, 180, 102, 0.4); font-size: 12.5px; line-height: 1.45;
+  }
+  .install-bar[hidden] { display: none; }
+  .install-icon { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 8px; }
+  .install-text { flex: 1 1 auto; min-width: 0; margin: 0; font-weight: 600; }
+  .install-glyph { display: inline-block; width: 16px; height: 16px; vertical-align: -3px; fill: none; stroke: var(--brand-gold); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .install-go { flex: 0 0 auto; padding: 7px 16px; font-size: 13px; }
+  .install-go[hidden] { display: none; }
+  .install-close { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(255, 255, 255, 0.08); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; }
+  /* with the install bar up, the welcome page tightens a little so its call to action stays on the first screen */
+  .app.has-install .welcome-content { gap: 7px; padding-bottom: 8px; }
+  .app.has-install .welcome-brand { padding-bottom: 7px; margin-bottom: 0; }
+  .app.has-install .welcome-facts .fact { padding: 7px 16px; }
+  .app.has-install .welcome-actions { margin-top: 6px; }
+  /* the welcome page's first screen ends above the bar */
+  .welcome-photo, .welcome-shade { height: calc(100vh - var(--dock-h)); height: calc(100dvh - var(--dock-h)); }
+  .welcome-panel { height: calc(100vh - var(--dock-h) - 14%); height: calc(100dvh - var(--dock-h) - 14%); }
+  .welcome-content { min-height: calc(100vh - var(--dock-h) - var(--header-h) - clamp(16px, 4vh, 40px)); min-height: calc(100dvh - var(--dock-h) - var(--header-h) - clamp(16px, 4vh, 40px)); }
+  .room-sidebar:not(.is-focus) .room-item-btn { gap: 6px; padding: 5px 11px 5px 9px; }
+  .room-sidebar:not(.is-focus) .room-item-btn .type-icon { width: 18px; height: 18px; }
+  .focus-title .type-icon { width: 24px; height: 24px; }
+  .gallery-icon { top: 7px; inset-inline-start: 7px; width: 30px; height: 30px; border-radius: 9px; }
+  .gallery-icon .type-icon { width: 22px; height: 22px; }
+  /* the plan's two views are the two middle entries of the bar below: the toolbar keeps the scenes and the tools, in one row */
+  .view-tabs { display: none; }
+  .scenebar { flex-wrap: nowrap; min-height: 50px; }
+  .scene-tabs { flex: 0 1 auto; }
+  .scene-tab { padding: 7px 14px; font-size: 13px; white-space: nowrap; }
+  .room-sidebar.is-focus .sidebar-head { display: none; }
+  /* the routes key now lies on the plan itself (the toolbar is one row): solid chips, readable on the light plan */
+  .route-legend .route-chip { background: rgba(10, 12, 15, 0.86); color: #fff; border-color: rgba(255, 255, 255, 0.16); }
+  .gallery-icon { inset-inline-start: auto; inset-inline-end: 7px; }
+  /* the version mark: its last part (the commit) at the free end of the path bar, clear of the buttons */
+  .build-sha { top: 15px; bottom: auto; left: 8px; transform: none; max-width: 74px; overflow: hidden; white-space: nowrap; }
+}
+
+@media (max-width: 720px) {
+  /* with the bar below, the welcome text starts higher on the photo: the navy wash starts higher too */
+  .welcome-panel { top: 8%; height: calc(100vh - var(--dock-h) - 8%); height: calc(100dvh - var(--dock-h) - 8%); }
+  .welcome-brand-text strong, .welcome-brand-text small { text-shadow: 0 1px 8px rgba(5, 27, 48, 0.9); }
+}
+@media (max-width: 720px) and (max-height: 620px) {
+  /* a short phone: the headline, the two figures and the call to action stay above the bar; the rest scrolls */
+  .welcome-content { gap: 8px; }
+  .welcome-atmosphere { display: none; }
+  .welcome-location .loc-main { font-size: 30px; }
+  .welcome-subtitle { font-size: 19px; }
+  .welcome-facts .fact { padding: 8px 14px; }
+  .welcome-facts .fact-num { font-size: 26px; }
+  .welcome-actions { margin-top: 8px; }
+  /* and with the install bar up as well */
+  .app.has-install .welcome-content { gap: 5px; }
+  .app.has-install .welcome-brand-text small { display: none; }
+  .app.has-install .welcome-facts .fact { padding: 5px 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* these rules come after the general reduced-motion block above, so they are switched off here */
+  .room-photo { transition: none; }
+}
+
+/* the brochure beside the two welcome actions (owner, 2026-11-11): on a phone the three stay on one row */
+@media (max-width: 720px) {
+  .welcome-actions { gap: 8px; flex-wrap: nowrap; }
+  .welcome-actions .btn-lg { padding: 12px 16px; font-size: 15px; white-space: nowrap; }
+  .welcome-actions .btn-primary::after { margin-inline-start: 6px; }
+  .welcome-actions .btn-ghost { padding: 10px 12px; font-size: 13px; white-space: nowrap; }
+  .welcome-actions .wide-only { display: none; }
+}
+@media (max-width: 350px) {
+  .welcome-actions { gap: 6px; }
+  .welcome-actions .btn-lg { padding: 11px 12px; font-size: 14px; }
+  .welcome-actions .btn-primary::after { content: none; }
+  .welcome-actions .btn-ghost { padding: 9px 9px; font-size: 12px; }
+}
